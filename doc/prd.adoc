@@ -1,6 +1,7 @@
 = TextFoundry
 :author: Artem Durynin
 :page-version: 0.1
+:toc-title: Содержание
 :toc: left
 :toclevels: 3
 
