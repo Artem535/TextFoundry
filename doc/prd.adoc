@@ -1,7 +1,7 @@
 = TextFoundry
 :author: Artem Durynin
 :page-version: 0.1
-:toc: auto
+:toc: left
 :toclevels: 3
 
 == Цель документа
