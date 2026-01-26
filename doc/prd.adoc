@@ -1,7 +1,6 @@
 = TextFoundry
-
-Author: Artem Durynin
-Version: 0.1
+:author: Artem Durynin
+:page-version: 0.1
 :toc: auto
 :toclevels: 3
 
@@ -130,8 +129,8 @@ Renderer не выполняет:
 
 == Этапы обработки текста
 
-## [source]
-
+[source]
+----
 Blocks
 ↓
 Template Expansion
@@ -141,7 +140,7 @@ Raw Text
 (optional) Normalization
 ↓
 Final Text
-----------
+----
 
 === Template Expansion
 
