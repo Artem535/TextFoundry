@@ -3,7 +3,7 @@ image: asciidoctor/docker-asciidoctor:main
 pages:
   script:
     - cd doc
-    - ascidoc prd.asciidoc
+    - asciidoc prd.asciidoc
   artifacts:
     paths:
       # The folder that contains the files to be exposed at the Page URL
