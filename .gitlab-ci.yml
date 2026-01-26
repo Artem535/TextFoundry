@@ -2,8 +2,9 @@
 image: asciidoctor/docker-asciidoctor:main
 pages:
   script:
-    - cd doc
-    - asciidoctor prd.asciidoc
+    - mkdir public
+    - cd public
+    - asciidoctor ../doc/prd.adoc -o index.html
   artifacts:
     paths:
       # The folder that contains the files to be exposed at the Page URL
