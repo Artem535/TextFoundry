@@ -96,10 +96,10 @@ public:
     /**
      * Apply structural style to rendered fragments
      */
-    [[nodiscard]] std::string applyStructuralStyle(
+    [[nodiscard]] static std::string applyStructuralStyle(
         const std::vector<std::string>& fragmentTexts,
         const StructuralStyle& style
-    ) const;
+    ) ;
 
 private:
     std::unique_ptr<IBlockCache> blockCache_;

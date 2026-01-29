@@ -42,7 +42,7 @@ struct StaticText {
 struct Separator {
     SeparatorType type;
 
-    explicit Separator(SeparatorType sepType) : type(sepType) {}
+    explicit Separator(const SeparatorType &sepType) : type(sepType) {}
 
     /**
      * Get string representation of separator
@@ -66,7 +66,7 @@ public:
         : data_(std::move(staticText)) {}
 
     explicit Fragment(Separator separator)
-        : data_(std::move(separator)) {}
+        : data_(separator) {}
 
     // Factory methods
     [[nodiscard]] static Fragment makeBlockRef(BlockRef ref) {

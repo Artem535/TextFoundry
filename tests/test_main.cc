@@ -615,7 +615,7 @@ TEST_SUITE("Renderer") {
     TEST_CASE("render composition with BlockRef") {
         // Setup block cache
         std::unique_ptr<IBlockCache> cache = std::make_unique<MockBlockCache>();
-        auto* mockCache = static_cast<MockBlockCache*>(cache.get());
+        auto* mockCache = dynamic_cast<MockBlockCache*>(cache.get());
 
         Block block("greeting.hello");
         block.setTemplate(Template("Hello, {{name}}!"));
@@ -709,7 +709,7 @@ TEST_SUITE("Renderer") {
         Renderer renderer;
 
         StructuralStyle style;
-        style.blockWrapper = "<div>{+{content}+}</div>";
+        style.blockWrapper = "<div>{{content}}</div>";
 
         std::vector<std::string> fragments{"Hello", "World"};
         auto result = renderer.applyStructuralStyle(fragments, style);

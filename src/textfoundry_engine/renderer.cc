@@ -75,7 +75,7 @@ Result<std::string> Renderer::renderBlock(
 std::string Renderer::applyStructuralStyle(
     const std::vector<std::string>& fragmentTexts,
     const StructuralStyle& style
-) const {
+) {
     std::ostringstream result;
 
     // Add preamble
@@ -90,10 +90,11 @@ std::string Renderer::applyStructuralStyle(
         // Apply block wrapper if present
         if (style.blockWrapper.has_value()) {
             std::string wrapped = style.blockWrapper.value();
-            // Replace {+{content}+} placeholder
-            size_t pos = wrapped.find("{+{content}+}");
+            // Replace {{content}} placeholder
+            constexpr std::string_view content = "{{content}}";
+            size_t pos = wrapped.find(content);
             if (pos != std::string::npos) {
-                wrapped.replace(pos, 13, text);  // 13 = length of "{+{content}+}"
+                wrapped.replace(pos, content.size(), text);
             }
             text = wrapped;
         }

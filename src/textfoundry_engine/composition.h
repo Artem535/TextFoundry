@@ -211,7 +211,7 @@ private:
  */
 class CompositionDraftBuilder {
 public:
-    CompositionDraftBuilder();
+    CompositionDraftBuilder() = default;
     explicit CompositionDraftBuilder(CompositionId id);
 
     CompositionDraftBuilder& withId(CompositionId id);

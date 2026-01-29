@@ -243,12 +243,12 @@ private:
     /**
      * Get block from repository (used by renderer)
      */
-    const Block* getBlockFromRepo(const BlockId& id, Version version) const;
+    [[nodiscard]] const Block* getBlockFromRepo(const BlockId& id, Version version) const;
 
     /**
      * Get latest block from repository
      */
-    const Block* getLatestBlockFromRepo(const BlockId& id) const;
+    [[nodiscard]] const Block* getLatestBlockFromRepo(const BlockId& id) const;
 };
 
 // ==================== Repository Interfaces ====================
