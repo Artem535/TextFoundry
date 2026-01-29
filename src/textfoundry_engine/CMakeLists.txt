@@ -7,4 +7,11 @@ add_library(textfoundry_core STATIC
         blockref.h
         fragment.cc
         fragment.h
+        composition.cc
+        composition.h
+        renderer.cc
+        renderer.h
+        blocktype.hpp
+        version.h
+        error.h
 )
