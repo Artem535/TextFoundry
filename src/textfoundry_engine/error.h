@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <string>
 #include <variant>
+#include <format>
 
 namespace tf {
 
@@ -62,8 +63,8 @@ struct Error {
     }
 
     // Factory methods for common errors
-    [[nodiscard]] static Error missingParam(const std::string& paramName) {
-        return Error{ErrorCode::MissingParam, "Missing required parameter: " + paramName};
+    [[nodiscard]] static Error missingParam(const std::string_view& paramName) {
+        return Error{ErrorCode::MissingParam, std::format("Missing required parameter: {}", paramName)};
     }
 
     [[nodiscard]] static Error versionRequired() {
@@ -90,8 +91,8 @@ struct Error {
 template<typename T>
 class Result {
 public:
-    Result(T value) : data_(std::move(value)) {}
-    Result(Error error) : data_(std::move(error)) {}
+    explicit Result(T value) : data_(std::move(value)) {}
+    explicit Result(Error error) : data_(std::move(error)) {}
 
     [[nodiscard]] bool hasValue() const noexcept {
         return std::holds_alternative<T>(data_);
@@ -144,7 +145,7 @@ private:
 /**
  * Exception thrown for unrecoverable engine errors
  */
-class EngineException : public std::runtime_error {
+class EngineException final : public std::runtime_error {
 public:
     explicit EngineException(const std::string& message)
         : std::runtime_error(message) {}

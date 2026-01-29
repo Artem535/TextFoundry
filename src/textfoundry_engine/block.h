@@ -26,7 +26,7 @@ using ParamValue = std::string;
 /**
  * Type alias for parameter map
  */
-using Params = std::unordered_map<std::string, ParamValue>;
+using Params = std::unordered_map<std::string_view, ParamValue>;
 
 /**
  * BlockId - globally unique identifier using dot notation (domain.subdomain.name)
@@ -127,7 +127,7 @@ public:
      * @param newVersion version to assign
      * @returns Error if block cannot be published (e.g., not in Draft state)
      */
-    [[nodiscard]] Error publish(Version newVersion);
+    [[nodiscard]] Error publish(const Version &newVersion);
 
     /**
      * Mark this version as deprecated

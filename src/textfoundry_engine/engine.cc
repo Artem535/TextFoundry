@@ -94,7 +94,7 @@ Error Engine::saveBlock(const Block& block) {
 
 Result<Block> Engine::loadBlock(const BlockId& id, std::optional<Version> version) {
     if (!blockRepo_) {
-        return Error{ErrorCode::StorageError, "No block repository configured"};
+        return Result<Block>(Error{ErrorCode::StorageError, "No block repository configured"});
     }
     if (version.has_value()) {
         return blockRepo_->load(id, version.value());
@@ -105,21 +105,21 @@ Result<Block> Engine::loadBlock(const BlockId& id, std::optional<Version> versio
 Result<Block> Engine::publishBlock(const BlockId& id, Version newVersion) {
     auto blockResult = loadBlock(id);
     if (blockResult.hasError()) {
-        return blockResult.error();
+        return Result<Block>(blockResult.error());
     }
 
     Block block = std::move(blockResult.value());
     auto err = block.publish(newVersion);
     if (err.isError()) {
-        return err;
+        return Result<Block>(err);
     }
 
     err = saveBlock(block);
     if (err.isError()) {
-        return err;
+        return Result<Block>(err);
     }
 
-    return block;
+    return Result<Block>(block);
 }
 
 Error Engine::deprecateBlock(const BlockId& id, Version version) {
@@ -135,7 +135,7 @@ Error Engine::deprecateBlock(const BlockId& id, Version version) {
 
 Result<Version> Engine::getLatestBlockVersion(const BlockId& id) {
     if (!blockRepo_) {
-        return Error{ErrorCode::StorageError, "No block repository configured"};
+        return Result<Version>(Error{ErrorCode::StorageError, "No block repository configured"});
     }
     return blockRepo_->getLatestVersion(id);
 }
@@ -165,7 +165,7 @@ Result<Composition> Engine::loadComposition(
     std::optional<Version> version
 ) {
     if (!compRepo_) {
-        return Error{ErrorCode::StorageError, "No composition repository configured"};
+        return Result<Composition>(Error{ErrorCode::StorageError, "No composition repository configured"});
     }
     if (version.has_value()) {
         return compRepo_->load(id, version.value());
@@ -176,21 +176,21 @@ Result<Composition> Engine::loadComposition(
 Result<Composition> Engine::publishComposition(const CompositionId& id, Version newVersion) {
     auto compResult = loadComposition(id);
     if (compResult.hasError()) {
-        return compResult.error();
+        return Result<Composition>(compResult.error());
     }
 
     Composition comp = std::move(compResult.value());
     auto err = comp.publish(newVersion);
     if (err.isError()) {
-        return err;
+        return Result<Composition>(err);
     }
 
     err = saveComposition(comp);
     if (err.isError()) {
-        return err;
+        return Result<Composition>(err);
     }
 
-    return comp;
+    return Result<Composition>(comp);
 }
 
 Error Engine::deprecateComposition(const CompositionId& id, Version version) {
@@ -219,7 +219,7 @@ Result<RenderResult> Engine::render(
 ) {
     auto compResult = loadComposition(compositionId);
     if (compResult.hasError()) {
-        return compResult.error();
+        return Result<RenderResult>(compResult.error());
     }
     return renderer_->render(compResult.value(), context);
 }
@@ -231,7 +231,7 @@ Result<RenderResult> Engine::render(
 ) {
     auto compResult = loadComposition(compositionId, version);
     if (compResult.hasError()) {
-        return compResult.error();
+        return Result<RenderResult>(compResult.error());
     }
     return renderer_->render(compResult.value(), context);
 }
@@ -242,7 +242,7 @@ Result<std::string> Engine::renderBlock(
 ) {
     auto blockResult = loadBlock(blockId);
     if (blockResult.hasError()) {
-        return blockResult.error();
+        return Result<std::string>(blockResult.error());
     }
     return renderer_->renderBlock(blockResult.value(), context);
 }
@@ -254,7 +254,7 @@ Result<std::string> Engine::renderBlock(
 ) {
     auto blockResult = loadBlock(blockId, version);
     if (blockResult.hasError()) {
-        return blockResult.error();
+        return Result<std::string>(blockResult.error());
     }
     return renderer_->renderBlock(blockResult.value(), context);
 }
@@ -263,7 +263,7 @@ Result<std::string> Engine::renderBlock(
 
 Result<std::string> Engine::normalize(const std::string& text, const SemanticStyle& style) const {
     if (!normalizer_) {
-        return Error{ErrorCode::StorageError, "No normalizer configured"};
+        return Result<std::string>(Error{ErrorCode::StorageError, "No normalizer configured"});
     }
     return normalizer_->normalize(text, style);
 }

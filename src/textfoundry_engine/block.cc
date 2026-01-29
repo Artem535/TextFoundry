@@ -15,32 +15,33 @@ namespace tf {
     // Regex to match {{paramName}} pattern
     const auto names = ctre::search_all<R"(\{\{(\w+)\}\})">(content_)
                        | std::views::transform([](const auto &match) {
-                         return std::string(match.template get<1>());
+                         return match.template get<1>().to_string();
                        })
                        | std::ranges::to<std::vector<std::string> >();;
     return names;
   }
 
   Result<std::string> Template::expand(const Params &params) const {
-    std::string result = content_;
-    std::regex pattern(R"(\{\{(\w+)\}\})");
-    std::smatch match;
+    std::string result;
+    result.reserve(content_.size() * 2);
 
-    std::string::const_iterator searchStart(result.cbegin());
-    while (std::regex_search(searchStart, result.cend(), match, pattern)) {
-      std::string paramName = match[1].str();
-      auto it = params.find(paramName);
-      if (it == params.end()) {
-        return Error::missingParam(paramName);
+    size_t last_pos = 0;
+    for (const auto match: ctre::search_all<R"(\{\{(\w+)\}\})">(content_)) {
+      const std::string_view paramName = match.template get<1>().to_view();
+
+      auto count_symb = match.to_view().data() - content_.data() - last_pos;
+      result.append(content_, last_pos, count_symb);
+
+      if (!params.contains(paramName)) {
+        return Result<std::string>(Error::missingParam(paramName));
       }
-      // Replace {{paramName}} with value
-      size_t pos = match.position();
-      size_t len = match.length();
-      result.replace(pos, len, it->second);
-      searchStart = result.cbegin() + pos + it->second.length();
+
+      result += params.at(paramName);
+      last_pos = match.to_view().data() - content_.data() + match.to_view().size();
     }
 
-    return result;
+    result += content_.substr(last_pos);
+    return Result(result);
   }
 
   // Block implementation
@@ -50,25 +51,22 @@ namespace tf {
     const Params &runtimeContext
   ) const {
     // 1. Check runtime context (highest priority)
-    auto runtimeIt = runtimeContext.find(paramName);
-    if (runtimeIt != runtimeContext.end()) {
-      return runtimeIt->second;
+    if (const auto runtimeIt = runtimeContext.find(paramName); runtimeIt != runtimeContext.end()) {
+      return Result{runtimeIt->second};
     }
 
     // 2. Check local override
-    auto localIt = localOverride.find(paramName);
-    if (localIt != localOverride.end()) {
-      return localIt->second;
+    if (const auto localIt = localOverride.find(paramName); localIt != localOverride.end()) {
+      return Result{localIt->second};
     }
 
     // 3. Check block defaults (lowest priority)
-    auto defaultIt = defaults_.find(paramName);
-    if (defaultIt != defaults_.end()) {
-      return defaultIt->second;
+    if (const auto defaultIt = defaults_.find(paramName); defaultIt != defaults_.end()) {
+      return Result{defaultIt->second};
     }
 
     // Parameter not found
-    return Error::missingParam(paramName);
+    return Result<ParamValue>(Error::missingParam(paramName));
   }
 
   Error Block::validateParams(
@@ -76,7 +74,7 @@ namespace tf {
     const Params &runtimeContext
   ) const {
     // Check all parameters in template have values
-    auto paramNames = template_.extractParamNames();
+    const auto paramNames = template_.extractParamNames();
     for (const auto &paramName: paramNames) {
       if (!canResolveParam(paramName, localOverride, runtimeContext)) {
         return Error::missingParam(paramName);
@@ -85,7 +83,7 @@ namespace tf {
     return Error::success();
   }
 
-  Error Block::publish(Version newVersion) {
+  Error Block::publish(const Version &newVersion) {
     if (state_ != BlockState::Draft) {
       return Error{
         ErrorCode::InvalidStateTransition,

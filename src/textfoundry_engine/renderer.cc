@@ -26,8 +26,8 @@ Result<RenderResult> Renderer::render(
 ) const {
     // Only Published compositions can be rendered
     if (composition.state() != BlockState::Published) {
-        return Error{ErrorCode::PublishedRequired,
-                     "Only Published compositions can be rendered"};
+        return Result<RenderResult>(Error{ErrorCode::PublishedRequired,
+                     "Only Published compositions can be rendered"});
     }
 
     // Render all fragments
@@ -37,7 +37,7 @@ Result<RenderResult> Renderer::render(
     for (const auto& fragment : composition.fragments()) {
         auto result = renderFragment(fragment, context, blocksUsed);
         if (result.hasError()) {
-            return result.error();
+            return Result<RenderResult>(result.error());
         }
         fragmentTexts.push_back(std::move(result.value()));
     }
@@ -56,7 +56,7 @@ Result<RenderResult> Renderer::render(
     result.blocksUsed = std::move(blocksUsed);
     result.format = style.outputFormat;
 
-    return result;
+    return Result<RenderResult>(result);
 }
 
 Result<std::string> Renderer::renderBlock(
@@ -124,12 +124,12 @@ Result<std::string> Renderer::renderFragment(
             return expandBlockRef(fragment.asBlockRef(), context, blocksUsed);
 
         case FragmentType::StaticText:
-            return fragment.asStaticText().text();
+            return Result<std::string>(fragment.asStaticText().text());
 
         case FragmentType::Separator:
-            return fragment.asSeparator().toString();
+            return Result<std::string>(fragment.asSeparator().toString());
     }
-    return Error{ErrorCode::InvalidParamType, "Unknown fragment type"};
+    return Result<std::string>(Error{ErrorCode::InvalidParamType, "Unknown fragment type"});
 }
 
 Result<std::string> Renderer::expandBlockRef(
@@ -138,7 +138,7 @@ Result<std::string> Renderer::expandBlockRef(
     std::vector<std::pair<BlockId, Version>>& blocksUsed
 ) const {
     if (!blockCache_) {
-        return Error{ErrorCode::StorageError, "No block cache available"};
+        return Result<std::string>(Error{ErrorCode::StorageError, "No block cache available"});
     }
 
     const Block* block = nullptr;
@@ -155,7 +155,7 @@ Result<std::string> Renderer::expandBlockRef(
     }
 
     if (!block) {
-        return Error::blockNotFound(blockRef.blockId());
+        return Result<std::string>(Error::blockNotFound(blockRef.blockId()));
     }
 
     // Track block usage
@@ -164,7 +164,7 @@ Result<std::string> Renderer::expandBlockRef(
     // Resolve parameters
     auto paramsResult = blockRef.resolveParams(*block, context.params);
     if (paramsResult.hasError()) {
-        return paramsResult.error();
+        return Result<std::string>(paramsResult.error());
     }
 
     // Expand template

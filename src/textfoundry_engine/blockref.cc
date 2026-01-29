@@ -35,7 +35,7 @@ namespace tf {
 
   void BlockRef::setLocalParams(Params params) { localParams_ = std::move(params); }
 
-  void BlockRef::setUseLatest(bool useLatest) {
+  void BlockRef::setUseLatest(const bool useLatest) {
     useLatest_ = useLatest;
     if (useLatest) {
       version_.reset();
@@ -68,11 +68,11 @@ namespace tf {
     for (const auto &paramName: paramNames) {
       auto result = block.resolveParam(paramName, localParams_, runtimeContext);
       if (result.hasError()) {
-        return result.error();
+        return Result<Params>(result.error());
       }
       resolved[paramName] = result.value();
     }
 
-    return resolved;
+    return Result<Params>(resolved);
   }
 } // namespace tf

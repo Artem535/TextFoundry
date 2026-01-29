@@ -51,13 +51,13 @@ std::string FragmentJsonSerializer::serialize(const std::vector<Fragment>& fragm
 Result<Fragment> FragmentJsonSerializer::deserialize(std::string_view json) {
     // TODO: Implement JSON deserialization
     (void)json;
-    return Fragment::makeStaticText("");
+    return Result<Fragment>(Fragment::makeStaticText(""));
 }
 
 Result<std::vector<Fragment>> FragmentJsonSerializer::deserializeList(std::string_view json) {
     // TODO: Implement JSON array deserialization
     (void)json;
-    return std::vector<Fragment>{};
+    return Result<std::vector<Fragment>>(std::vector<Fragment>{});
 }
 
 } // namespace tf
