@@ -25,9 +25,7 @@ struct RenderResult {
     std::vector<std::pair<BlockId, Version>> blocksUsed;  ///< Blocks used in rendering
     StructuralStyle::OutputFormat format; ///< Output format used
 
-    [[nodiscard]] bool isEmpty() const noexcept {
-        return text.empty();
-    }
+    [[nodiscard]] bool isEmpty() const noexcept;
 };
 
 /**
@@ -64,12 +62,12 @@ public:
 class Renderer {
 public:
     Renderer() = default;
-    explicit Renderer(std::unique_ptr<IBlockCache> cache) : blockCache_(std::move(cache)) {}
+    explicit Renderer(std::unique_ptr<IBlockCache> cache);
 
     /**
      * Set block cache for block resolution
      */
-    void setBlockCache(std::unique_ptr<IBlockCache> cache) { blockCache_ = std::move(cache); }
+    void setBlockCache(std::unique_ptr<IBlockCache> cache);
 
     /**
      * Render composition to text

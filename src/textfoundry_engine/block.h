@@ -15,6 +15,7 @@
 #include <vector>
 #include <optional>
 
+
 namespace tf {
 
 /**
@@ -166,55 +167,22 @@ private:
 class BlockDraftBuilder {
 public:
     BlockDraftBuilder() = default;
-    explicit BlockDraftBuilder(BlockId id) : block_(std::move(id)) {}
+    explicit BlockDraftBuilder(BlockId id);
 
-    BlockDraftBuilder& withId(BlockId id) {
-        block_.setId(std::move(id));
-        return *this;
-    }
+    BlockDraftBuilder& withId(BlockId id);
 
-    BlockDraftBuilder& withType(BlockType type) {
-        block_.setType(type);
-        return *this;
-    }
+    BlockDraftBuilder& withType(const BlockType &type);
 
-    BlockDraftBuilder& withTemplate(Template templ) {
-        block_.setTemplate(std::move(templ));
-        return *this;
-    }
+    BlockDraftBuilder& withTemplate(Template templ);
 
-    BlockDraftBuilder& withDefault(const std::string& name, ParamValue value) {
-        auto defaults = block_.defaults();
-        defaults[name] = std::move(value);
-        block_.setDefaults(std::move(defaults));
-        return *this;
-    }
+    BlockDraftBuilder& withDefault(const std::string& name, ParamValue value);
 
-    BlockDraftBuilder& withDefaults(Params defaults) {
-        block_.setDefaults(std::move(defaults));
-        return *this;
-    }
+    BlockDraftBuilder& withDefaults(Params defaults);
+    BlockDraftBuilder& withTag(const std::string& tag);
+    BlockDraftBuilder& withLanguage(std::string lang);
+    BlockDraftBuilder& withDescription(std::string desc);
 
-    BlockDraftBuilder& withTag(const std::string& tag) {
-        auto tags = block_.tags();
-        tags.insert(tag);
-        block_.setTags(std::move(tags));
-        return *this;
-    }
-
-    BlockDraftBuilder& withLanguage(std::string lang) {
-        block_.setLanguage(std::move(lang));
-        return *this;
-    }
-
-    BlockDraftBuilder& withDescription(std::string desc) {
-        block_.setDescription(std::move(desc));
-        return *this;
-    }
-
-    [[nodiscard]] Block build() const {
-        return block_;
-    }
+    [[nodiscard]] Block build() const;
 
 private:
     Block block_;

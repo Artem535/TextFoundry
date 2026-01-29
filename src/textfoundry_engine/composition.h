@@ -33,26 +33,17 @@ struct RenderContext {
     /**
      * Add a runtime parameter
      */
-    RenderContext& withParam(const std::string& name, ParamValue value) {
-        params[name] = std::move(value);
-        return *this;
-    }
+    RenderContext& withParam(const std::string& name, ParamValue value);
 
     /**
      * Set target language
      */
-    RenderContext& withLanguage(std::string lang) {
-        targetLanguage = std::move(lang);
-        return *this;
-    }
+    RenderContext& withLanguage(std::string lang);
 
     /**
      * Set strict mode
      */
-    RenderContext& withStrictMode(bool strict) {
-        strictMode = strict;
-        return *this;
-    }
+    RenderContext& withStrictMode(bool strict);
 };
 
 /**
@@ -73,21 +64,9 @@ struct StructuralStyle {
     std::optional<std::string> postamble;     ///< Text after composition
     std::optional<std::string> delimiter;     ///< Separator between fragments
 
-    [[nodiscard]] static StructuralStyle plain() {
-        return StructuralStyle{};
-    }
-
-    [[nodiscard]] static StructuralStyle markdown() {
-        StructuralStyle style;
-        style.outputFormat = OutputFormat::Markdown;
-        return style;
-    }
-
-    [[nodiscard]] static StructuralStyle json() {
-        StructuralStyle style;
-        style.outputFormat = OutputFormat::Json;
-        return style;
-    }
+    [[nodiscard]] static StructuralStyle plain();
+    [[nodiscard]] static StructuralStyle markdown();
+    [[nodiscard]] static StructuralStyle json();
 };
 
 /**
@@ -100,12 +79,7 @@ struct SemanticStyle {
     std::optional<std::string> targetLanguage; ///< e.g., "en", "ru"
     std::optional<std::string> person;         ///< e.g., "first", "third"
 
-    [[nodiscard]] bool isEmpty() const noexcept {
-        return !tone.has_value() &&
-               !tense.has_value() &&
-               !targetLanguage.has_value() &&
-               !person.has_value();
-    }
+    [[nodiscard]] bool isEmpty() const noexcept;
 };
 
 /**
@@ -115,15 +89,8 @@ struct StyleProfile {
     StructuralStyle structural;
     SemanticStyle semantic;
 
-    [[nodiscard]] static StyleProfile plain() {
-        return StyleProfile{};
-    }
-
-    [[nodiscard]] static StyleProfile markdown() {
-        StyleProfile profile;
-        profile.structural = StructuralStyle::markdown();
-        return profile;
-    }
+    [[nodiscard]] static StyleProfile plain();
+    [[nodiscard]] static StyleProfile markdown();
 };
 
 /**
@@ -133,22 +100,22 @@ struct StyleProfile {
 class Composition {
 public:
     Composition() = default;
-    explicit Composition(CompositionId id) : id_(std::move(id)) {}
+    explicit Composition(CompositionId id);
 
     // Getters
-    [[nodiscard]] const CompositionId& id() const noexcept { return id_; }
-    [[nodiscard]] BlockState state() const noexcept { return state_; }
-    [[nodiscard]] const Version& version() const noexcept { return version_; }
-    [[nodiscard]] const std::vector<Fragment>& fragments() const noexcept { return fragments_; }
-    [[nodiscard]] const std::optional<StyleProfile>& styleProfile() const noexcept { return styleProfile_; }
-    [[nodiscard]] const std::string& projectKey() const noexcept { return projectKey_; }
-    [[nodiscard]] const std::string& description() const noexcept { return description_; }
+    [[nodiscard]] const CompositionId& id() const noexcept;
+    [[nodiscard]] BlockState state() const noexcept;
+    [[nodiscard]] const Version& version() const noexcept;
+    [[nodiscard]] const std::vector<Fragment>& fragments() const noexcept;
+    [[nodiscard]] const std::optional<StyleProfile>& styleProfile() const noexcept;
+    [[nodiscard]] const std::string& projectKey() const noexcept;
+    [[nodiscard]] const std::string& description() const noexcept;
 
     // Setters (allowed only for Draft state)
-    void setId(CompositionId id) { id_ = std::move(id); }
-    void setStyleProfile(StyleProfile profile) { styleProfile_ = std::move(profile); }
-    void setProjectKey(std::string key) { projectKey_ = std::move(key); }
-    void setDescription(std::string desc) { description_ = std::move(desc); }
+    void setId(CompositionId id);
+    void setStyleProfile(StyleProfile profile);
+    void setProjectKey(std::string key);
+    void setDescription(std::string desc);
 
     /**
      * Add a BlockRef fragment with local parameters
@@ -191,10 +158,10 @@ public:
     /**
      * Access fragment by index
      */
-    [[nodiscard]] Fragment& fragment(size_t index) { return fragments_.at(index); }
-    [[nodiscard]] const Fragment& fragment(size_t index) const { return fragments_.at(index); }
+    [[nodiscard]] Fragment& fragment(size_t index);
+    [[nodiscard]] const Fragment& fragment(size_t index) const;
 
-    [[nodiscard]] size_t fragmentCount() const noexcept { return fragments_.size(); }
+    [[nodiscard]] size_t fragmentCount() const noexcept;
 
     /**
      * Validate composition
@@ -244,47 +211,18 @@ private:
  */
 class CompositionDraftBuilder {
 public:
-    CompositionDraftBuilder() = default;
-    explicit CompositionDraftBuilder(CompositionId id) : comp_(std::move(id)) {}
+    CompositionDraftBuilder();
+    explicit CompositionDraftBuilder(CompositionId id);
 
-    CompositionDraftBuilder& withId(CompositionId id) {
-        comp_.setId(std::move(id));
-        return *this;
-    }
+    CompositionDraftBuilder& withId(CompositionId id);
+    CompositionDraftBuilder& withStyleProfile(StyleProfile profile);
+    CompositionDraftBuilder& withProjectKey(std::string key);
+    CompositionDraftBuilder& withDescription(std::string desc);
+    CompositionDraftBuilder& addBlockRef(const BlockId& blockId, Version version, Params localParams = {});
+    CompositionDraftBuilder& addStaticText(std::string text);
+    CompositionDraftBuilder& addSeparator(SeparatorType type);
 
-    CompositionDraftBuilder& withStyleProfile(StyleProfile profile) {
-        comp_.setStyleProfile(std::move(profile));
-        return *this;
-    }
-
-    CompositionDraftBuilder& withProjectKey(std::string key) {
-        comp_.setProjectKey(std::move(key));
-        return *this;
-    }
-
-    CompositionDraftBuilder& withDescription(std::string desc) {
-        comp_.setDescription(std::move(desc));
-        return *this;
-    }
-
-    CompositionDraftBuilder& addBlockRef(const BlockId& blockId, Version version, Params localParams = {}) {
-        comp_.addBlockRef(blockId, version, std::move(localParams));
-        return *this;
-    }
-
-    CompositionDraftBuilder& addStaticText(std::string text) {
-        comp_.addStaticText(std::move(text));
-        return *this;
-    }
-
-    CompositionDraftBuilder& addSeparator(SeparatorType type) {
-        comp_.addSeparator(type);
-        return *this;
-    }
-
-    [[nodiscard]] Composition build() const {
-        return comp_;
-    }
+    [[nodiscard]] Composition build() const;
 
 private:
     Composition comp_;

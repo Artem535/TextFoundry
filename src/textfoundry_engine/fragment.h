@@ -33,7 +33,7 @@ struct StaticText {
 
     explicit StaticText(std::string text) : content(std::move(text)) {}
 
-    [[nodiscard]] const std::string& text() const noexcept { return content; }
+    [[nodiscard]] const std::string& text() const noexcept;
 };
 
 /**
@@ -155,16 +155,7 @@ public:
     }
 
     // Validation
-    [[nodiscard]] Error validate(bool isDraftContext = false) const {
-        return std::visit([&](const auto& val) -> Error {
-            using T = std::decay_t<decltype(val)>;
-            if constexpr (std::is_same_v<T, BlockRef>) {
-                return val.validate(isDraftContext);
-            }
-            // StaticText and Separator are always valid
-            return Error::success();
-        }, data_);
-    }
+    [[nodiscard]] Error validate(bool isDraftContext = false) const;
 
 private:
     std::variant<BlockRef, StaticText, Separator> data_;

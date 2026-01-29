@@ -18,6 +18,23 @@ std::string Separator::toString() const {
     return "";
 }
 
+// StaticText implementation
+const std::string& StaticText::text() const noexcept {
+    return content;
+}
+
+// Fragment implementation
+Error Fragment::validate(bool isDraftContext) const {
+    return std::visit([&](const auto& val) -> Error {
+        using T = std::decay_t<decltype(val)>;
+        if constexpr (std::is_same_v<T, BlockRef>) {
+            return val.validate(isDraftContext);
+        }
+        // StaticText and Separator are always valid
+        return Error::success();
+    }, data_);
+}
+
 // FragmentJsonSerializer stub implementations
 std::string FragmentJsonSerializer::serialize(const Fragment& fragment) {
     // TODO: Implement JSON serialization

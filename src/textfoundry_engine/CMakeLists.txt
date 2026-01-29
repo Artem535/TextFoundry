@@ -1,3 +1,6 @@
+
+find_package(ctre CONFIG REQUIRED)
+
 add_library(textfoundry_core STATIC
         engine.cc
         engine.h
@@ -15,3 +18,5 @@ add_library(textfoundry_core STATIC
         version.h
         error.h
 )
+
+target_link_libraries(textfoundry_core ctre::ctre)
