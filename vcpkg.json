@@ -1,14 +1,18 @@
 {
-  "name": "textfoundry",
-  "version": "0.1",
   "dependencies": [
     {
       "name": "doctest",
       "version>=": "2.4.12"
     },
     {
-     "name":"ctre",
-      "version>=":"3.10.0"
+      "name": "spdlog",
+      "version>=": "1.17.0"
+    },
+    {
+      "name": "ctre",
+      "version>=": "3.10.0"
     }
-  ]
+  ],
+  "name": "textfoundry",
+  "version": "0.1"
 }

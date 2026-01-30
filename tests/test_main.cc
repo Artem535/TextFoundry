@@ -5,6 +5,18 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
 
+#include "../src/textfoundry_engine/logger.h"
+
+// Initialize logger before running tests
+struct LoggerSetup {
+    LoggerSetup() {
+        tf::Logger::init(tf::LogLevel::Warn);  // Only warnings and errors during tests
+    }
+    ~LoggerSetup() {
+        tf::Logger::shutdown();
+    }
+} loggerSetup;
+
 #include "../src/textfoundry_engine/version.h"
 #include "../src/textfoundry_engine/error.h"
 #include "../src/textfoundry_engine/blocktype.hpp"

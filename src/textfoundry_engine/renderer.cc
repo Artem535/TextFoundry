@@ -3,6 +3,7 @@
 //
 
 #include "renderer.h"
+#include "logger.h"
 
 #include <sstream>
 
@@ -24,8 +25,13 @@ Result<RenderResult> Renderer::render(
     const Composition& composition,
     const RenderContext& context
 ) const {
+    TF_LOG_DEBUG("Rendering composition [id={}, version={}.{}]",
+                 composition.id(), composition.version().major, composition.version().minor);
+
     // Only Published compositions can be rendered
     if (composition.state() != BlockState::Published) {
+        TF_LOG_ERROR("Cannot render composition: only Published compositions can be rendered [id={}, state={}]",
+                     composition.id(), static_cast<int>(composition.state()));
         return Result<RenderResult>(Error{ErrorCode::PublishedRequired,
                      "Only Published compositions can be rendered"});
     }
@@ -34,9 +40,11 @@ Result<RenderResult> Renderer::render(
     std::vector<std::string> fragmentTexts;
     std::vector<std::pair<BlockId, Version>> blocksUsed;
 
+    TF_LOG_TRACE("Rendering {} fragments", composition.fragments().size());
     for (const auto& fragment : composition.fragments()) {
         auto result = renderFragment(fragment, context, blocksUsed);
         if (result.hasError()) {
+            TF_LOG_ERROR("Failed to render fragment: {}", result.error().message);
             return Result<RenderResult>(result.error());
         }
         fragmentTexts.push_back(std::move(result.value()));
@@ -55,6 +63,9 @@ Result<RenderResult> Renderer::render(
     result.compositionVersion = composition.version();
     result.blocksUsed = std::move(blocksUsed);
     result.format = style.outputFormat;
+
+    TF_LOG_DEBUG("Composition rendered successfully [id={}, blocks_used={}]",
+                 composition.id(), result.blocksUsed.size());
 
     return Result<RenderResult>(result);
 }
