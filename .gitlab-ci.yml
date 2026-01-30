@@ -4,7 +4,7 @@ pages:
   script:
     - mkdir public
     - cd public
-    - asciidoctor ../doc/prd.adoc -o index.html
+    - asciidoctor ../doc/main.adoc -o index.html
   artifacts:
     paths:
       # The folder that contains the files to be exposed at the Page URL
