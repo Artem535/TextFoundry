@@ -7,5 +7,5 @@
 :toclevels: 3
 :source-highlighter: rouge
 
-include::prd.adoc[leveloffset=2]
-include::doc.adoc[leveloffset=2]
+include::prd.adoc[leveloffset=1]
+include::doc.adoc[leveloffset=1]
