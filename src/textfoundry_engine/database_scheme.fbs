@@ -1,0 +1,240 @@
+// database_scheme.fbs
+// TextFoundry Database Schema
+// FlatBuffers schema for ObjectBox storage
+
+// ============================================================================
+// CORE DICTIONARY TABLES
+// ============================================================================
+
+table ObxProject {
+    id: ulong;
+    /// Unique project identifier (e.g., "myapp", "docs")
+    /// objectbox:unique
+    key: string;
+    /// Display name
+    name: string;
+    /// Project description
+    description: string;
+    /// Creation timestamp (Unix milliseconds)
+    /// objectbox:id-companion, date
+    createdAt: long;
+    /// Last modification timestamp
+    /// objectbox:id-companion, date
+    updatedAt: long;
+}
+
+table ObxLanguage {
+    id: ulong;
+    /// ISO 639-1 code (e.g., "en", "ru", "de")
+    /// objectbox:unique
+    code: string;
+    /// Native name (e.g., "English", "Русский")
+    nativeName: string; // Not supported now
+}
+
+/// Lifecycle state dictionary (Draft/Published/Deprecated)
+/// Enables attaching metadata to states
+table ObxState {
+    id: ulong;
+    /// Numeric code matching BlockState enum (1=Published, 2=Deprecated)
+    /// objectbox:unique
+    code: byte;
+    /// Display name for UI ("Draft", "Published", "Deprecated")
+    name: string;
+    /// Human-readable description of the state
+    description: string;
+}
+
+// ============================================================================
+// TAGGING SYSTEM
+// ============================================================================
+
+table ObxTag {
+    id: ulong;
+    /// Many-to-One: Tag belongs to ObxProject
+    /// objectbox:relation=ObxProject
+    projectId: ulong;
+    /// Tag name (unique within project)
+    /// objectbox:index
+    name: string;
+    /// Creation timestamp
+    /// objectbox:id-companion, date
+    createdAt: long;
+}
+
+// ============================================================================
+// BLOCK SYSTEM
+// ============================================================================
+
+/// Parameter schema for blocks (extracted from JSON for queryability)
+table ObxBlockParam {
+    id: ulong;
+    /// Many-to-One: Parameter belongs to ObxBlock
+    /// objectbox:relation=ObxBlock
+    blockId: ulong;
+    /// Parameter name
+    /// objectbox:index
+    name: string;
+    /// Is parameter required
+    required: bool;
+    /// Default value (empty if none)
+    defaultValue: string;
+}
+
+/// ObxBlock - reusable logical text fragment
+/// Many-to-Many relation with ObxTag: standalone relation stored separately
+/// objectbox:relation(name=tags,to=ObxTag)
+table ObxBlock {
+    id: ulong;
+
+    /// Logical block identifier (e.g., "greeting.formal")
+    /// objectbox:index
+    blockId: string;
+    versionMajor: ushort;
+    versionMinor: ushort;
+
+    /// Many-to-One: ObxBlock belongs to ObxProject
+    /// objectbox:relation=ObxProject
+    projectId: ulong;
+
+    /// Many-to-One: Language metadata for filtering
+    /// objectbox:relation=ObxLanguage
+    languageId: ulong;
+
+    /// Many-to-One: Lifecycle state (replaces embedded byte enum)
+    /// objectbox:relation=ObxState
+    stateId: ulong;
+
+    /// Block type enum (Role/Constraint/Style/Domain/Meta)
+    /// Kept as embedded byte since it's taxonomy, not lifecycle metadata
+    type: byte;
+
+    /// Template content with placeholders
+    templateContent: string;
+    /// JSON object with default parameter values
+    defaultsJson: string;
+    /// Human-readable description
+    description: string;
+    /// Creation timestamp
+    /// objectbox:id-companion, date
+    createdAt: long;
+    /// Last modification timestamp
+    /// objectbox:id-companion, date
+    updatedAt: long;
+
+    /// Previous version reference (for version chain)
+    /// objectbox:relation=ObxBlock
+    previousVersionId: ulong;
+    /// Next version reference (for version chain)
+    /// objectbox:relation=ObxBlock
+    nextVersionId: ulong;
+}
+
+// ============================================================================
+// COMPOSITION SYSTEM
+// ============================================================================
+
+/// Fragment stored as separate entity for queryability and large compositions
+table ObxFragment {
+    id: ulong;
+    /// Many-to-One: ObxFragment belongs to ObxComposition
+    /// objectbox:relation=ObxComposition
+    compositionId: ulong;
+    /// Order index within composition
+    /// objectbox:index
+    orderIndex: uint;
+    /// Fragment type: 0=BlockRef, 1=StaticText, 2=Separator
+    fragmentType: byte;
+    /// For BlockRef: referenced block ID
+    refBlockId: string;
+    /// For BlockRef: block version major
+    refVersionMajor: ushort;
+    /// For BlockRef: block version minor
+    refVersionMinor: ushort;
+    /// For BlockRef: use latest version flag
+    refUseLatest: bool;
+    /// For BlockRef: local parameters JSON
+    refLocalParamsJson: string;
+    /// For StaticText: raw content
+    staticContent: string;
+    /// For Separator: separator type (0=None, 1=Newline, 2=Paragraph, 3=Hr)
+    separatorType: byte;
+}
+
+table ObxComposition {
+    id: ulong;
+    /// Logical composition identifier
+    /// objectbox:index
+    compositionId: string;
+    /// Many-to-One: ObxComposition belongs to ObxProject
+    /// objectbox:relation=ObxProject
+    projectId: ulong;
+    /// Many-to-One: Lifecycle state
+    /// objectbox:relation=ObxState
+    stateId: ulong;
+
+    versionMajor: ushort;
+    versionMinor: ushort;
+
+    /// Many-to-One: Target language
+    /// objectbox:relation=ObxLanguage
+    targetLanguageId: ulong;
+
+    /// Structural style JSON (blockWrapper, preamble, postamble, delimiter)
+    structuralStyleJson: string;
+    /// Semantic style JSON (tone, tense, targetLanguage, person)
+    semanticStyleJson: string;
+
+    /// Human-readable description
+    description: string;
+    /// Creation timestamp
+    /// objectbox:id-companion, date
+    createdAt: long;
+    /// Last modification timestamp
+    /// objectbox:id-companion, date
+    updatedAt: long;
+
+    /// Previous version reference
+    /// objectbox:relation=ObxComposition
+    previousVersionId: ulong;
+    /// Next version reference
+    /// objectbox:relation=ObxComposition
+    nextVersionId: ulong;
+}
+
+// ============================================================================
+// METADATA AND AUDIT
+// ============================================================================
+
+/// Audit log for tracking changes (optional, for compliance).
+table ObxAuditLog {
+    id: ulong;
+    /// Timestamp of the change
+    /// objectbox:id-companion, date
+    createdAt: long;
+    /// Entity type: "ObxBlock", "ObxComposition", "ObxProject", etc.
+    entityType: string;
+    /// Entity ID
+    entityId: ulong;
+    /// Operation: "CREATE", "UPDATE", "DELETE", "PUBLISH", "DEPRECATE"
+    operation: string;
+    /// User identifier (if available)
+    userId: string;
+    /// Change details JSON
+    detailsJson: string;
+}
+
+/// Block usage statistics (for analytics) (NOT IMPLEMENTED)
+table ObxBlockUsage {
+    id: ulong;
+    /// Many-to-One: ObxBlock being tracked
+    /// objectbox:relation=ObxBlock
+    blockId: ulong;
+    /// Usage count
+    usageCount: ulong;
+    /// Last used timestamp
+    /// objectbox:id-companion, date
+    lastUsedAt: long;
+    /// Compositions where block is used (JSON array of composition IDs)
+    compositionIdsJson: string;
+}
