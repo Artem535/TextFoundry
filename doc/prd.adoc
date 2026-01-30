@@ -1,10 +1,4 @@
 = TextFoundry PRD: Архитектура Text Engine
-:author: Artem Durynin
-:page-version: 0.9
-:toc-title: Содержание
-:toc: left
-:toclevels: 3
-:source-highlighter: rouge
 
 == Цель и назначение документа [[purpose]]
 Этот документ описывает ограничения, архитектурные принципы, жизненные циклы сущностей и дорожную карту _Text Engine_ — движка для конструирования текстов и промтов из переиспользуемых смысловых блоков [1].
