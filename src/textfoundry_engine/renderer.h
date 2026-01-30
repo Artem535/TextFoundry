@@ -23,7 +23,6 @@ struct RenderResult {
     CompositionId compositionId;         ///< Source composition ID
     Version compositionVersion;          ///< Source composition version
     std::vector<std::pair<BlockId, Version>> blocksUsed;  ///< Blocks used in rendering
-    StructuralStyle::OutputFormat format; ///< Output format used
 
     [[nodiscard]] bool isEmpty() const noexcept;
 };
@@ -88,10 +87,10 @@ public:
      * @param context Runtime parameters
      * @returns Rendered string or Error
      */
-    [[nodiscard]] Result<std::string> renderBlock(
+    [[nodiscard]] static Result<std::string> renderBlock(
         const Block& block,
         const RenderContext& context = RenderContext{}
-    ) const;
+    );
 
     /**
      * Apply structural style to rendered fragments
@@ -125,15 +124,7 @@ private:
     /**
      * Get structural style from composition or default
      */
-    [[nodiscard]] StructuralStyle getEffectiveStyle(const Composition& composition) const;
-
-    /**
-     * Format text according to output format
-     */
-    [[nodiscard]] std::string formatOutput(
-        const std::string& text,
-        StructuralStyle::OutputFormat format
-    ) const;
+    [[nodiscard]] static StructuralStyle getEffectiveStyle(const Composition& composition);
 };
 
 } // namespace tf

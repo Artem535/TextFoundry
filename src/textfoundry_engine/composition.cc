@@ -21,23 +21,6 @@ namespace tf {
     return *this;
   }
 
-  // StructuralStyle implementation
-  StructuralStyle StructuralStyle::plain() {
-    return StructuralStyle{};
-  }
-
-  StructuralStyle StructuralStyle::markdown() {
-    StructuralStyle style;
-    style.outputFormat = OutputFormat::Markdown;
-    return style;
-  }
-
-  StructuralStyle StructuralStyle::json() {
-    StructuralStyle style;
-    style.outputFormat = OutputFormat::Json;
-    return style;
-  }
-
   // SemanticStyle implementation
   bool SemanticStyle::isEmpty() const noexcept {
     return !tone.has_value() &&
@@ -49,12 +32,6 @@ namespace tf {
   // StyleProfile implementation
   StyleProfile StyleProfile::plain() {
     return StyleProfile{};
-  }
-
-  StyleProfile StyleProfile::markdown() {
-    StyleProfile profile;
-    profile.structural = StructuralStyle::markdown();
-    return profile;
   }
 
   // Composition implementation

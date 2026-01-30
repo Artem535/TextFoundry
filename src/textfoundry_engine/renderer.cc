@@ -54,15 +54,11 @@ Result<RenderResult> Renderer::render(
     auto style = getEffectiveStyle(composition);
     std::string finalText = applyStructuralStyle(fragmentTexts, style);
 
-    // Format output
-    finalText = formatOutput(finalText, style.outputFormat);
-
     RenderResult result;
     result.text = std::move(finalText);
     result.compositionId = composition.id();
     result.compositionVersion = composition.version();
     result.blocksUsed = std::move(blocksUsed);
-    result.format = style.outputFormat;
 
     TF_LOG_DEBUG("Composition rendered successfully [id={}, blocks_used={}]",
                  composition.id(), result.blocksUsed.size());
@@ -73,7 +69,7 @@ Result<RenderResult> Renderer::render(
 Result<std::string> Renderer::renderBlock(
     const Block& block,
     const RenderContext& context
-) const {
+) {
     // Merge defaults with context params (context has priority)
     Params merged = block.defaults();
     for (const auto& [key, value] : context.params) {
@@ -103,8 +99,7 @@ std::string Renderer::applyStructuralStyle(
             std::string wrapped = style.blockWrapper.value();
             // Replace {{content}} placeholder
             constexpr std::string_view content = "{{content}}";
-            size_t pos = wrapped.find(content);
-            if (pos != std::string::npos) {
+            if (const size_t pos = wrapped.find(content); pos != std::string::npos) {
                 wrapped.replace(pos, content.size(), text);
             }
             text = wrapped;
@@ -183,21 +178,11 @@ Result<std::string> Renderer::expandBlockRef(
     return block->templ().expand(paramsResult.value());
 }
 
-StructuralStyle Renderer::getEffectiveStyle(const Composition& composition) const {
+StructuralStyle Renderer::getEffectiveStyle(const Composition& composition) {
     if (composition.styleProfile().has_value()) {
         return composition.styleProfile()->structural;
     }
-    return StructuralStyle::plain();
-}
-
-std::string Renderer::formatOutput(
-    const std::string& text,
-    StructuralStyle::OutputFormat format
-) const {
-    // For now, just return text as-is
-    // Format-specific handling can be added later
-    (void)format;
-    return text;
+    return {};
 }
 
 } // namespace tf

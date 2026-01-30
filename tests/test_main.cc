@@ -472,17 +472,6 @@ TEST_SUITE("Composition") {
         CHECK(c.state() == BlockState::Deprecated);
     }
 
-    TEST_CASE("StructuralStyle factories") {
-        auto plain = StructuralStyle::plain();
-        CHECK(plain.outputFormat == StructuralStyle::OutputFormat::Plain);
-
-        auto markdown = StructuralStyle::markdown();
-        CHECK(markdown.outputFormat == StructuralStyle::OutputFormat::Markdown);
-
-        auto json = StructuralStyle::json();
-        CHECK(json.outputFormat == StructuralStyle::OutputFormat::Json);
-    }
-
     TEST_CASE("SemanticStyle isEmpty") {
         SemanticStyle s;
         CHECK(s.isEmpty());
@@ -765,6 +754,5 @@ TEST_SUITE("Renderer") {
         CHECK(result.hasValue());
         CHECK(result.value().compositionId == "my.composition");
         CHECK(result.value().compositionVersion == Version{2, 5});
-        CHECK(result.value().format == StructuralStyle::OutputFormat::Plain);
     }
 }

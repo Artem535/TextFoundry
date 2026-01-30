@@ -124,10 +124,14 @@ StyleProfile задаёт правила оформления текста и р
 ==== StructuralStyle (структурный) [[structural-style]]
 Детерминированные параметры, применяемые на этапе Template Expansion [1]:
 
-* `output_format` — json | xml | markdown | plain
 * `block_wrapper` — шаблон обёртки для каждого блока (например, `<final_instruction>{+{content}+}</final_instruction>`)
 * `preamble/postamble` — статический текст до и после всей Composition
 * `delimiters` — разделители между фрагментами
+
+[IMPORTANT]
+**Неподдерживаемая функция:** Различные `output_format` (json | xml | markdown | plain) для разных стилей не реализованы. 
+Рендерер всегда возвращает plain text. Форматирование под конкретный выходной формат должно выполняться 
+клиентом через `block_wrapper`, `preamble/postamble` и `delimiters`.
 
 Применяется автоматически при рендеринге, не изменяет семантику текста [1].
 

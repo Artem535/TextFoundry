@@ -51,22 +51,10 @@ struct RenderContext {
  * Applied automatically during rendering, doesn't modify semantics
  */
 struct StructuralStyle {
-    enum class OutputFormat {
-        Plain,
-        Markdown,
-        Json,
-        Xml
-    };
-
-    OutputFormat outputFormat = OutputFormat::Plain;
     std::optional<std::string> blockWrapper;  ///< Template with {{content}} placeholder
     std::optional<std::string> preamble;      ///< Text before composition
     std::optional<std::string> postamble;     ///< Text after composition
     std::optional<std::string> delimiter;     ///< Separator between fragments
-
-    [[nodiscard]] static StructuralStyle plain();
-    [[nodiscard]] static StructuralStyle markdown();
-    [[nodiscard]] static StructuralStyle json();
 };
 
 /**
