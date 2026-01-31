@@ -49,21 +49,7 @@ namespace tf {
 
   // ==================== Block Operations ====================
 
-  Block Engine::create_block_draft(const BlockId &id) {
-    TF_LOG_DEBUG("Creating block draft [id={}]", id);
-    return Block(id);
-  }
-
-  Error Engine::save_block(const Block &block) {
-    if (!blockRepo_) {
-      TF_LOG_ERROR("Cannot save block: no block repository configured");
-      return Error{ErrorCode::StorageError, "No block repository configured"};
-    }
-    TF_LOG_INFO("Saving block [id={}, version={}.{}]", block.id(), block.version().major, block.version().minor);
-    return blockRepo_->save(block);
-  }
-
-  Result<Block> Engine::load_block(const BlockId &id, std::optional<Version> version) {
+  Result<Block> Engine::load_block(const BlockId &id, std::optional<Version> version) const {
     if (!blockRepo_) {
       TF_LOG_ERROR("Cannot load block: no block repository configured");
       return Result<Block>(Error{ErrorCode::StorageError, "No block repository configured"});
@@ -74,31 +60,6 @@ namespace tf {
     }
     TF_LOG_DEBUG("Loading latest block [id={}]", id);
     return blockRepo_->load_latest(id);
-  }
-
-  Result<Block> Engine::publish_block(const BlockId &id, Version newVersion) {
-    TF_LOG_INFO("Publishing block [id={} -> version={}.{}]", id, newVersion.major, newVersion.minor);
-    auto blockResult = load_block(id);
-    if (blockResult.has_error()) {
-      TF_LOG_ERROR("Failed to publish block [id={}]: {}", id, blockResult.error().message);
-      return Result<Block>(blockResult.error());
-    }
-
-    Block block = std::move(blockResult.value());
-    auto err = block.publish(newVersion);
-    if (err.is_error()) {
-      TF_LOG_ERROR("Failed to publish block [id={}]: {}", id, err.message);
-      return Result<Block>(err);
-    }
-
-    err = save_block(block);
-    if (err.is_error()) {
-      TF_LOG_ERROR("Failed to save published block [id={}]: {}", id, err.message);
-      return Result<Block>(err);
-    }
-
-    TF_LOG_INFO("Block published successfully [id={}, version={}.{}]", id, newVersion.major, newVersion.minor);
-    return Result<Block>(block);
   }
 
   Error Engine::deprecate_block(const BlockId &id, Version version) {
@@ -138,12 +99,175 @@ namespace tf {
     return blockRepo_->list(typeFilter);
   }
 
-  // ==================== Composition Operations ====================
+  Result<Version> Engine::get_next_version(const BlockId &id, VersionBump bump) {
+    auto current = blockRepo_->get_latest_version(id);
 
-  Composition Engine::create_composition_draft(const CompositionId &id) {
-    TF_LOG_DEBUG("Creating composition draft [id={}]", id);
-    return Composition(id);
+    Version next{1, 0};
+    if (current.has_value()) {
+      if (bump == VersionBump::Major) {
+        next = Version{static_cast<uint16_t>(current.value().major + 1), 0};
+      } else {
+        // Minor
+        next = Version{
+          current.value().major,
+          static_cast<uint16_t>(current.value().minor + 1)
+        };
+      }
+    }
+
+    return Result<Version>(next);
   }
+
+
+  Result<PublishedBlock> Engine::publish_block(BlockDraft draft, VersionBump bump) {
+    Block &block = draft.internal_;
+
+    if (block.state() != BlockState::Draft) {
+      return Result<PublishedBlock>(Error{
+        ErrorCode::InvalidStateTransition,
+        "Only Draft blocks can be published"
+      });
+    }
+
+    auto next_ver_result = get_next_version(block.id(), bump);
+    if (next_ver_result.has_error()) {
+      return Result<PublishedBlock>(next_ver_result.error());
+    }
+
+    return publish_block_internal(std::move(block), next_ver_result.value());
+  }
+
+  Result<PublishedBlock> Engine::publish_block(BlockDraft draft, Version explicit_version) {
+    Block &block = draft.internal_;
+
+    if (block.state() != BlockState::Draft) {
+      return Result<PublishedBlock>(Error{
+        ErrorCode::InvalidStateTransition,
+        "Only Draft blocks can be published"
+      });
+    }
+
+    auto existing = blockRepo_->load(block.id(), explicit_version);
+    if (existing.has_value()) {
+      return Result<PublishedBlock>(Error{
+        ErrorCode::DuplicateId,
+        std::format("Version {}.{} already exists",
+                    explicit_version.major, explicit_version.minor)
+      });
+    }
+
+    return publish_block_internal(std::move(block), explicit_version);
+  }
+
+  Result<PublishedBlock> Engine::publish_block_internal(Block block, Version version) {
+    auto err = block.publish(version);
+    if (err.is_error()) {
+      return Result<PublishedBlock>(err);
+    }
+
+    err = blockRepo_->save(block);
+    if (err.is_error()) {
+      return Result<PublishedBlock>(err);
+    }
+
+    TF_LOG_INFO("Block published: {} v{}", block.id(), version);
+
+    return Result<PublishedBlock>(PublishedBlock(block.id(), version));
+  }
+
+  Result<Version> Engine::get_latest_composition_version(const CompositionId &id) {
+    if (!compRepo_) {
+      TF_LOG_ERROR("Cannot get latest composition version: no composition repository configured");
+      return Result<Version>(Error{ErrorCode::StorageError, "No composition repository configured"});
+    }
+
+    TF_LOG_DEBUG("Getting latest composition version [id={}]", id);
+    const auto version = compRepo_->get_latest_version(id);
+    return version;
+  }
+
+  Result<PublishedComposition> Engine::publish_composition(
+    CompositionDraft draft,
+    VersionBump bump
+  ) {
+    Composition &comp = draft.internal_;
+
+    if (comp.state() != BlockState::Draft) {
+      return Result<PublishedComposition>(Error{
+        ErrorCode::InvalidStateTransition,
+        "Only Draft compositions can be published"
+      });
+    }
+
+
+    for (const auto &frag: comp.fragments()) {
+      if (frag.is_block_ref()) {
+        const auto &ref = frag.as_block_ref();
+        if (ref.use_latest()) {
+          return Result<PublishedComposition>(Error::version_required());
+        }
+      }
+    }
+
+    Version next_version{1, 0};
+    auto latest = compRepo_->get_latest_version(comp.id());
+    if (latest.has_value()) {
+      if (bump == VersionBump::Major) {
+        next_version = Version{
+          static_cast<uint16_t>(latest.value().major + 1), 0
+        };
+      } else {
+        next_version = Version{
+          latest.value().major,
+          static_cast<uint16_t>(latest.value().minor + 1)
+        };
+      }
+    }
+
+    return publish_composition_internal(comp, next_version);
+  }
+
+  Result<PublishedComposition> Engine::publish_composition(
+    CompositionDraft draft,
+    Version explicit_version
+  ) {
+    Composition &comp = draft.internal_;
+
+    // Проверка на существование версии
+    if (auto existing = compRepo_->load(comp.id(), explicit_version);
+      existing.has_value()) {
+      return Result<PublishedComposition>(Error{
+        ErrorCode::DuplicateId,
+        "Composition version already exists"
+      });
+    }
+
+    return publish_composition_internal({}, explicit_version);
+  }
+
+  Result<PublishedComposition> Engine::publish_composition_internal(Composition comp, Version version) {
+    auto err = comp.publish(version);
+    if (err.is_error()) return Result<PublishedComposition>(err);
+
+    err = compRepo_->save(comp);
+    if (err.is_error()) return Result<PublishedComposition>(err);
+
+    return Result<PublishedComposition>(
+      PublishedComposition(comp.id(), version)
+    );
+  }
+
+
+  Error Engine::save_block(const Block &block) {
+    if (!blockRepo_) {
+      TF_LOG_ERROR("Cannot save block: no block repository configured");
+      return Error{ErrorCode::StorageError, "No block repository configured"};
+    }
+    TF_LOG_INFO("Saving block [id={}, version={}.{}]", block.id(), block.version().major, block.version().minor);
+    return blockRepo_->save(block);
+  }
+
+  // ==================== Composition Operations ====================
 
   Error Engine::save_composition(const Composition &composition) {
     if (!compRepo_) {
@@ -169,31 +293,6 @@ namespace tf {
     }
     TF_LOG_DEBUG("Loading latest composition [id={}]", id);
     return compRepo_->load_latest(id);
-  }
-
-  Result<Composition> Engine::publish_composition(const CompositionId &id, Version newVersion) {
-    TF_LOG_INFO("Publishing composition [id={} -> version={}.{}]", id, newVersion.major, newVersion.minor);
-    auto compResult = load_composition(id);
-    if (compResult.has_error()) {
-      TF_LOG_ERROR("Failed to publish composition [id={}]: {}", id, compResult.error().message);
-      return Result<Composition>(compResult.error());
-    }
-
-    Composition comp = std::move(compResult.value());
-    auto err = comp.publish(newVersion);
-    if (err.is_error()) {
-      TF_LOG_ERROR("Failed to publish composition [id={}]: {}", id, err.message);
-      return Result<Composition>(err);
-    }
-
-    err = save_composition(comp);
-    if (err.is_error()) {
-      TF_LOG_ERROR("Failed to save published composition [id={}]: {}", id, err.message);
-      return Result<Composition>(err);
-    }
-
-    TF_LOG_INFO("Composition published successfully [id={}, version={}.{}]", id, newVersion.major, newVersion.minor);
-    return Result<Composition>(comp);
   }
 
   Error Engine::deprecate_composition(const CompositionId &id, Version version) {

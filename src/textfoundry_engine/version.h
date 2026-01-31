@@ -5,9 +5,9 @@
 #pragma once
 
 #include <cstdint>
-#include <compare>
 #include <format>
 #include <string>
+#include <fmt/base.h>
 
 namespace tf {
 
@@ -26,20 +26,33 @@ struct Version {
     /**
      * Convert version to string format "major.minor"
      */
-    [[nodiscard]] std::string toString() const {
+    [[nodiscard]] std::string to_string() const {
         return std::format("{}.{}", major, minor);
     }
 };
 
 } // namespace tf
 
-/**
- * Formatter for Version
- */
+
+// fmt support for spdlog (corrected for fmt v9+)
+template<>
+struct fmt::formatter<tf::Version> {
+    template<typename ParseContext>
+    constexpr auto parse(ParseContext& ctx) {
+        return ctx.begin();
+    }
+
+    template<typename FormatContext>
+    auto format(const tf::Version& v, FormatContext& ctx) const {
+        return fmt::format_to(ctx.out(), "{}.{}", v.major, v.minor);
+    }
+};
+
+// C++23 std::format support
 template<>
 struct std::formatter<tf::Version> : std::formatter<std::string> {
     template<typename FormatContext>
     auto format(const tf::Version& v, FormatContext& ctx) const {
-        return std::formatter<std::string>::format(v.toString(), ctx);
+        return std::formatter<std::string>::format(v.to_string(), ctx);
     }
 };

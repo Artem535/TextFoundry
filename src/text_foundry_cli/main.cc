@@ -11,12 +11,32 @@ int main() {
   const tf::EngineConfig config{.default_data_path = "memory:objectbox"};
   tf::Engine engine{config};
 
-  tf::Block block = engine.create_block_draft(tf::BlockId{"test.hello_world"});
-  block.set_template(tf::Template("Hello World by {{name}}"));
-  block.set_defaults({{"name", "Artem"}});
+  auto greeting_result = engine.publish_block(
+    tf::BlockDraftBuilder("greeting.formal")
+    .with_template(tf::Template("Уважаемый {{name}}!"))
+    .with_default("name", "клиент")
+    .with_type(tf::BlockType::Role)
+    .build()
+  );
 
-  const auto error = engine.save_block(block);
-  const auto published = engine.publish_block("test.hello_world", {0, 0});
-  const auto res = engine.render_block("test.hello_world", {0, 0}, {});
-  std::cout << res.value() << std::endl;
+  if (greeting_result.has_error()) {
+    return 1;
+  }
+
+  auto greeting = greeting_result.value();
+
+  auto doc_result = engine.publish_composition(
+    tf::CompositionDraftBuilder("welcome.doc")
+    .with_project_key("crm")
+    .add_block_ref(greeting.ref())
+    .add_separator(tf::SeparatorType::Paragraph)
+    .add_static_text("Добро пожаловать в систему.")
+    .build()
+  );
+
+  if (doc_result.has_value()) {
+    auto rendered = engine.render(doc_result.value().id(),
+                                  doc_result.value().version());
+    std::cout << rendered.value().text << std::endl;
+  }
 }

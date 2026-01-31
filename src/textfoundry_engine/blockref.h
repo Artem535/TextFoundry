@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include "block.h"
+#include "types.h"
 #include "version.h"
 #include "error.h"
 #include "blocktype.hpp"
@@ -12,6 +12,8 @@
 #include <optional>
 
 namespace tf {
+  class Block;
+
   /**
    * BlockRef - reference to a published Block with local parameter overrides
    * Version is mandatory for reproducibility (use_latest only allowed in Draft Composition)

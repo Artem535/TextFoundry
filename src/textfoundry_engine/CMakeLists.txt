@@ -39,6 +39,7 @@ add_library(textfoundry_core STATIC
         objectboxrepository.h
         repository_block_cache.cpp
         ../text_foundry_cli/main.cc
+        types.h
 )
 
 add_obx_schema(

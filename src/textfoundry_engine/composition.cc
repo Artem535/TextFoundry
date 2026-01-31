@@ -152,6 +152,16 @@ namespace tf {
     }
   }
 
+  CompositionDraft::CompositionDraft(Composition &&c) : internal_(std::move(c)) {
+  }
+
+  CompositionId PublishedComposition::id() const noexcept { return id_; }
+
+  Version PublishedComposition::version() const noexcept { return version_; }
+
+  PublishedComposition::PublishedComposition(CompositionId id, Version ver) : id_(std::move(id)), version_(ver) {
+  }
+
   // CompositionDraftBuilder implementation
   CompositionDraftBuilder::CompositionDraftBuilder(CompositionId id) : comp_(std::move(id)) {
   }
@@ -176,9 +186,10 @@ namespace tf {
     return *this;
   }
 
-  CompositionDraftBuilder &CompositionDraftBuilder::add_block_ref(const BlockId &blockId, Version version,
-                                                                Params local_params) {
-    comp_.add_block_ref(blockId, version, std::move(local_params));
+  CompositionDraftBuilder &CompositionDraftBuilder::add_block_ref(BlockRef ref) {
+    comp_.add_block_ref(ref.block_id(),
+                        ref.version().value_or(Version{0, 0}),
+                        ref.local_params());
     return *this;
   }
 
@@ -192,7 +203,7 @@ namespace tf {
     return *this;
   }
 
-  Composition CompositionDraftBuilder::build() const {
-    return comp_;
+  CompositionDraft CompositionDraftBuilder::build() {
+    return CompositionDraft(std::move(comp_));
   }
 } // namespace tf

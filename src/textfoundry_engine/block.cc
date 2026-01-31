@@ -3,6 +3,7 @@
 //
 
 #include "block.h"
+#include "blockref.h"
 
 #include <ranges>
 #include <regex>
@@ -44,13 +45,13 @@ namespace tf {
     return Result(result);
   }
 
-  const BlockId & Block::id() const noexcept { return id_; }
+  const BlockId &Block::id() const noexcept { return id_; }
 
   BlockType Block::type() const noexcept { return type_; }
 
   BlockState Block::state() const noexcept { return state_; }
 
-  const Version & Block::version() const noexcept { return version_; }
+  const Version &Block::version() const noexcept { return version_; }
 
   // Block implementation
   Result<ParamValue> Block::resolve_param(
@@ -116,19 +117,19 @@ namespace tf {
     }
   }
 
-  void Block::set_version(const Version& v) { version_ = v; }
+  void Block::set_version(const Version &v) { version_ = v; }
 
-  const Template & Block::templ() const noexcept { return template_; }
+  const Template &Block::templ() const noexcept { return template_; }
 
-  const Params & Block::defaults() const noexcept { return defaults_; }
+  const Params &Block::defaults() const noexcept { return defaults_; }
 
-  const std::vector<ParamSchema> & Block::param_schema() const noexcept { return paramSchema_; }
+  const std::vector<ParamSchema> &Block::param_schema() const noexcept { return paramSchema_; }
 
-  const std::unordered_set<std::string> & Block::tags() const noexcept { return tags_; }
+  const std::unordered_set<std::string> &Block::tags() const noexcept { return tags_; }
 
-  const std::string & Block::language() const noexcept { return language_; }
+  const std::string &Block::language() const noexcept { return language_; }
 
-  const std::string & Block::description() const noexcept { return description_; }
+  const std::string &Block::description() const noexcept { return description_; }
 
   void Block::set_id(BlockId id) { id_ = std::move(id); }
 
@@ -171,7 +172,12 @@ namespace tf {
     return false;
   }
 
+  BlockRef PublishedBlock::ref() const {
+    return {id_, version_};
+  }
+
   BlockDraftBuilder::BlockDraftBuilder(BlockId id) : block_(std::move(id)) {
+    block_.set_state(BlockState::Draft);
   }
 
   BlockDraftBuilder &BlockDraftBuilder::with_id(BlockId id) {
@@ -218,7 +224,7 @@ namespace tf {
     return *this;
   }
 
-  Block BlockDraftBuilder::build() const {
-    return block_;
+  BlockDraft BlockDraftBuilder::build() {
+    return BlockDraft(std::move(block_));
   }
 } // namespace tf

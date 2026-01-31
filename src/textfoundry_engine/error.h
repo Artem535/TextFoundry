@@ -62,6 +62,8 @@ struct Error {
         return code == ErrorCode::Success;
     }
 
+    bool operator==(const Error & error) const = default;
+
     // Factory methods for common errors
     [[nodiscard]] static Error missing_param(const std::string_view& paramName) {
         return Error{ErrorCode::MissingParam, std::format("Missing required parameter: {}", paramName)};

@@ -3,6 +3,7 @@
 //
 
 #include "blockref.h"
+#include "block.h"
 
 namespace tf {
   BlockRef::BlockRef(BlockId block_id) : blockId_(std::move(block_id)) {

@@ -100,7 +100,7 @@ TEST_SUITE("Version") {
 
     TEST_CASE("version toString") {
         Version v{2, 5};
-        CHECK(v.toString() == "2.5");
+        CHECK(v.to_string() == "2.5");
     }
 }
 
