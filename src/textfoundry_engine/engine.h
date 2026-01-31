@@ -13,7 +13,6 @@
 #include <string>
 #include <vector>
 #include <optional>
-#include <functional>
 
 namespace tf {
 
@@ -25,8 +24,9 @@ class ICompositionRepository;
  * Engine configuration
  */
 struct EngineConfig {
-    std::string projectKey = "default";
-    bool strictMode = false;  ///< Default strict mode for rendering
+    std::string project_key = "default";
+    bool strict_mode = false;  ///< Default strict mode for rendering
+    std::string default_data_path = "memory:tf"; ///< Default data path for block and composition repositories
 };
 
 /**
@@ -63,6 +63,8 @@ class Engine {
 public:
     Engine();
     explicit Engine(EngineConfig config);
+
+
 
     /**
      * Set block repository for persistence
@@ -150,7 +152,7 @@ public:
     /**
      * List all compositions
      */
-    [[nodiscard]] std::vector<CompositionId> listCompositions();
+    [[nodiscard]] std::vector<CompositionId> listCompositions() const;
 
     // ==================== Rendering Operations ====================
 
@@ -216,6 +218,14 @@ public:
      */
     [[nodiscard]] bool hasNormalizer() const noexcept;
 
+    // ==================== Full Initialization ====================
+
+    /**
+     * Initialize engine with ObjectBox repositories
+     * Uses config_.defaultDataPath as database directory
+     */
+    void full_init();
+
     // ==================== Validation ====================
 
     /**
@@ -234,21 +244,6 @@ private:
     std::shared_ptr<ICompositionRepository> compRepo_;
     std::shared_ptr<INormalizer> normalizer_;
     std::unique_ptr<Renderer> renderer_;
-
-    /**
-     * Initialize renderer with block cache
-     */
-    void initRenderer();
-
-    /**
-     * Get block from repository (used by renderer)
-     */
-    [[nodiscard]] const Block* getBlockFromRepo(const BlockId& id, Version version) const;
-
-    /**
-     * Get latest block from repository
-     */
-    [[nodiscard]] const Block* getLatestBlockFromRepo(const BlockId& id) const;
 };
 
 // ==================== Repository Interfaces ====================

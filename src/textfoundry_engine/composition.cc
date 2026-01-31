@@ -47,9 +47,16 @@ namespace tf {
   const std::string &Composition::description() const noexcept { return description_; }
 
   void Composition::setId(CompositionId id) { id_ = std::move(id); }
+
+  void Composition::setState(const BlockState state) {
+    state_ = state;
+  }
+
   void Composition::setStyleProfile(StyleProfile profile) { styleProfile_ = std::move(profile); }
   void Composition::setProjectKey(std::string key) { projectKey_ = std::move(key); }
   void Composition::setDescription(std::string desc) { description_ = std::move(desc); }
+
+  void Composition::setVersion(const Version& v) { version_ = v; }
 
   Fragment &Composition::fragment(size_t index) { return fragments_.at(index); }
   const Fragment &Composition::fragment(size_t index) const { return fragments_.at(index); }

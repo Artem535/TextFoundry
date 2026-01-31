@@ -14,6 +14,7 @@ find_package(ObjectBoxGenerator 5.0.0 REQUIRED)
 # Other lib
 find_package(ctre CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
+find_package(reflectcpp CONFIG REQUIRED)
 
 
 add_library(textfoundry_core STATIC
@@ -34,8 +35,10 @@ add_library(textfoundry_core STATIC
         error.h
         logger.h
         logger.cc
-        objectboxstorage.cc
-        objectboxstorage.h
+        objectboxrepository.cc
+        objectboxrepository.h
+        repository_block_cache.cpp
+        ../text_foundry_cli/main.cc
 )
 
 add_obx_schema(
@@ -45,5 +48,5 @@ add_obx_schema(
         CXX_STANDARD 14 # Defaults to C++14 otherwise
 )
 
-target_link_libraries(textfoundry_core ctre::ctre spdlog::spdlog objectbox)
+target_link_libraries(textfoundry_core ctre::ctre spdlog::spdlog objectbox reflectcpp::reflectcpp)
 

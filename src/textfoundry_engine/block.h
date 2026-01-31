@@ -26,7 +26,7 @@ using ParamValue = std::string;
 /**
  * Type alias for parameter map
  */
-using Params = std::unordered_map<std::string_view, ParamValue>;
+using Params = std::unordered_map<std::string, ParamValue>;
 
 /**
  * BlockId - globally unique identifier using dot notation (domain.subdomain.name)
@@ -85,6 +85,7 @@ public:
     [[nodiscard]] BlockType type() const noexcept { return type_; }
     [[nodiscard]] BlockState state() const noexcept { return state_; }
     [[nodiscard]] const Version& version() const noexcept { return version_; }
+    void setVersion(const Version& v);
     [[nodiscard]] const Template& templ() const noexcept { return template_; }
     [[nodiscard]] const Params& defaults() const noexcept { return defaults_; }
     [[nodiscard]] const std::vector<ParamSchema>& paramSchema() const noexcept { return paramSchema_; }
@@ -95,6 +96,7 @@ public:
     // Setters (allowed only for Draft state)
     void setId(BlockId id) { id_ = std::move(id); }
     void setType(BlockType type) { type_ = type; }
+    void setState(BlockState state) { state_ = state; }
     void setTemplate(Template templ) { template_ = std::move(templ); }
     void setDefaults(Params defaults) { defaults_ = std::move(defaults); }
     void setParamSchema(std::vector<ParamSchema> schema) { paramSchema_ = std::move(schema); }

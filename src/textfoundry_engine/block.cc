@@ -27,7 +27,7 @@ namespace tf {
 
     size_t last_pos = 0;
     for (const auto match: ctre::search_all<R"(\{\{(\w+)\}\})">(content_)) {
-      const std::string_view paramName = match.template get<1>().to_view();
+      const std::string paramName = match.template get<1>().to_string();
 
       auto count_symb = match.to_view().data() - content_.data() - last_pos;
       result.append(content_, last_pos, count_symb);
@@ -107,6 +107,8 @@ namespace tf {
       state_ = BlockState::Deprecated;
     }
   }
+
+  void Block::setVersion(const Version& v) { version_ = v; }
 
   bool Block::canResolveParam(
     const std::string &paramName,

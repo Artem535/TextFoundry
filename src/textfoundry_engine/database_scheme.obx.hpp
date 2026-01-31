@@ -29,7 +29,7 @@ struct ObxAuditLog {
     std::string detailsJson;
 
     struct _OBX_MetaInfo {
-        static constexpr obx_schema_id entityId() { return 17; }
+        static constexpr obx_schema_id entityId() { return 1; }
     
         static void setObjectId(ObxAuditLog& object, obx_id newId) { object.id = newId; }
     
@@ -60,7 +60,6 @@ struct ObxAuditLog_ {
 struct ObxBlock; 
 struct ObxLanguage; 
 struct ObxProject; 
-struct ObxState; 
 struct ObxTag; 
 
 struct ObxBlock_;
@@ -77,8 +76,8 @@ struct ObxBlock {
     obx_id projectId;
     /// Many-to-One: Language metadata for filtering
     obx_id languageId;
-    /// Many-to-One: Lifecycle state (replaces embedded byte enum)
-    obx_id stateId;
+    /// Lifecycle state: 0=Draft, 1=Published, 2=Deprecated
+    int8_t state;
     /// Block type enum (Role/Constraint/Style/Domain/Meta)
     /// Kept as embedded byte since it's taxonomy, not lifecycle metadata
     int8_t type;
@@ -86,6 +85,8 @@ struct ObxBlock {
     std::string templateContent;
     /// JSON object with default parameter values
     std::string defaultsJson;
+    /// JSON Obx block parameters
+    std::string paramsJson;
     /// Human-readable description
     std::string description;
     /// Creation timestamp
@@ -98,7 +99,7 @@ struct ObxBlock {
     obx_id nextVersionId;
 
     struct _OBX_MetaInfo {
-        static constexpr obx_schema_id entityId() { return 18; }
+        static constexpr obx_schema_id entityId() { return 2; }
     
         static void setObjectId(ObxBlock& object, obx_id newId) { object.id = newId; }
     
@@ -123,59 +124,17 @@ struct ObxBlock_ {
     static const obx::Property<ObxBlock, OBXPropertyType_Short> versionMinor;
     static const obx::RelationProperty<ObxBlock, ObxProject> projectId;
     static const obx::RelationProperty<ObxBlock, ObxLanguage> languageId;
-    static const obx::RelationProperty<ObxBlock, ObxState> stateId;
+    static const obx::Property<ObxBlock, OBXPropertyType_Byte> state;
     static const obx::Property<ObxBlock, OBXPropertyType_Byte> type;
     static const obx::Property<ObxBlock, OBXPropertyType_String> templateContent;
     static const obx::Property<ObxBlock, OBXPropertyType_String> defaultsJson;
+    static const obx::Property<ObxBlock, OBXPropertyType_String> paramsJson;
     static const obx::Property<ObxBlock, OBXPropertyType_String> description;
-    static const obx::Property<ObxBlock, OBXPropertyType_Date> createdAt;
-    static const obx::Property<ObxBlock, OBXPropertyType_Date> updatedAt;
+    static const obx::Property<ObxBlock, OBXPropertyType_Long> createdAt;
+    static const obx::Property<ObxBlock, OBXPropertyType_Long> updatedAt;
     static const obx::RelationProperty<ObxBlock, ObxBlock> previousVersionId;
     static const obx::RelationProperty<ObxBlock, ObxBlock> nextVersionId;
     static const obx::RelationStandalone<ObxBlock, ObxTag> tags;
-};
-
-struct ObxBlock; 
-
-struct ObxBlockParam_;
-
-/// Parameter schema for blocks (extracted from JSON for queryability)
-struct ObxBlockParam {
-    obx_id id;
-    /// Many-to-One: Parameter belongs to ObxBlock
-    obx_id blockId;
-    /// Parameter name
-    std::string name;
-    /// Is parameter required
-    bool required;
-    /// Default value (empty if none)
-    std::string defaultValue;
-
-    struct _OBX_MetaInfo {
-        static constexpr obx_schema_id entityId() { return 19; }
-    
-        static void setObjectId(ObxBlockParam& object, obx_id newId) { object.id = newId; }
-    
-        /// Write given object to the FlatBufferBuilder
-        static void toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb, const ObxBlockParam& object);
-    
-        /// Read an object from a valid FlatBuffer
-        static ObxBlockParam fromFlatBuffer(const void* data, size_t size);
-    
-        /// Read an object from a valid FlatBuffer
-        static std::unique_ptr<ObxBlockParam> newFromFlatBuffer(const void* data, size_t size);
-    
-        /// Read an object from a valid FlatBuffer
-        static void fromFlatBuffer(const void* data, size_t size, ObxBlockParam& outObject);
-    };
-};
-
-struct ObxBlockParam_ {
-    static const obx::Property<ObxBlockParam, OBXPropertyType_Long> id;
-    static const obx::RelationProperty<ObxBlockParam, ObxBlock> blockId;
-    static const obx::Property<ObxBlockParam, OBXPropertyType_String> name;
-    static const obx::Property<ObxBlockParam, OBXPropertyType_Bool> required;
-    static const obx::Property<ObxBlockParam, OBXPropertyType_String> defaultValue;
 };
 
 struct ObxBlock; 
@@ -195,7 +154,7 @@ struct ObxBlockUsage {
     std::string compositionIdsJson;
 
     struct _OBX_MetaInfo {
-        static constexpr obx_schema_id entityId() { return 20; }
+        static constexpr obx_schema_id entityId() { return 3; }
     
         static void setObjectId(ObxBlockUsage& object, obx_id newId) { object.id = newId; }
     
@@ -217,14 +176,13 @@ struct ObxBlockUsage_ {
     static const obx::Property<ObxBlockUsage, OBXPropertyType_Long> id;
     static const obx::RelationProperty<ObxBlockUsage, ObxBlock> blockId;
     static const obx::Property<ObxBlockUsage, OBXPropertyType_Long> usageCount;
-    static const obx::Property<ObxBlockUsage, OBXPropertyType_Date> lastUsedAt;
+    static const obx::Property<ObxBlockUsage, OBXPropertyType_Long> lastUsedAt;
     static const obx::Property<ObxBlockUsage, OBXPropertyType_String> compositionIdsJson;
 };
 
 struct ObxComposition; 
 struct ObxLanguage; 
 struct ObxProject; 
-struct ObxState; 
 
 struct ObxComposition_;
 
@@ -234,16 +192,12 @@ struct ObxComposition {
     std::string compositionId;
     /// Many-to-One: ObxComposition belongs to ObxProject
     obx_id projectId;
-    /// Many-to-One: Lifecycle state
-    obx_id stateId;
+    /// Lifecycle state: 0=Draft, 1=Published, 2=Deprecated
+    int8_t state;
     uint16_t versionMajor;
     uint16_t versionMinor;
     /// Many-to-One: Target language
     obx_id targetLanguageId;
-    /// Structural style JSON (blockWrapper, preamble, postamble, delimiter)
-    std::string structuralStyleJson;
-    /// Semantic style JSON (tone, tense, targetLanguage, person)
-    std::string semanticStyleJson;
     /// Human-readable description
     std::string description;
     /// Creation timestamp
@@ -254,9 +208,12 @@ struct ObxComposition {
     obx_id previousVersionId;
     /// Next version reference
     obx_id nextVersionId;
+    /// Structural style JSON (blockWrapper, preamble, postamble, delimiter)
+    /// Semantic style JSON (tone, tense, targetLanguage, person)
+    std::string styleProfileJson;
 
     struct _OBX_MetaInfo {
-        static constexpr obx_schema_id entityId() { return 21; }
+        static constexpr obx_schema_id entityId() { return 4; }
     
         static void setObjectId(ObxComposition& object, obx_id newId) { object.id = newId; }
     
@@ -278,17 +235,16 @@ struct ObxComposition_ {
     static const obx::Property<ObxComposition, OBXPropertyType_Long> id;
     static const obx::Property<ObxComposition, OBXPropertyType_String> compositionId;
     static const obx::RelationProperty<ObxComposition, ObxProject> projectId;
-    static const obx::RelationProperty<ObxComposition, ObxState> stateId;
+    static const obx::Property<ObxComposition, OBXPropertyType_Byte> state;
     static const obx::Property<ObxComposition, OBXPropertyType_Short> versionMajor;
     static const obx::Property<ObxComposition, OBXPropertyType_Short> versionMinor;
     static const obx::RelationProperty<ObxComposition, ObxLanguage> targetLanguageId;
-    static const obx::Property<ObxComposition, OBXPropertyType_String> structuralStyleJson;
-    static const obx::Property<ObxComposition, OBXPropertyType_String> semanticStyleJson;
     static const obx::Property<ObxComposition, OBXPropertyType_String> description;
-    static const obx::Property<ObxComposition, OBXPropertyType_Date> createdAt;
-    static const obx::Property<ObxComposition, OBXPropertyType_Date> updatedAt;
+    static const obx::Property<ObxComposition, OBXPropertyType_Long> createdAt;
+    static const obx::Property<ObxComposition, OBXPropertyType_Long> updatedAt;
     static const obx::RelationProperty<ObxComposition, ObxComposition> previousVersionId;
     static const obx::RelationProperty<ObxComposition, ObxComposition> nextVersionId;
+    static const obx::Property<ObxComposition, OBXPropertyType_String> styleProfileJson;
 };
 
 struct ObxComposition; 
@@ -320,7 +276,7 @@ struct ObxFragment {
     int8_t separatorType;
 
     struct _OBX_MetaInfo {
-        static constexpr obx_schema_id entityId() { return 22; }
+        static constexpr obx_schema_id entityId() { return 5; }
     
         static void setObjectId(ObxFragment& object, obx_id newId) { object.id = newId; }
     
@@ -363,7 +319,7 @@ struct ObxLanguage {
     std::string nativeName;
 
     struct _OBX_MetaInfo {
-        static constexpr obx_schema_id entityId() { return 23; }
+        static constexpr obx_schema_id entityId() { return 6; }
     
         static void setObjectId(ObxLanguage& object, obx_id newId) { object.id = newId; }
     
@@ -404,7 +360,7 @@ struct ObxProject {
     int64_t updatedAt;
 
     struct _OBX_MetaInfo {
-        static constexpr obx_schema_id entityId() { return 24; }
+        static constexpr obx_schema_id entityId() { return 7; }
     
         static void setObjectId(ObxProject& object, obx_id newId) { object.id = newId; }
     
@@ -427,48 +383,8 @@ struct ObxProject_ {
     static const obx::Property<ObxProject, OBXPropertyType_String> key;
     static const obx::Property<ObxProject, OBXPropertyType_String> name;
     static const obx::Property<ObxProject, OBXPropertyType_String> description;
-    static const obx::Property<ObxProject, OBXPropertyType_Date> createdAt;
-    static const obx::Property<ObxProject, OBXPropertyType_Date> updatedAt;
-};
-
-
-struct ObxState_;
-
-/// Lifecycle state dictionary (Draft/Published/Deprecated)
-/// Enables attaching metadata to states
-struct ObxState {
-    obx_id id;
-    /// Numeric code matching BlockState enum (1=Published, 2=Deprecated)
-    int8_t code;
-    /// Display name for UI ("Draft", "Published", "Deprecated")
-    std::string name;
-    /// Human-readable description of the state
-    std::string description;
-
-    struct _OBX_MetaInfo {
-        static constexpr obx_schema_id entityId() { return 25; }
-    
-        static void setObjectId(ObxState& object, obx_id newId) { object.id = newId; }
-    
-        /// Write given object to the FlatBufferBuilder
-        static void toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb, const ObxState& object);
-    
-        /// Read an object from a valid FlatBuffer
-        static ObxState fromFlatBuffer(const void* data, size_t size);
-    
-        /// Read an object from a valid FlatBuffer
-        static std::unique_ptr<ObxState> newFromFlatBuffer(const void* data, size_t size);
-    
-        /// Read an object from a valid FlatBuffer
-        static void fromFlatBuffer(const void* data, size_t size, ObxState& outObject);
-    };
-};
-
-struct ObxState_ {
-    static const obx::Property<ObxState, OBXPropertyType_Long> id;
-    static const obx::Property<ObxState, OBXPropertyType_Byte> code;
-    static const obx::Property<ObxState, OBXPropertyType_String> name;
-    static const obx::Property<ObxState, OBXPropertyType_String> description;
+    static const obx::Property<ObxProject, OBXPropertyType_Long> createdAt;
+    static const obx::Property<ObxProject, OBXPropertyType_Long> updatedAt;
 };
 
 struct ObxProject; 
@@ -485,7 +401,7 @@ struct ObxTag {
     int64_t createdAt;
 
     struct _OBX_MetaInfo {
-        static constexpr obx_schema_id entityId() { return 26; }
+        static constexpr obx_schema_id entityId() { return 8; }
     
         static void setObjectId(ObxTag& object, obx_id newId) { object.id = newId; }
     

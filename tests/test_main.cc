@@ -25,46 +25,57 @@ struct LoggerSetup {
 #include "../src/textfoundry_engine/fragment.h"
 #include "../src/textfoundry_engine/composition.h"
 #include "../src/textfoundry_engine/renderer.h"
+#include "../src/textfoundry_engine/engine.h"
 
 using namespace tf;
 
-// Hash function for pair<BlockId, Version>
-struct PairHash {
-    size_t operator()(const std::pair<BlockId, Version>& p) const {
-        return std::hash<BlockId>{}(p.first) ^
-               (std::hash<uint16_t>{}(p.second.major) << 1) ^
-               (std::hash<uint16_t>{}(p.second.minor) << 2);
-    }
-};
+// ==================== Test Fixture with Real Engine ====================
 
-// Mock block cache for testing
-class MockBlockCache : public IBlockCache {
+class EngineTestFixture {
 public:
-    void addBlock(Block block) {
-        blocks_[{block.id(), block.version()}] = std::move(block);
+    Engine engine;
+    static int testIdCounter;
+    int myTestId;
+
+    EngineTestFixture() : myTestId(testIdCounter++) {
+        // Use unique in-memory database for each test instance
+        EngineConfig config;
+        config.default_data_path = "memory:test_" + std::to_string(myTestId);
+        engine = Engine(config);
     }
 
-    const Block* getBlock(const BlockId& id, Version version) const override {
-        auto it = blocks_.find({id, version});
-        if (it != blocks_.end()) {
-            return &it->second;
+    // Helper to create and publish a block
+    Block createAndPublishBlock(const BlockId& id, const std::string& templateStr,
+                                 const Params& defaults = {}, Version version = Version{1, 0}) {
+        auto block = engine.createBlockDraft(id);
+        block.setTemplate(Template(templateStr));
+        if (!defaults.empty()) {
+            block.setDefaults(defaults);
         }
-        return nullptr;
+        auto saveErr = engine.saveBlock(block);
+        REQUIRE(saveErr.isSuccess());
+        auto result = engine.publishBlock(id, version);
+        REQUIRE(result.hasValue());
+        return result.value();
     }
 
-    const Block* getLatestBlock(const BlockId& id) const override {
-        const Block* latest = nullptr;
-        for (const auto& [key, block] : blocks_) {
-            if (key.first == id && (!latest || block.version() > latest->version())) {
-                latest = &block;
-            }
+    // Helper to create and publish a composition
+    Composition createAndPublishComposition(const CompositionId& id,
+                                             const std::vector<std::pair<std::string, Version>>& blockRefs,
+                                             Version version = Version{1, 0}) {
+        auto comp = engine.createCompositionDraft(id);
+        for (const auto& [blockId, ver] : blockRefs) {
+            comp.addBlockRef(blockId, ver);
         }
-        return latest;
+        auto saveErr = engine.saveComposition(comp);
+        REQUIRE(saveErr.isSuccess());
+        auto result = engine.publishComposition(id, version);
+        REQUIRE(result.hasValue());
+        return result.value();
     }
-
-private:
-    mutable std::unordered_map<std::pair<BlockId, Version>, Block, PairHash> blocks_;
 };
+
+int EngineTestFixture::testIdCounter = 0;
 
 // ==================== Version Tests ====================
 
@@ -266,16 +277,18 @@ TEST_SUITE("Block") {
     TEST_CASE("cannot publish already published block") {
         Block b("test.block");
         b.setTemplate(Template("Hello!"));
-        b.publish(Version{1, 0});
+        auto err = b.publish(Version{1, 0});
+        CHECK(err.isSuccess());
 
-        auto err = b.publish(Version{2, 0});
+        err = b.publish(Version{2, 0});
         CHECK(err.isError());
     }
 
     TEST_CASE("block deprecate") {
         Block b("test.block");
         b.setTemplate(Template("Hello!"));
-        b.publish(Version{1, 0});
+        auto err = b.publish(Version{1, 0});
+        CHECK(err.isSuccess());
 
         b.deprecate();
         CHECK(b.state() == BlockState::Deprecated);
@@ -301,13 +314,13 @@ TEST_SUITE("BlockRef") {
     }
 
     TEST_CASE("BlockRef validate in draft context allows use_latest") {
-        BlockRef ref("block.id");
+        BlockRef ref("block.id");  // use_latest = true
         auto err = ref.validate(true);  // isDraftContext = true
         CHECK(err.isSuccess());
     }
 
     TEST_CASE("BlockRef validate in non-draft context rejects use_latest") {
-        BlockRef ref("block.id");
+        BlockRef ref("block.id");  // use_latest = true
         auto err = ref.validate(false);  // isDraftContext = false
         CHECK(err.isError());
         CHECK(err.code == ErrorCode::VersionRequired);
@@ -466,7 +479,8 @@ TEST_SUITE("Composition") {
 
     TEST_CASE("composition deprecate") {
         Composition c("test.composition");
-        c.publish(Version{1, 0});
+        auto err = c.publish(Version{1, 0});
+        CHECK(err.isSuccess());
 
         c.deprecate();
         CHECK(c.state() == BlockState::Deprecated);
@@ -534,225 +548,245 @@ TEST_SUITE("CompositionDraftBuilder") {
     }
 }
 
-// ==================== Renderer Tests ====================
+// ==================== Renderer Tests (using real Engine) ====================
 
-TEST_SUITE("Renderer") {
-    TEST_CASE("render single block") {
-        Block b("greeting.hello");
-        b.setTemplate(Template("Hello, {{name}}!"));
-        b.setDefaults({{"name", "World"}});
+TEST_CASE_FIXTURE(EngineTestFixture, "render single block through engine") {
+    // Create and publish block
+    createAndPublishBlock("greeting.hello", "Hello, {{name}}!", {{"name", "World"}});
 
-        Renderer renderer;
-        auto result = renderer.renderBlock(b, RenderContext{});
+    // Render through engine
+    auto result = engine.renderBlock("greeting.hello", Version{1, 0});
 
-        CHECK(result.hasValue());
-        CHECK(result.value() == "Hello, World!");
-    }
+    CHECK(result.hasValue());
+    CHECK(result.value() == "Hello, World!");
+}
 
-    TEST_CASE("render block with runtime override") {
-        Block b("greeting.hello");
-        b.setTemplate(Template("Hello, {{name}}!"));
-        b.setDefaults({{"name", "World"}});
+TEST_CASE_FIXTURE(EngineTestFixture, "render block with runtime override through engine") {
+    createAndPublishBlock("greeting.hello", "Hello, {{name}}!", {{"name", "World"}});
 
-        Renderer renderer;
-        auto ctx = RenderContext{}.withParam("name", "Alice");
-        auto result = renderer.renderBlock(b, ctx);
+    auto ctx = RenderContext{}.withParam("name", "Alice");
+    auto result = engine.renderBlock("greeting.hello", Version{1, 0}, ctx);
 
-        CHECK(result.hasValue());
-        CHECK(result.value() == "Hello, Alice!");
-    }
+    CHECK(result.hasValue());
+    CHECK(result.value() == "Hello, Alice!");
+}
 
-    TEST_CASE("render block with missing param fails") {
-        Block b("greeting.hello");
-        b.setTemplate(Template("Hello, {{name}}!"));
-        // No defaults
+TEST_CASE_FIXTURE(EngineTestFixture, "render block with missing param fails") {
+    createAndPublishBlock("greeting.hello", "Hello, {{name}}!");  // No defaults
 
-        Renderer renderer;
-        auto result = renderer.renderBlock(b, RenderContext{});
+    auto result = engine.renderBlock("greeting.hello", Version{1, 0});
 
-        CHECK(result.hasError());
-        CHECK(result.error().code == ErrorCode::MissingParam);
-    }
+    CHECK(result.hasError());
+    CHECK(result.error().code == ErrorCode::MissingParam);
+}
 
-    TEST_CASE("render composition with static text only") {
-        Composition c("test.comp");
-        c.addStaticText("Hello, World!");
-        c.publish(Version{1, 0});
+TEST_CASE_FIXTURE(EngineTestFixture, "render composition with static text only") {
+    auto comp = engine.createCompositionDraft("test.comp");
+    comp.addStaticText("Hello, World!");
+    engine.saveComposition(comp);
+    engine.publishComposition("test.comp", Version{1, 0});
 
-        Renderer renderer;
-        auto result = renderer.render(c, RenderContext{});
+    auto result = engine.render("test.comp", Version{1, 0});
 
-        CHECK(result.hasValue());
-        CHECK(result.value().text == "Hello, World!");
-        CHECK(result.value().compositionId == "test.comp");
-    }
+    CHECK(result.hasValue());
+    CHECK(result.value().text == "Hello, World!");
+    CHECK(result.value().compositionId == "test.comp");
+}
 
-    TEST_CASE("render unpublished composition fails") {
-        Composition c("test.comp");
-        c.addStaticText("Hello");
-        // Not published
+TEST_CASE_FIXTURE(EngineTestFixture, "render unpublished composition fails") {
+    auto comp = engine.createCompositionDraft("test.comp");
+    comp.addStaticText("Hello");
+    engine.saveComposition(comp);
+    // Not published
 
-        Renderer renderer;
-        auto result = renderer.render(c, RenderContext{});
+    auto result = engine.render("test.comp");
 
-        CHECK(result.hasError());
-        CHECK(result.error().code == ErrorCode::PublishedRequired);
-    }
+    CHECK(result.hasError());
+    CHECK(result.error().code == ErrorCode::PublishedRequired);
+}
 
-    TEST_CASE("render composition with separator") {
-        Composition c("test.comp");
-        c.addStaticText("Line 1");
-        c.addSeparator(SeparatorType::Newline);
-        c.addStaticText("Line 2");
-        c.publish(Version{1, 0});
+TEST_CASE_FIXTURE(EngineTestFixture, "render composition with separator") {
+    auto comp = engine.createCompositionDraft("test.comp");
+    comp.addStaticText("Line 1");
+    comp.addSeparator(SeparatorType::Newline);
+    comp.addStaticText("Line 2");
+    engine.saveComposition(comp);
+    engine.publishComposition("test.comp", Version{1, 0});
 
-        Renderer renderer;
-        auto result = renderer.render(c, RenderContext{});
+    auto result = engine.render("test.comp", Version{1, 0});
 
-        CHECK(result.hasValue());
-        CHECK(result.value().text == "Line 1\nLine 2");
-    }
+    CHECK(result.hasValue());
+    CHECK(result.value().text == "Line 1\nLine 2");
+}
 
-    TEST_CASE("render composition with BlockRef") {
-        // Setup block cache
-        std::unique_ptr<IBlockCache> cache = std::make_unique<MockBlockCache>();
-        auto* mockCache = dynamic_cast<MockBlockCache*>(cache.get());
+TEST_CASE_FIXTURE(EngineTestFixture, "render composition with BlockRef") {
+    // Create and publish block
+    createAndPublishBlock("greeting.hello", "Hello, {{name}}!", {{"name", "World"}});
 
-        Block block("greeting.hello");
-        block.setTemplate(Template("Hello, {{name}}!"));
-        block.setDefaults({{"name", "World"}});
-        block.publish(Version{1, 0});
-        mockCache->addBlock(block);
+    // Create and publish composition with BlockRef
+    auto comp = engine.createCompositionDraft("test.comp");
+    comp.addBlockRef("greeting.hello", Version{1, 0});
+    engine.saveComposition(comp);
+    engine.publishComposition("test.comp", Version{1, 0});
 
-        // Create composition
-        Composition c("test.comp");
-        c.addBlockRef("greeting.hello", Version{1, 0});
-        c.publish(Version{1, 0});
+    auto result = engine.render("test.comp", Version{1, 0});
 
-        Renderer renderer(std::move(cache));
-        auto result = renderer.render(c, RenderContext{});
+    CHECK(result.hasValue());
+    CHECK(result.value().text == "Hello, World!");
+    CHECK(result.value().blocksUsed.size() == 1);
+    CHECK(result.value().blocksUsed[0].first == "greeting.hello");
+    CHECK(result.value().blocksUsed[0].second == Version{1, 0});
+}
 
-        CHECK(result.hasValue());
-        CHECK(result.value().text == "Hello, World!");
-        CHECK(result.value().blocksUsed.size() == 1);
-        CHECK(result.value().blocksUsed[0].first == "greeting.hello");
-        CHECK(result.value().blocksUsed[0].second == Version{1, 0});
-    }
+TEST_CASE_FIXTURE(EngineTestFixture, "render composition with BlockRef and runtime params") {
+    createAndPublishBlock("greeting.hello", "Hello, {{name}}!", {{"name", "World"}});
 
-    TEST_CASE("render composition with BlockRef and runtime params") {
-        std::unique_ptr<IBlockCache> cache = std::make_unique<MockBlockCache>();
-        auto* mockCache = static_cast<MockBlockCache*>(cache.get());
+    auto comp = engine.createCompositionDraft("test.comp");
+    comp.addBlockRef("greeting.hello", Version{1, 0});
+    engine.saveComposition(comp);
+    engine.publishComposition("test.comp", Version{1, 0});
 
-        Block block("greeting.hello");
-        block.setTemplate(Template("Hello, {{name}}!"));
-        block.setDefaults({{"name", "World"}});
-        block.publish(Version{1, 0});
-        mockCache->addBlock(block);
+    auto ctx = RenderContext{}.withParam("name", "Alice");
+    auto result = engine.render("test.comp", Version{1, 0}, ctx);
 
-        Composition c("test.comp");
-        c.addBlockRef("greeting.hello", Version{1, 0});
-        c.publish(Version{1, 0});
+    CHECK(result.hasValue());
+    CHECK(result.value().text == "Hello, Alice!");
+}
 
-        Renderer renderer(std::move(cache));
-        auto ctx = RenderContext{}.withParam("name", "Alice");
-        auto result = renderer.render(c, ctx);
+TEST_CASE_FIXTURE(EngineTestFixture, "render composition with multiple fragments") {
+    createAndPublishBlock("greeting.hello", "Hello, {{name}}!", {{"name", "World"}});
+    createAndPublishBlock("farewell.goodbye", "Goodbye, {{name}}!", {{"name", "Friend"}});
 
-        CHECK(result.hasValue());
-        CHECK(result.value().text == "Hello, Alice!");
-    }
+    auto comp = engine.createCompositionDraft("test.comp");
+    comp.addBlockRef("greeting.hello", Version{1, 0}, {{"name", "Alice"}});
+    comp.addSeparator(SeparatorType::Paragraph);
+    comp.addBlockRef("farewell.goodbye", Version{1, 0}, {{"name", "Alice"}});
+    engine.saveComposition(comp);
+    engine.publishComposition("test.comp", Version{1, 0});
 
-    TEST_CASE("render composition with multiple fragments") {
-        std::unique_ptr<IBlockCache> cache = std::make_unique<MockBlockCache>();
-        auto* mockCache = static_cast<MockBlockCache*>(cache.get());
+    auto result = engine.render("test.comp", Version{1, 0});
 
-        Block greeting("greeting.hello");
-        greeting.setTemplate(Template("Hello, {{name}}!"));
-        greeting.setDefaults({{"name", "World"}});
-        greeting.publish(Version{1, 0});
-        mockCache->addBlock(greeting);
+    CHECK(result.hasValue());
+    CHECK(result.value().text == "Hello, Alice!\n\nGoodbye, Alice!");
+    CHECK(result.value().blocksUsed.size() == 2);
+}
 
-        Block farewell("farewell.goodbye");
-        farewell.setTemplate(Template("Goodbye, {{name}}!"));
-        farewell.setDefaults({{"name", "Friend"}});
-        farewell.publish(Version{1, 0});
-        mockCache->addBlock(farewell);
+TEST_CASE_FIXTURE(EngineTestFixture, "render with missing block fails") {
+    // Create composition referencing non-existent block
+    auto comp = engine.createCompositionDraft("test.comp");
+    comp.addBlockRef("missing.block", Version{1, 0});
+    engine.saveComposition(comp);
+    engine.publishComposition("test.comp", Version{1, 0});
 
-        Composition c("test.comp");
-        c.addBlockRef("greeting.hello", Version{1, 0}, {{"name", "Alice"}});
-        c.addSeparator(SeparatorType::Paragraph);
-        c.addBlockRef("farewell.goodbye", Version{1, 0}, {{"name", "Alice"}});
-        c.publish(Version{1, 0});
+    auto result = engine.render("test.comp", Version{1, 0});
 
-        Renderer renderer(std::move(cache));
-        auto result = renderer.render(c, RenderContext{});
+    CHECK(result.hasError());
+    CHECK(result.error().code == ErrorCode::BlockNotFound);
+}
 
-        CHECK(result.hasValue());
-        CHECK(result.value().text == "Hello, Alice!\n\nGoodbye, Alice!");
-        CHECK(result.value().blocksUsed.size() == 2);
-    }
+TEST_CASE_FIXTURE(EngineTestFixture, "render result contains metadata") {
+    auto comp = engine.createCompositionDraft("my.composition");
+    comp.addStaticText("Text");
+    engine.saveComposition(comp);
+    engine.publishComposition("my.composition", Version{2, 5});
 
-    TEST_CASE("render with missing block fails") {
-        std::unique_ptr<IBlockCache> cache = std::make_unique<MockBlockCache>();
-        // No blocks added
+    auto result = engine.render("my.composition", Version{2, 5});
 
-        Composition c("test.comp");
-        c.addBlockRef("missing.block", Version{1, 0});
-        c.publish(Version{1, 0});
+    CHECK(result.hasValue());
+    CHECK(result.value().compositionId == "my.composition");
+    CHECK(result.value().compositionVersion == Version{2, 5});
+}
 
-        Renderer renderer(std::move(cache));
-        auto result = renderer.render(c, RenderContext{});
+// ==================== Engine Integration Tests ====================
 
-        CHECK(result.hasError());
-        CHECK(result.error().code == ErrorCode::BlockNotFound);
-    }
+TEST_CASE_FIXTURE(EngineTestFixture, "create and save block") {
+    auto block = engine.createBlockDraft("test.block");
+    block.setTemplate(Template("Hello, {{name}}!"));
+    block.setDefaults({{"name", "World"}});
 
-    TEST_CASE("apply structural style with wrapper") {
-        Renderer renderer;
+    auto err = engine.saveBlock(block);
+    CHECK(err.isSuccess());
 
-        StructuralStyle style;
-        style.blockWrapper = "<div>{{content}}</div>";
+    // Load it back
+    auto result = engine.loadBlock("test.block");
+    CHECK(result.hasValue());
+    CHECK(result.value().id() == "test.block");
+    CHECK(result.value().templ().extractParamNames().size() == 1);
+}
 
-        std::vector<std::string> fragments{"Hello", "World"};
-        auto result = renderer.applyStructuralStyle(fragments, style);
+TEST_CASE_FIXTURE(EngineTestFixture, "publish block workflow") {
+    auto block = engine.createBlockDraft("test.block");
+    block.setTemplate(Template("Hello!"));
+    engine.saveBlock(block);
 
-        CHECK(result == "<div>Hello</div><div>World</div>");
-    }
+    auto result = engine.publishBlock("test.block", Version{1, 0});
+    CHECK(result.hasValue());
+    CHECK(result.value().state() == BlockState::Published);
+    CHECK(result.value().version() == Version{1, 0});
 
-    TEST_CASE("apply structural style with delimiter") {
-        Renderer renderer;
+    // Check latest version
+    auto verResult = engine.getLatestBlockVersion("test.block");
+    CHECK(verResult.hasValue());
+    CHECK(verResult.value() == Version{1, 0});
+}
 
-        StructuralStyle style;
-        style.delimiter = ", ";
+TEST_CASE_FIXTURE(EngineTestFixture, "list blocks") {
+    createAndPublishBlock("block1", "Text 1", {}, Version{1, 0});
+    createAndPublishBlock("block2", "Text 2", {}, Version{1, 0});
 
-        std::vector<std::string> fragments{"A", "B", "C"};
-        auto result = renderer.applyStructuralStyle(fragments, style);
+    auto blocks = engine.listBlocks();
+    CHECK(blocks.size() == 2);
+}
 
-        CHECK(result == "A, B, C");
-    }
+TEST_CASE_FIXTURE(EngineTestFixture, "create and save composition") {
+    auto comp = engine.createCompositionDraft("test.comp");
+    comp.addStaticText("Hello");
 
-    TEST_CASE("apply structural style with preamble and postamble") {
-        Renderer renderer;
+    auto err = engine.saveComposition(comp);
+    CHECK(err.isSuccess());
 
-        StructuralStyle style;
-        style.preamble = "START:";
-        style.postamble = ":END";
+    auto result = engine.loadComposition("test.comp");
+    CHECK(result.hasValue());
+    CHECK(result.value().id() == "test.comp");
+    CHECK(result.value().fragmentCount() == 1);
+}
 
-        std::vector<std::string> fragments{"Content"};
-        auto result = renderer.applyStructuralStyle(fragments, style);
+TEST_CASE_FIXTURE(EngineTestFixture, "publish composition workflow") {
+    // First create and publish a block
+    createAndPublishBlock("test.block", "Hello!", {}, Version{1, 0});
 
-        CHECK(result == "START:Content:END");
-    }
+    // Then create and publish composition referencing it
+    auto comp = engine.createCompositionDraft("test.comp");
+    comp.addBlockRef("test.block", Version{1, 0});
+    engine.saveComposition(comp);
 
-    TEST_CASE("render result contains metadata") {
-        Composition c("my.composition");
-        c.addStaticText("Text");
-        c.publish(Version{2, 5});
+    auto result = engine.publishComposition("test.comp", Version{1, 0});
+    CHECK(result.hasValue());
+    CHECK(result.value().state() == BlockState::Published);
 
-        Renderer renderer;
-        auto result = renderer.render(c, RenderContext{});
+    // List compositions
+    auto comps = engine.listCompositions();
+    CHECK(comps.size() == 1);
+    CHECK(comps[0] == "test.comp");
+}
 
-        CHECK(result.hasValue());
-        CHECK(result.value().compositionId == "my.composition");
-        CHECK(result.value().compositionVersion == Version{2, 5});
-    }
+TEST_CASE_FIXTURE(EngineTestFixture, "validate block through engine") {
+    auto block = engine.createBlockDraft("test.block");
+    block.setTemplate(Template("Hello, {{name}}!"));
+    block.setDefaults({{"name", "World"}});
+    engine.saveBlock(block);
+
+    auto err = engine.validateBlock("test.block");
+    CHECK(err.isSuccess());
+}
+
+TEST_CASE_FIXTURE(EngineTestFixture, "validate composition through engine") {
+    createAndPublishBlock("test.block", "Hello!", {}, Version{1, 0});
+
+    auto comp = engine.createCompositionDraft("test.comp");
+    comp.addBlockRef("test.block", Version{1, 0});
+    engine.saveComposition(comp);
+
+    auto err = engine.validateComposition("test.comp");
+    CHECK(err.isSuccess());
 }

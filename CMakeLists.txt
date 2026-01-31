@@ -5,6 +5,7 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_subdirectory(src/textfoundry_engine)
+add_subdirectory(src/text_foundry_cli)
 
 enable_testing()
 add_subdirectory(tests)

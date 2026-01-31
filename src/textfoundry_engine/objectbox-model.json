@@ -4,959 +4,148 @@
   "_note3": "If you have VCS merge conflicts, you must resolve them according to ObjectBox docs.",
   "entities": [
     {
-      "id": "1:57696275262855442",
-      "lastPropertyId": "12:2260519897151071907",
-      "name": "BlockEntity",
-      "properties": [
-        {
-          "id": "1:5129209301906471667",
-          "name": "id",
-          "type": 6,
-          "flags": 1
-        },
-        {
-          "id": "2:1199028528895614597",
-          "name": "blockId",
-          "indexId": "1:4763249224591858941",
-          "type": 9,
-          "flags": 2048
-        },
-        {
-          "id": "3:6378191700952406938",
-          "name": "versionMajor",
-          "type": 3,
-          "flags": 8192
-        },
-        {
-          "id": "4:6088998160400943153",
-          "name": "versionMinor",
-          "type": 3,
-          "flags": 8192
-        },
-        {
-          "id": "5:8639656024871629269",
-          "name": "projectId",
-          "indexId": "2:1565648307754507732",
-          "type": 11,
-          "flags": 520,
-          "relationTarget": "ProjectEntity"
-        },
-        {
-          "id": "6:2434778347853448205",
-          "name": "languageId",
-          "indexId": "3:7460275118957472292",
-          "type": 11,
-          "flags": 520,
-          "relationTarget": "LanguageEntity"
-        },
-        {
-          "id": "7:3690365578827182387",
-          "name": "stateId",
-          "indexId": "4:6549930675967498849",
-          "type": 11,
-          "flags": 520,
-          "relationTarget": "StateEntity"
-        },
-        {
-          "id": "8:710772247541273247",
-          "name": "type",
-          "type": 2
-        },
-        {
-          "id": "9:5493023944047535107",
-          "name": "templateContent",
-          "type": 9
-        },
-        {
-          "id": "10:1529399784459475819",
-          "name": "defaultsJson",
-          "type": 9
-        },
-        {
-          "id": "11:7006666799014364540",
-          "name": "description",
-          "type": 9
-        },
-        {
-          "id": "12:2260519897151071907",
-          "name": "createdAt",
-          "type": 6
-        }
-      ],
-      "relations": [
-        {
-          "id": "1:4152549937199351367",
-          "name": "tags",
-          "targetId": "6:6567933563396494517"
-        }
-      ]
-    },
-    {
-      "id": "2:562660884330953739",
-      "lastPropertyId": "9:3077709303520992902",
-      "name": "CompositionEntity",
-      "properties": [
-        {
-          "id": "1:5660884704371419291",
-          "name": "id",
-          "type": 6,
-          "flags": 1
-        },
-        {
-          "id": "2:1946514701755130748",
-          "name": "compositionId",
-          "indexId": "5:7430145506313043761",
-          "type": 9,
-          "flags": 2048
-        },
-        {
-          "id": "3:8621404584576469278",
-          "name": "projectId",
-          "indexId": "6:48669320816730418",
-          "type": 11,
-          "flags": 520,
-          "relationTarget": "ProjectEntity"
-        },
-        {
-          "id": "4:4986598774873823977",
-          "name": "stateId",
-          "indexId": "7:1683115489585852495",
-          "type": 11,
-          "flags": 520,
-          "relationTarget": "StateEntity"
-        },
-        {
-          "id": "5:7480635436511109680",
-          "name": "versionMajor",
-          "type": 3,
-          "flags": 8192
-        },
-        {
-          "id": "6:8945235438308624970",
-          "name": "versionMinor",
-          "type": 3,
-          "flags": 8192
-        },
-        {
-          "id": "7:9180825021972329338",
-          "name": "fragmentsJson",
-          "type": 9
-        },
-        {
-          "id": "8:5339886255792571264",
-          "name": "styleProfileJson",
-          "type": 9
-        },
-        {
-          "id": "9:3077709303520992902",
-          "name": "description",
-          "type": 9
-        }
-      ]
-    },
-    {
-      "id": "3:1670866351301645916",
-      "lastPropertyId": "3:6475080613085833455",
-      "name": "LanguageEntity",
-      "properties": [
-        {
-          "id": "1:1464835562993684192",
-          "name": "id",
-          "type": 6,
-          "flags": 1
-        },
-        {
-          "id": "2:2058815083417228274",
-          "name": "code",
-          "indexId": "8:9177139226684487548",
-          "type": 9,
-          "flags": 2080
-        },
-        {
-          "id": "3:6475080613085833455",
-          "name": "nativeName",
-          "type": 9
-        }
-      ]
-    },
-    {
-      "id": "4:8685612070040541327",
-      "lastPropertyId": "4:6412226719425125879",
-      "name": "ProjectEntity",
-      "properties": [
-        {
-          "id": "1:7083881087941045881",
-          "name": "id",
-          "type": 6,
-          "flags": 1
-        },
-        {
-          "id": "2:5290490195030045589",
-          "name": "key",
-          "indexId": "9:9117311454775834578",
-          "type": 9,
-          "flags": 2080
-        },
-        {
-          "id": "3:939047193770584783",
-          "name": "name",
-          "type": 9
-        },
-        {
-          "id": "4:6412226719425125879",
-          "name": "description",
-          "type": 9
-        }
-      ]
-    },
-    {
-      "id": "5:7141636622366486680",
-      "lastPropertyId": "6:5835631912848117159",
-      "name": "StateEntity",
-      "properties": [
-        {
-          "id": "1:2580277125467523868",
-          "name": "id",
-          "type": 6,
-          "flags": 1
-        },
-        {
-          "id": "2:263083942621547346",
-          "name": "code",
-          "indexId": "10:8575883218779526662",
-          "type": 2,
-          "flags": 40
-        },
-        {
-          "id": "3:7726902316407310215",
-          "name": "name",
-          "type": 9
-        },
-        {
-          "id": "4:6997458095052701099",
-          "name": "description",
-          "type": 9
-        },
-        {
-          "id": "5:1822056721947058508",
-          "name": "isEditable",
-          "type": 1
-        },
-        {
-          "id": "6:5835631912848117159",
-          "name": "color",
-          "type": 9
-        }
-      ]
-    },
-    {
-      "id": "6:6567933563396494517",
-      "lastPropertyId": "4:278016263539548694",
-      "name": "TagEntity",
-      "properties": [
-        {
-          "id": "1:2658408236495469980",
-          "name": "id",
-          "type": 6,
-          "flags": 1
-        },
-        {
-          "id": "2:6654261449488996665",
-          "name": "projectId",
-          "indexId": "11:6747301825833540773",
-          "type": 11,
-          "flags": 520,
-          "relationTarget": "ProjectEntity"
-        },
-        {
-          "id": "3:859662067492348996",
-          "name": "name",
-          "indexId": "12:6654236401403711538",
-          "type": 9,
-          "flags": 2048
-        },
-        {
-          "id": "4:278016263539548694",
-          "name": "color",
-          "type": 9
-        }
-      ]
-    },
-    {
-      "id": "7:6295336110175675990",
-      "lastPropertyId": "7:7546050729990779752",
-      "name": "AuditLog",
-      "properties": [
-        {
-          "id": "1:5707371769760702664",
-          "name": "id",
-          "type": 6,
-          "flags": 1
-        },
-        {
-          "id": "2:9023355124982378391",
-          "name": "createdAt",
-          "type": 10,
-          "flags": 16384
-        },
-        {
-          "id": "3:8551977958270958203",
-          "name": "entityType",
-          "type": 9
-        },
-        {
-          "id": "4:8468807059358032720",
-          "name": "entityId",
-          "type": 6,
-          "flags": 8192
-        },
-        {
-          "id": "5:3839215414566226863",
-          "name": "operation",
-          "type": 9
-        },
-        {
-          "id": "6:3936966133046135632",
-          "name": "userId",
-          "type": 9
-        },
-        {
-          "id": "7:7546050729990779752",
-          "name": "detailsJson",
-          "type": 9
-        }
-      ]
-    },
-    {
-      "id": "8:4943001428679981823",
-      "lastPropertyId": "15:3501614420884521353",
-      "name": "Block",
-      "properties": [
-        {
-          "id": "1:1870990730266785750",
-          "name": "id",
-          "type": 6,
-          "flags": 1
-        },
-        {
-          "id": "2:8303863013635122987",
-          "name": "blockId",
-          "indexId": "13:530992364187691733",
-          "type": 9,
-          "flags": 2048
-        },
-        {
-          "id": "3:2166608998529116609",
-          "name": "versionMajor",
-          "type": 3,
-          "flags": 8192
-        },
-        {
-          "id": "4:4831900078544148498",
-          "name": "versionMinor",
-          "type": 3,
-          "flags": 8192
-        },
-        {
-          "id": "5:5073234489106142605",
-          "name": "projectId",
-          "indexId": "14:3045982246307612868",
-          "type": 11,
-          "flags": 520,
-          "relationTarget": "Project"
-        },
-        {
-          "id": "6:8413447917223290972",
-          "name": "languageId",
-          "indexId": "15:5356536588763857837",
-          "type": 11,
-          "flags": 520,
-          "relationTarget": "Language"
-        },
-        {
-          "id": "7:1030786713039587387",
-          "name": "stateId",
-          "indexId": "16:8426760129687927915",
-          "type": 11,
-          "flags": 520,
-          "relationTarget": "State"
-        },
-        {
-          "id": "8:5096469238783885677",
-          "name": "type",
-          "type": 2
-        },
-        {
-          "id": "9:617099536593896548",
-          "name": "templateContent",
-          "type": 9
-        },
-        {
-          "id": "10:1202474511629967151",
-          "name": "defaultsJson",
-          "type": 9
-        },
-        {
-          "id": "11:6763130479013345836",
-          "name": "description",
-          "type": 9
-        },
-        {
-          "id": "12:5408496264368475757",
-          "name": "createdAt",
-          "type": 10,
-          "flags": 16384
-        },
-        {
-          "id": "13:3568948129195108609",
-          "name": "updatedAt",
-          "type": 10,
-          "flags": 16384
-        },
-        {
-          "id": "14:5147990913340940705",
-          "name": "previousVersionId",
-          "indexId": "17:2375341842057500771",
-          "type": 11,
-          "flags": 520,
-          "relationTarget": "Block"
-        },
-        {
-          "id": "15:3501614420884521353",
-          "name": "nextVersionId",
-          "indexId": "18:3100998111389067410",
-          "type": 11,
-          "flags": 520,
-          "relationTarget": "Block"
-        }
-      ],
-      "relations": [
-        {
-          "id": "2:1681958216555504991",
-          "name": "tags",
-          "targetId": "16:1188910124985028287"
-        }
-      ]
-    },
-    {
-      "id": "9:5570103557602683028",
-      "lastPropertyId": "5:8375414384866664373",
-      "name": "BlockParam",
-      "properties": [
-        {
-          "id": "1:8984412954921982222",
-          "name": "id",
-          "type": 6,
-          "flags": 1
-        },
-        {
-          "id": "2:8142396565729070210",
-          "name": "blockId",
-          "indexId": "19:6753600746862329712",
-          "type": 11,
-          "flags": 520,
-          "relationTarget": "Block"
-        },
-        {
-          "id": "3:8275885050042173275",
-          "name": "name",
-          "indexId": "20:7656475668756938282",
-          "type": 9,
-          "flags": 2048
-        },
-        {
-          "id": "4:6254126383890466316",
-          "name": "required",
-          "type": 1
-        },
-        {
-          "id": "5:8375414384866664373",
-          "name": "defaultValue",
-          "type": 9
-        }
-      ]
-    },
-    {
-      "id": "10:7262655583489592780",
-      "lastPropertyId": "5:7680491739973784940",
-      "name": "BlockUsage",
-      "properties": [
-        {
-          "id": "1:8599080108028658539",
-          "name": "id",
-          "type": 6,
-          "flags": 1
-        },
-        {
-          "id": "2:4574066416511166029",
-          "name": "blockId",
-          "indexId": "21:4258053881467005621",
-          "type": 11,
-          "flags": 520,
-          "relationTarget": "Block"
-        },
-        {
-          "id": "3:3779844295925201532",
-          "name": "usageCount",
-          "type": 6,
-          "flags": 8192
-        },
-        {
-          "id": "4:1863239407284993978",
-          "name": "lastUsedAt",
-          "type": 10,
-          "flags": 16384
-        },
-        {
-          "id": "5:7680491739973784940",
-          "name": "compositionIdsJson",
-          "type": 9
-        }
-      ]
-    },
-    {
-      "id": "11:6114696665850993207",
-      "lastPropertyId": "14:9029452982129102374",
-      "name": "Composition",
-      "properties": [
-        {
-          "id": "1:3814356238973095714",
-          "name": "id",
-          "type": 6,
-          "flags": 1
-        },
-        {
-          "id": "2:3480184400528201495",
-          "name": "compositionId",
-          "indexId": "22:812020512002916839",
-          "type": 9,
-          "flags": 2048
-        },
-        {
-          "id": "3:4797438095773333562",
-          "name": "projectId",
-          "indexId": "23:6850129915895586064",
-          "type": 11,
-          "flags": 520,
-          "relationTarget": "Project"
-        },
-        {
-          "id": "4:6924506854953449170",
-          "name": "stateId",
-          "indexId": "24:682753437743707749",
-          "type": 11,
-          "flags": 520,
-          "relationTarget": "State"
-        },
-        {
-          "id": "5:6342944438326742972",
-          "name": "versionMajor",
-          "type": 3,
-          "flags": 8192
-        },
-        {
-          "id": "6:5050856274807411139",
-          "name": "versionMinor",
-          "type": 3,
-          "flags": 8192
-        },
-        {
-          "id": "7:8801658036662946341",
-          "name": "targetLanguageId",
-          "indexId": "25:8377713999315452729",
-          "type": 11,
-          "flags": 520,
-          "relationTarget": "Language"
-        },
-        {
-          "id": "8:5448587404191117976",
-          "name": "structuralStyleJson",
-          "type": 9
-        },
-        {
-          "id": "9:3756222673954986126",
-          "name": "semanticStyleJson",
-          "type": 9
-        },
-        {
-          "id": "10:8904244876773985088",
-          "name": "description",
-          "type": 9
-        },
-        {
-          "id": "11:194682182273150674",
-          "name": "createdAt",
-          "type": 10,
-          "flags": 16384
-        },
-        {
-          "id": "12:589806453329240809",
-          "name": "updatedAt",
-          "type": 10,
-          "flags": 16384
-        },
-        {
-          "id": "13:2796363176682541580",
-          "name": "previousVersionId",
-          "indexId": "26:592707911850055032",
-          "type": 11,
-          "flags": 520,
-          "relationTarget": "Composition"
-        },
-        {
-          "id": "14:9029452982129102374",
-          "name": "nextVersionId",
-          "indexId": "27:2303185552553673995",
-          "type": 11,
-          "flags": 520,
-          "relationTarget": "Composition"
-        }
-      ]
-    },
-    {
-      "id": "12:4152522461539627863",
-      "lastPropertyId": "11:8191586964666734619",
-      "name": "Fragment",
-      "properties": [
-        {
-          "id": "1:9051432534103074534",
-          "name": "id",
-          "type": 6,
-          "flags": 1
-        },
-        {
-          "id": "2:7120714838731852010",
-          "name": "compositionId",
-          "indexId": "28:2439507049812817751",
-          "type": 11,
-          "flags": 520,
-          "relationTarget": "Composition"
-        },
-        {
-          "id": "3:4972041658278003259",
-          "name": "orderIndex",
-          "indexId": "29:5192330739611001596",
-          "type": 5,
-          "flags": 8200
-        },
-        {
-          "id": "4:8454737284448586891",
-          "name": "fragmentType",
-          "type": 2
-        },
-        {
-          "id": "5:7515779558467346916",
-          "name": "refBlockId",
-          "type": 9
-        },
-        {
-          "id": "6:4526026091314638494",
-          "name": "refVersionMajor",
-          "type": 3,
-          "flags": 8192
-        },
-        {
-          "id": "7:3191789880515503675",
-          "name": "refVersionMinor",
-          "type": 3,
-          "flags": 8192
-        },
-        {
-          "id": "8:8863034920697582422",
-          "name": "refUseLatest",
-          "type": 1
-        },
-        {
-          "id": "9:3093106176464569848",
-          "name": "refLocalParamsJson",
-          "type": 9
-        },
-        {
-          "id": "10:4490735054290718",
-          "name": "staticContent",
-          "type": 9
-        },
-        {
-          "id": "11:8191586964666734619",
-          "name": "separatorType",
-          "type": 2
-        }
-      ]
-    },
-    {
-      "id": "13:5793504984911009669",
-      "lastPropertyId": "3:6365496957627311805",
-      "name": "Language",
-      "properties": [
-        {
-          "id": "1:8572074958598361325",
-          "name": "id",
-          "type": 6,
-          "flags": 1
-        },
-        {
-          "id": "2:2997829720586255358",
-          "name": "code",
-          "indexId": "30:3528553895637913762",
-          "type": 9,
-          "flags": 2080
-        },
-        {
-          "id": "3:6365496957627311805",
-          "name": "nativeName",
-          "type": 9
-        }
-      ]
-    },
-    {
-      "id": "14:6101437057925707805",
-      "lastPropertyId": "6:2195413757460513120",
-      "name": "Project",
-      "properties": [
-        {
-          "id": "1:12642157649163685",
-          "name": "id",
-          "type": 6,
-          "flags": 1
-        },
-        {
-          "id": "2:4879268997700539446",
-          "name": "key",
-          "indexId": "31:8408189818251469528",
-          "type": 9,
-          "flags": 2080
-        },
-        {
-          "id": "3:8084976570353636422",
-          "name": "name",
-          "type": 9
-        },
-        {
-          "id": "4:5815701098508186499",
-          "name": "description",
-          "type": 9
-        },
-        {
-          "id": "5:7457785811120544802",
-          "name": "createdAt",
-          "type": 10,
-          "flags": 16384
-        },
-        {
-          "id": "6:2195413757460513120",
-          "name": "updatedAt",
-          "type": 10,
-          "flags": 16384
-        }
-      ]
-    },
-    {
-      "id": "15:787972814753526170",
-      "lastPropertyId": "4:4543969917487505937",
-      "name": "State",
-      "properties": [
-        {
-          "id": "1:4190736361543997485",
-          "name": "id",
-          "type": 6,
-          "flags": 1
-        },
-        {
-          "id": "2:3521864640388833515",
-          "name": "code",
-          "indexId": "32:8677812826052010820",
-          "type": 2,
-          "flags": 40
-        },
-        {
-          "id": "3:7190170368525339818",
-          "name": "name",
-          "type": 9
-        },
-        {
-          "id": "4:4543969917487505937",
-          "name": "description",
-          "type": 9
-        }
-      ]
-    },
-    {
-      "id": "16:1188910124985028287",
-      "lastPropertyId": "4:5449200163072290257",
-      "name": "Tag",
-      "properties": [
-        {
-          "id": "1:805018694657059763",
-          "name": "id",
-          "type": 6,
-          "flags": 1
-        },
-        {
-          "id": "2:5151124271278084430",
-          "name": "projectId",
-          "indexId": "33:1769371075400577988",
-          "type": 11,
-          "flags": 520,
-          "relationTarget": "Project"
-        },
-        {
-          "id": "3:4424390433173747288",
-          "name": "name",
-          "indexId": "34:8785835493740944091",
-          "type": 9,
-          "flags": 2048
-        },
-        {
-          "id": "4:5449200163072290257",
-          "name": "createdAt",
-          "type": 10,
-          "flags": 16384
-        }
-      ]
-    },
-    {
-      "id": "17:8109528970418338120",
-      "lastPropertyId": "7:8472594470331430384",
+      "id": "1:3486556126890379663",
+      "lastPropertyId": "7:6382725116332418668",
       "name": "ObxAuditLog",
       "properties": [
         {
-          "id": "1:4463830278217255861",
+          "id": "1:2214554370488076382",
           "name": "id",
           "type": 6,
           "flags": 1
         },
         {
-          "id": "2:3687739152273630979",
+          "id": "2:3506239280332526389",
           "name": "createdAt",
           "type": 10,
           "flags": 16384
         },
         {
-          "id": "3:4090746717551909987",
+          "id": "3:4482760038498926548",
           "name": "entityType",
           "type": 9
         },
         {
-          "id": "4:6741866457312085371",
+          "id": "4:3988205158127297815",
           "name": "entityId",
           "type": 6,
           "flags": 8192
         },
         {
-          "id": "5:2597004069734179195",
+          "id": "5:2789092730318726264",
           "name": "operation",
           "type": 9
         },
         {
-          "id": "6:358559562285609240",
+          "id": "6:1723724515437558887",
           "name": "userId",
           "type": 9
         },
         {
-          "id": "7:8472594470331430384",
+          "id": "7:6382725116332418668",
           "name": "detailsJson",
           "type": 9
         }
       ]
     },
     {
-      "id": "18:4229572312024629952",
-      "lastPropertyId": "15:4276232648218145728",
+      "id": "2:2419412424179453468",
+      "lastPropertyId": "16:6101633986158951426",
       "name": "ObxBlock",
       "properties": [
         {
-          "id": "1:1716521843343506613",
+          "id": "1:332737791752134479",
           "name": "id",
           "type": 6,
           "flags": 1
         },
         {
-          "id": "2:5645237428785535960",
+          "id": "2:873629523902239538",
           "name": "blockId",
-          "indexId": "35:2829578497216503651",
+          "indexId": "1:6776742879252443622",
           "type": 9,
           "flags": 2048
         },
         {
-          "id": "3:5593769109490680329",
+          "id": "3:1043641358241571982",
           "name": "versionMajor",
           "type": 3,
           "flags": 8192
         },
         {
-          "id": "4:1518883151809832006",
+          "id": "4:4944382978999545762",
           "name": "versionMinor",
           "type": 3,
           "flags": 8192
         },
         {
-          "id": "5:457558560494136900",
+          "id": "5:6964255108966420280",
           "name": "projectId",
-          "indexId": "36:8684439689311352741",
+          "indexId": "2:6201078563201984979",
           "type": 11,
           "flags": 520,
           "relationTarget": "ObxProject"
         },
         {
-          "id": "6:8572639939029251689",
+          "id": "6:912344703733303434",
           "name": "languageId",
-          "indexId": "37:8821119637825524803",
+          "indexId": "3:1137865073665502452",
           "type": 11,
           "flags": 520,
           "relationTarget": "ObxLanguage"
         },
         {
-          "id": "7:3229680073772549911",
-          "name": "stateId",
-          "indexId": "38:4867770292206682001",
-          "type": 11,
-          "flags": 520,
-          "relationTarget": "ObxState"
+          "id": "7:1066852842988807085",
+          "name": "state",
+          "type": 2
         },
         {
-          "id": "8:3781743197529634023",
+          "id": "8:5993588606601763012",
           "name": "type",
           "type": 2
         },
         {
-          "id": "9:5748271900735229135",
+          "id": "9:1955988582939614146",
           "name": "templateContent",
           "type": 9
         },
         {
-          "id": "10:1710873459636100629",
+          "id": "10:4142586662763137350",
           "name": "defaultsJson",
           "type": 9
         },
         {
-          "id": "11:5573069865148944233",
+          "id": "11:2084984020101507384",
+          "name": "paramsJson",
+          "type": 9
+        },
+        {
+          "id": "12:3440974925327366262",
           "name": "description",
           "type": 9
         },
         {
-          "id": "12:3363375049567830844",
+          "id": "13:1047850774962802466",
           "name": "createdAt",
-          "type": 10,
-          "flags": 16384
+          "type": 6
         },
         {
-          "id": "13:7631057877081221464",
+          "id": "14:5488124296738568161",
           "name": "updatedAt",
-          "type": 10,
-          "flags": 16384
+          "type": 6
         },
         {
-          "id": "14:8403231824201927016",
+          "id": "15:2477372764567074401",
           "name": "previousVersionId",
-          "indexId": "39:8213146442075310323",
+          "indexId": "4:2710185122806534609",
           "type": 11,
           "flags": 520,
           "relationTarget": "ObxBlock"
         },
         {
-          "id": "15:4276232648218145728",
+          "id": "16:6101633986158951426",
           "name": "nextVersionId",
-          "indexId": "40:987736793127681074",
+          "indexId": "5:8368360337530499642",
           "type": 11,
           "flags": 520,
           "relationTarget": "ObxBlock"
@@ -964,382 +153,301 @@
       ],
       "relations": [
         {
-          "id": "3:4350534257507534229",
+          "id": "1:1369909837411946385",
           "name": "tags",
-          "targetId": "26:8148437322667548321"
+          "targetId": "8:7488814803516279037"
         }
       ]
     },
     {
-      "id": "19:2067758439051960785",
-      "lastPropertyId": "5:848666151043165809",
-      "name": "ObxBlockParam",
-      "properties": [
-        {
-          "id": "1:255281176265107388",
-          "name": "id",
-          "type": 6,
-          "flags": 1
-        },
-        {
-          "id": "2:1403513089045471248",
-          "name": "blockId",
-          "indexId": "41:5244745171809410966",
-          "type": 11,
-          "flags": 520,
-          "relationTarget": "ObxBlock"
-        },
-        {
-          "id": "3:6391671757789240170",
-          "name": "name",
-          "indexId": "42:1000288106356521781",
-          "type": 9,
-          "flags": 2048
-        },
-        {
-          "id": "4:303587734755549318",
-          "name": "required",
-          "type": 1
-        },
-        {
-          "id": "5:848666151043165809",
-          "name": "defaultValue",
-          "type": 9
-        }
-      ]
-    },
-    {
-      "id": "20:3514173954177295020",
-      "lastPropertyId": "5:2275721006182547997",
+      "id": "3:5545948432654789716",
+      "lastPropertyId": "5:9067083493629389318",
       "name": "ObxBlockUsage",
       "properties": [
         {
-          "id": "1:7982292215244065149",
+          "id": "1:3861123283439100209",
           "name": "id",
           "type": 6,
           "flags": 1
         },
         {
-          "id": "2:6726183029071653270",
+          "id": "2:3406028565571673254",
           "name": "blockId",
-          "indexId": "43:8217734895396769669",
+          "indexId": "6:697211012772602908",
           "type": 11,
           "flags": 520,
           "relationTarget": "ObxBlock"
         },
         {
-          "id": "3:1578708559579972804",
+          "id": "3:9035683715649156196",
           "name": "usageCount",
           "type": 6,
           "flags": 8192
         },
         {
-          "id": "4:4711801221325656786",
+          "id": "4:9075234929563453921",
           "name": "lastUsedAt",
-          "type": 10,
-          "flags": 16384
+          "type": 6
         },
         {
-          "id": "5:2275721006182547997",
+          "id": "5:9067083493629389318",
           "name": "compositionIdsJson",
           "type": 9
         }
       ]
     },
     {
-      "id": "21:19642391171978850",
-      "lastPropertyId": "14:807517261865152304",
+      "id": "4:1885837618698523194",
+      "lastPropertyId": "15:2713886912131433208",
       "name": "ObxComposition",
       "properties": [
         {
-          "id": "1:9121673142957595910",
+          "id": "1:9037253685589007890",
           "name": "id",
           "type": 6,
           "flags": 1
         },
         {
-          "id": "2:8461066205001328106",
+          "id": "2:3584318749876422359",
           "name": "compositionId",
-          "indexId": "44:2398076529948140058",
+          "indexId": "7:2917882431520203654",
           "type": 9,
           "flags": 2048
         },
         {
-          "id": "3:1439146589622815434",
+          "id": "3:1909216451171546311",
           "name": "projectId",
-          "indexId": "45:5344904519865127346",
+          "indexId": "8:7590914006066435128",
           "type": 11,
           "flags": 520,
           "relationTarget": "ObxProject"
         },
         {
-          "id": "4:1879389637711204020",
-          "name": "stateId",
-          "indexId": "46:6624866216391166814",
-          "type": 11,
-          "flags": 520,
-          "relationTarget": "ObxState"
+          "id": "4:1857890882368816099",
+          "name": "state",
+          "type": 2
         },
         {
-          "id": "5:547165990608698712",
+          "id": "5:3424346275741822669",
           "name": "versionMajor",
           "type": 3,
           "flags": 8192
         },
         {
-          "id": "6:8830465038029708958",
+          "id": "6:5468302990891741748",
           "name": "versionMinor",
           "type": 3,
           "flags": 8192
         },
         {
-          "id": "7:8802632186748715719",
+          "id": "7:1375010210826627039",
           "name": "targetLanguageId",
-          "indexId": "47:8473803315401206781",
+          "indexId": "9:3357579991842696158",
           "type": 11,
           "flags": 520,
           "relationTarget": "ObxLanguage"
         },
         {
-          "id": "8:3319164479583285105",
-          "name": "structuralStyleJson",
-          "type": 9
-        },
-        {
-          "id": "9:4392154557617036342",
-          "name": "semanticStyleJson",
-          "type": 9
-        },
-        {
-          "id": "10:8763757478433694728",
+          "id": "10:5803675816883414304",
           "name": "description",
           "type": 9
         },
         {
-          "id": "11:7892637950343919427",
+          "id": "11:7930516982725304848",
           "name": "createdAt",
-          "type": 10,
-          "flags": 16384
+          "type": 6
         },
         {
-          "id": "12:7266094097183231814",
+          "id": "12:4128778362145994394",
           "name": "updatedAt",
-          "type": 10,
-          "flags": 16384
+          "type": 6
         },
         {
-          "id": "13:5830130573710682391",
+          "id": "13:7776332083356539323",
           "name": "previousVersionId",
-          "indexId": "48:6227003334801516872",
+          "indexId": "10:4843881958623149956",
           "type": 11,
           "flags": 520,
           "relationTarget": "ObxComposition"
         },
         {
-          "id": "14:807517261865152304",
+          "id": "14:5784495734909918495",
           "name": "nextVersionId",
-          "indexId": "49:8539442189846529322",
+          "indexId": "11:8927559632122075829",
           "type": 11,
           "flags": 520,
           "relationTarget": "ObxComposition"
+        },
+        {
+          "id": "15:2713886912131433208",
+          "name": "styleProfileJson",
+          "type": 9
         }
       ]
     },
     {
-      "id": "22:2887310798474797674",
-      "lastPropertyId": "11:6788030598517637605",
+      "id": "5:515850691231794682",
+      "lastPropertyId": "11:105249975285181746",
       "name": "ObxFragment",
       "properties": [
         {
-          "id": "1:2374365281596082139",
+          "id": "1:3499244162769012114",
           "name": "id",
           "type": 6,
           "flags": 1
         },
         {
-          "id": "2:1239912064001796824",
+          "id": "2:5209857666512837518",
           "name": "compositionId",
-          "indexId": "50:5757771030107314431",
+          "indexId": "12:3343628311672821989",
           "type": 11,
           "flags": 520,
           "relationTarget": "ObxComposition"
         },
         {
-          "id": "3:5547278047741586015",
+          "id": "3:8213526494309275814",
           "name": "orderIndex",
-          "indexId": "51:955033855617170654",
+          "indexId": "13:9015908064021938569",
           "type": 5,
           "flags": 8200
         },
         {
-          "id": "4:7992939127314156984",
+          "id": "4:4789389256925146821",
           "name": "fragmentType",
           "type": 2
         },
         {
-          "id": "5:3005768508864797608",
+          "id": "5:3958286833178169469",
           "name": "refBlockId",
           "type": 9
         },
         {
-          "id": "6:3595190640824945038",
+          "id": "6:201026427630881145",
           "name": "refVersionMajor",
           "type": 3,
           "flags": 8192
         },
         {
-          "id": "7:6077381666910822696",
+          "id": "7:2845049687682960741",
           "name": "refVersionMinor",
           "type": 3,
           "flags": 8192
         },
         {
-          "id": "8:4062001980603807764",
+          "id": "8:1773029901654945127",
           "name": "refUseLatest",
           "type": 1
         },
         {
-          "id": "9:65023379851634381",
+          "id": "9:4383263765440131768",
           "name": "refLocalParamsJson",
           "type": 9
         },
         {
-          "id": "10:5585247828834719531",
+          "id": "10:5952987180705548697",
           "name": "staticContent",
           "type": 9
         },
         {
-          "id": "11:6788030598517637605",
+          "id": "11:105249975285181746",
           "name": "separatorType",
           "type": 2
         }
       ]
     },
     {
-      "id": "23:8073167299609748193",
-      "lastPropertyId": "3:301558688515763888",
+      "id": "6:2407694020417353093",
+      "lastPropertyId": "3:2486737883398218738",
       "name": "ObxLanguage",
       "properties": [
         {
-          "id": "1:4742032145132847130",
+          "id": "1:675362085673889402",
           "name": "id",
           "type": 6,
           "flags": 1
         },
         {
-          "id": "2:9167761392010296268",
+          "id": "2:7895223631615969861",
           "name": "code",
-          "indexId": "52:7358343623602282827",
+          "indexId": "14:3839464032562610522",
           "type": 9,
           "flags": 2080
         },
         {
-          "id": "3:301558688515763888",
+          "id": "3:2486737883398218738",
           "name": "nativeName",
           "type": 9
         }
       ]
     },
     {
-      "id": "24:6071961163271335937",
-      "lastPropertyId": "6:4620267012567901785",
+      "id": "7:3155233238031422165",
+      "lastPropertyId": "6:4741011244673191319",
       "name": "ObxProject",
       "properties": [
         {
-          "id": "1:595992226973802841",
+          "id": "1:5533930488139096011",
           "name": "id",
           "type": 6,
           "flags": 1
         },
         {
-          "id": "2:1857338850379635814",
+          "id": "2:8816063985851179648",
           "name": "key",
-          "indexId": "53:6097387086030939612",
+          "indexId": "15:5707610885390312033",
           "type": 9,
           "flags": 2080
         },
         {
-          "id": "3:1094329648148203529",
+          "id": "3:4526502123023764784",
           "name": "name",
           "type": 9
         },
         {
-          "id": "4:158232277970529326",
+          "id": "4:4005295130969598528",
           "name": "description",
           "type": 9
         },
         {
-          "id": "5:2893819131807305121",
+          "id": "5:9020587438181644941",
           "name": "createdAt",
-          "type": 10,
-          "flags": 16384
+          "type": 6
         },
         {
-          "id": "6:4620267012567901785",
+          "id": "6:4741011244673191319",
           "name": "updatedAt",
-          "type": 10,
-          "flags": 16384
+          "type": 6
         }
       ]
     },
     {
-      "id": "25:7268592802200342439",
-      "lastPropertyId": "4:538706536824680114",
-      "name": "ObxState",
-      "properties": [
-        {
-          "id": "1:8535034296460678552",
-          "name": "id",
-          "type": 6,
-          "flags": 1
-        },
-        {
-          "id": "2:1225734298014231969",
-          "name": "code",
-          "indexId": "54:7843103340756117273",
-          "type": 2,
-          "flags": 40
-        },
-        {
-          "id": "3:6976458048676111202",
-          "name": "name",
-          "type": 9
-        },
-        {
-          "id": "4:538706536824680114",
-          "name": "description",
-          "type": 9
-        }
-      ]
-    },
-    {
-      "id": "26:8148437322667548321",
-      "lastPropertyId": "4:8411617566963567872",
+      "id": "8:7488814803516279037",
+      "lastPropertyId": "4:4636538930359369580",
       "name": "ObxTag",
       "properties": [
         {
-          "id": "1:6176723263153724649",
+          "id": "1:2108250320641201970",
           "name": "id",
           "type": 6,
           "flags": 1
         },
         {
-          "id": "2:2152405014218236510",
+          "id": "2:1709407488256840161",
           "name": "projectId",
-          "indexId": "55:7841572014731479029",
+          "indexId": "16:5160747330705811946",
           "type": 11,
           "flags": 520,
           "relationTarget": "ObxProject"
         },
         {
-          "id": "3:2236408651111043544",
+          "id": "3:8215223810342296155",
           "name": "name",
-          "indexId": "56:8322369737688442627",
+          "indexId": "17:1234544260600394781",
           "type": 9,
           "flags": 2048
         },
         {
-          "id": "4:8411617566963567872",
+          "id": "4:4636538930359369580",
           "name": "createdAt",
           "type": 10,
           "flags": 16384
@@ -1347,14 +455,17 @@
       ]
     }
   ],
-  "lastEntityId": "26:8148437322667548321",
-  "lastIndexId": "56:8322369737688442627",
-  "lastRelationId": "3:4350534257507534229",
+  "lastEntityId": "8:7488814803516279037",
+  "lastIndexId": "17:1234544260600394781",
+  "lastRelationId": "1:1369909837411946385",
   "modelVersion": 5,
   "modelVersionParserMinimum": 5,
   "retiredEntityUids": [],
   "retiredIndexUids": [],
-  "retiredPropertyUids": [],
+  "retiredPropertyUids": [
+    5500436163053843341,
+    6482064681252462658
+  ],
   "retiredRelationUids": [],
   "version": 1
 }

@@ -94,6 +94,7 @@ public:
     [[nodiscard]] const CompositionId& id() const noexcept;
     [[nodiscard]] BlockState state() const noexcept;
     [[nodiscard]] const Version& version() const noexcept;
+    void setVersion(const Version& v);
     [[nodiscard]] const std::vector<Fragment>& fragments() const noexcept;
     [[nodiscard]] const std::optional<StyleProfile>& styleProfile() const noexcept;
     [[nodiscard]] const std::string& projectKey() const noexcept;
@@ -101,6 +102,7 @@ public:
 
     // Setters (allowed only for Draft state)
     void setId(CompositionId id);
+    void setState(BlockState state);
     void setStyleProfile(StyleProfile profile);
     void setProjectKey(std::string key);
     void setDescription(std::string desc);

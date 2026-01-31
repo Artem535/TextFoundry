@@ -46,6 +46,12 @@ public:
      * @returns Block or nullptr if not found
      */
     [[nodiscard]] virtual const Block* getLatestBlock(const BlockId& id) const = 0;
+
+    /**
+     * Clear all cached blocks
+     * Called before each render operation to ensure fresh data
+     */
+    virtual void clear() = 0;
 };
 
 /**
@@ -67,6 +73,12 @@ public:
      * Set block cache for block resolution
      */
     void setBlockCache(std::unique_ptr<IBlockCache> cache);
+
+    /**
+     * Clear the block cache
+     * Called before each render operation to ensure fresh data
+     */
+    void clearCache();
 
     /**
      * Render composition to text

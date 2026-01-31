@@ -16,10 +16,8 @@ table ObxProject {
     /// Project description
     description: string;
     /// Creation timestamp (Unix milliseconds)
-    /// objectbox:id-companion, date
     createdAt: long;
     /// Last modification timestamp
-    /// objectbox:id-companion, date
     updatedAt: long;
 }
 
@@ -30,19 +28,6 @@ table ObxLanguage {
     code: string;
     /// Native name (e.g., "English", "Русский")
     nativeName: string; // Not supported now
-}
-
-/// Lifecycle state dictionary (Draft/Published/Deprecated)
-/// Enables attaching metadata to states
-table ObxState {
-    id: ulong;
-    /// Numeric code matching BlockState enum (1=Published, 2=Deprecated)
-    /// objectbox:unique
-    code: byte;
-    /// Display name for UI ("Draft", "Published", "Deprecated")
-    name: string;
-    /// Human-readable description of the state
-    description: string;
 }
 
 // ============================================================================
@@ -66,21 +51,6 @@ table ObxTag {
 // BLOCK SYSTEM
 // ============================================================================
 
-/// Parameter schema for blocks (extracted from JSON for queryability)
-table ObxBlockParam {
-    id: ulong;
-    /// Many-to-One: Parameter belongs to ObxBlock
-    /// objectbox:relation=ObxBlock
-    blockId: ulong;
-    /// Parameter name
-    /// objectbox:index
-    name: string;
-    /// Is parameter required
-    required: bool;
-    /// Default value (empty if none)
-    defaultValue: string;
-}
-
 /// ObxBlock - reusable logical text fragment
 /// Many-to-Many relation with ObxTag: standalone relation stored separately
 /// objectbox:relation(name=tags,to=ObxTag)
@@ -101,9 +71,8 @@ table ObxBlock {
     /// objectbox:relation=ObxLanguage
     languageId: ulong;
 
-    /// Many-to-One: Lifecycle state (replaces embedded byte enum)
-    /// objectbox:relation=ObxState
-    stateId: ulong;
+    /// Lifecycle state: 0=Draft, 1=Published, 2=Deprecated
+    state: byte;
 
     /// Block type enum (Role/Constraint/Style/Domain/Meta)
     /// Kept as embedded byte since it's taxonomy, not lifecycle metadata
@@ -113,13 +82,13 @@ table ObxBlock {
     templateContent: string;
     /// JSON object with default parameter values
     defaultsJson: string;
+    /// JSON Obx block parameters
+    paramsJson: string;
     /// Human-readable description
     description: string;
     /// Creation timestamp
-    /// objectbox:id-companion, date
     createdAt: long;
     /// Last modification timestamp
-    /// objectbox:id-companion, date
     updatedAt: long;
 
     /// Previous version reference (for version chain)
@@ -169,9 +138,8 @@ table ObxComposition {
     /// Many-to-One: ObxComposition belongs to ObxProject
     /// objectbox:relation=ObxProject
     projectId: ulong;
-    /// Many-to-One: Lifecycle state
-    /// objectbox:relation=ObxState
-    stateId: ulong;
+    /// Lifecycle state: 0=Draft, 1=Published, 2=Deprecated
+    state: byte;
 
     versionMajor: ushort;
     versionMinor: ushort;
@@ -181,17 +149,14 @@ table ObxComposition {
     targetLanguageId: ulong;
 
     /// Structural style JSON (blockWrapper, preamble, postamble, delimiter)
-    structuralStyleJson: string;
     /// Semantic style JSON (tone, tense, targetLanguage, person)
-    semanticStyleJson: string;
+    styleProfileJson: string;
 
     /// Human-readable description
     description: string;
     /// Creation timestamp
-    /// objectbox:id-companion, date
     createdAt: long;
     /// Last modification timestamp
-    /// objectbox:id-companion, date
     updatedAt: long;
 
     /// Previous version reference
@@ -233,7 +198,6 @@ table ObxBlockUsage {
     /// Usage count
     usageCount: ulong;
     /// Last used timestamp
-    /// objectbox:id-companion, date
     lastUsedAt: long;
     /// Compositions where block is used (JSON array of composition IDs)
     compositionIdsJson: string;

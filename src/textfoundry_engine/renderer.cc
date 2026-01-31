@@ -21,6 +21,12 @@ void Renderer::setBlockCache(std::unique_ptr<IBlockCache> cache) {
     blockCache_ = std::move(cache);
 }
 
+void Renderer::clearCache() {
+    if (blockCache_) {
+        blockCache_->clear();
+    }
+}
+
 Result<RenderResult> Renderer::render(
     const Composition& composition,
     const RenderContext& context
