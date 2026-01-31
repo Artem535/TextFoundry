@@ -52,7 +52,7 @@ public:
     /**
      * Set global log level
      */
-    static void setLevel(LogLevel level);
+    static void set_level(LogLevel level);
 
 private:
     static std::shared_ptr<spdlog::logger> instance_;

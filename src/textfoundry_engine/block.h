@@ -57,7 +57,7 @@ public:
     /**
      * Extract parameter names from template placeholders {{paramName}}
      */
-    [[nodiscard]] std::vector<std::string> extractParamNames() const;
+    [[nodiscard]] std::vector<std::string> extract_param_names() const;
 
     /**
      * Expand template with provided parameters
@@ -81,28 +81,46 @@ public:
     explicit Block(BlockId id) : id_(std::move(id)) {}
 
     // Getters
-    [[nodiscard]] const BlockId& id() const noexcept { return id_; }
-    [[nodiscard]] BlockType type() const noexcept { return type_; }
-    [[nodiscard]] BlockState state() const noexcept { return state_; }
-    [[nodiscard]] const Version& version() const noexcept { return version_; }
-    void setVersion(const Version& v);
-    [[nodiscard]] const Template& templ() const noexcept { return template_; }
-    [[nodiscard]] const Params& defaults() const noexcept { return defaults_; }
-    [[nodiscard]] const std::vector<ParamSchema>& paramSchema() const noexcept { return paramSchema_; }
-    [[nodiscard]] const std::unordered_set<std::string>& tags() const noexcept { return tags_; }
-    [[nodiscard]] const std::string& language() const noexcept { return language_; }
-    [[nodiscard]] const std::string& description() const noexcept { return description_; }
+    [[nodiscard]] const BlockId& id() const noexcept;
+
+    [[nodiscard]] BlockType type() const noexcept;
+
+    [[nodiscard]] BlockState state() const noexcept;
+
+    [[nodiscard]] const Version& version() const noexcept;
+
+    [[nodiscard]] const Template& templ() const noexcept;
+
+    [[nodiscard]] const Params& defaults() const noexcept;
+
+    [[nodiscard]] const std::vector<ParamSchema>& param_schema() const noexcept;
+
+    [[nodiscard]] const std::unordered_set<std::string>& tags() const noexcept;
+
+    [[nodiscard]] const std::string& language() const noexcept;
+
+    [[nodiscard]] const std::string& description() const noexcept;
 
     // Setters (allowed only for Draft state)
-    void setId(BlockId id) { id_ = std::move(id); }
-    void setType(BlockType type) { type_ = type; }
-    void setState(BlockState state) { state_ = state; }
-    void setTemplate(Template templ) { template_ = std::move(templ); }
-    void setDefaults(Params defaults) { defaults_ = std::move(defaults); }
-    void setParamSchema(std::vector<ParamSchema> schema) { paramSchema_ = std::move(schema); }
-    void setTags(std::unordered_set<std::string> tags) { tags_ = std::move(tags); }
-    void setLanguage(std::string lang) { language_ = std::move(lang); }
-    void setDescription(std::string desc) { description_ = std::move(desc); }
+    void set_id(BlockId id);
+
+    void set_type(BlockType type);
+
+    void set_state(BlockState state);
+
+    void set_template(Template templ);
+
+    void set_defaults(Params defaults);
+
+    void set_param_schema(std::vector<ParamSchema> schema);
+
+    void set_tags(std::unordered_set<std::string> tags);
+
+    void set_language(std::string lang);
+
+    void set_description(std::string desc);
+
+    void set_version(const Version& v);
 
     /**
      * Resolve parameter value using hierarchy:
@@ -110,26 +128,26 @@ public:
      * 2. Composition Local Override
      * 3. Runtime Context (highest priority)
      */
-    [[nodiscard]] Result<ParamValue> resolveParam(
-        const std::string& paramName,
-        const Params& localOverride,
-        const Params& runtimeContext
+    [[nodiscard]] Result<ParamValue> resolve_param(
+        const std::string& param_name,
+        const Params& local_override,
+        const Params& runtime_context
     ) const;
 
     /**
      * Validate that all required parameters can be resolved
      */
-    [[nodiscard]] Error validateParams(
-        const Params& localOverride,
-        const Params& runtimeContext
+    [[nodiscard]] Error validate_params(
+        const Params& local_override,
+        const Params& runtime_context
     ) const;
 
     /**
      * Publish this block - creates immutable version
-     * @param newVersion version to assign
+     * @param new_version version to assign
      * @returns Error if block cannot be published (e.g., not in Draft state)
      */
-    [[nodiscard]] Error publish(const Version &newVersion);
+    [[nodiscard]] Error publish(const Version &new_version);
 
     /**
      * Mark this version as deprecated
@@ -139,10 +157,10 @@ public:
     /**
      * Check if parameter has default value or is provided in overrides
      */
-    [[nodiscard]] bool canResolveParam(
-        const std::string& paramName,
-        const Params& localOverride,
-        const Params& runtimeContext
+    [[nodiscard]] bool can_resolve_param(
+        const std::string& param_name,
+        const Params& local_override,
+        const Params& runtime_context
     ) const;
 
 private:
@@ -171,18 +189,14 @@ public:
     BlockDraftBuilder() = default;
     explicit BlockDraftBuilder(BlockId id);
 
-    BlockDraftBuilder& withId(BlockId id);
-
-    BlockDraftBuilder& withType(const BlockType &type);
-
-    BlockDraftBuilder& withTemplate(Template templ);
-
-    BlockDraftBuilder& withDefault(const std::string& name, ParamValue value);
-
-    BlockDraftBuilder& withDefaults(Params defaults);
-    BlockDraftBuilder& withTag(const std::string& tag);
-    BlockDraftBuilder& withLanguage(std::string lang);
-    BlockDraftBuilder& withDescription(std::string desc);
+    BlockDraftBuilder& with_id(BlockId id);
+    BlockDraftBuilder& with_type(const BlockType &type);
+    BlockDraftBuilder& with_template(Template templ);
+    BlockDraftBuilder& with_default(const std::string& name, ParamValue value);
+    BlockDraftBuilder& with_defaults(Params defaults);
+    BlockDraftBuilder& with_tag(const std::string& tag);
+    BlockDraftBuilder& with_language(std::string lang);
+    BlockDraftBuilder& with_description(std::string desc);
 
     [[nodiscard]] Block build() const;
 

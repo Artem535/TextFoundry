@@ -64,76 +64,74 @@ public:
     Engine();
     explicit Engine(EngineConfig config);
 
-
-
     /**
      * Set block repository for persistence
      */
-    void setBlockRepository(std::shared_ptr<IBlockRepository> repo);
+    void set_block_repository(std::shared_ptr<IBlockRepository> repo);
 
     /**
      * Set composition repository for persistence
      */
-    void setCompositionRepository(std::shared_ptr<ICompositionRepository> repo);
+    void set_composition_repository(std::shared_ptr<ICompositionRepository> repo);
 
     /**
      * Set normalizer for semantic transformations
      */
-    void setNormalizer(std::shared_ptr<INormalizer> normalizer);
+    void set_normalizer(std::shared_ptr<INormalizer> normalizer);
 
     // ==================== Block Operations ====================
 
     /**
      * Create a new Block draft
      */
-    [[nodiscard]] Block createBlockDraft(const BlockId& id);
+    [[nodiscard]] Block create_block_draft(const BlockId& id);
 
     /**
      * Save block draft to storage
      */
-    [[nodiscard]] Error saveBlock(const Block& block);
+    [[nodiscard]] Error save_block(const Block& block);
 
     /**
      * Load block from storage
      */
-    [[nodiscard]] Result<Block> loadBlock(const BlockId& id, std::optional<Version> version = std::nullopt);
+    [[nodiscard]] Result<Block> load_block(const BlockId& id, std::optional<Version> version = std::nullopt);
 
     /**
      * Publish block - creates immutable version
      */
-    [[nodiscard]] Result<Block> publishBlock(const BlockId& id, Version newVersion);
+    [[nodiscard]] Result<Block> publish_block(const BlockId& id, Version newVersion);
 
     /**
      * Deprecate a published block
      */
-    [[nodiscard]] Error deprecateBlock(const BlockId& id, Version version);
+    [[nodiscard]] Error deprecate_block(const BlockId& id, Version version);
 
     /**
      * Get latest version of a block
      */
-    [[nodiscard]] Result<Version> getLatestBlockVersion(const BlockId& id);
+    [[nodiscard]] Result<Version> get_latest_block_version(const BlockId& id);
 
     /**
      * List all blocks (optionally filtered by type)
      */
-    [[nodiscard]] std::vector<BlockId> listBlocks(std::optional<BlockType> typeFilter = std::nullopt);
+    [[nodiscard]] std::vector<BlockId> list_blocks(std::optional<BlockType> typeFilter = std::nullopt);
 
     // ==================== Composition Operations ====================
 
     /**
      * Create a new Composition draft
      */
-    [[nodiscard]] Composition createCompositionDraft(const CompositionId& id);
+    [[nodiscard]] Composition create_composition_draft(const CompositionId& id);
 
     /**
      * Save composition draft to storage
      */
-    [[nodiscard]] Error saveComposition(const Composition& composition);
+    [[nodiscard]] Error save_composition(const Composition& composition);
 
     /**
      * Load composition from storage
      */
-    [[nodiscard]] Result<Composition> loadComposition(
+    [[nodiscard]] Result<Composition> load_composition(
         const CompositionId& id,
         std::optional<Version> version = std::nullopt
     );
@@ -142,17 +140,17 @@ public:
      * Publish composition - creates immutable version
      * Validates that all BlockRefs have explicit versions
      */
-    [[nodiscard]] Result<Composition> publishComposition(const CompositionId& id, Version newVersion);
+    [[nodiscard]] Result<Composition> publish_composition(const CompositionId& id, Version newVersion);
 
     /**
      * Deprecate a published composition
      */
-    [[nodiscard]] Error deprecateComposition(const CompositionId& id, Version version);
+    [[nodiscard]] Error deprecate_composition(const CompositionId& id, Version version);
 
     /**
      * List all compositions
      */
-    [[nodiscard]] std::vector<CompositionId> listCompositions() const;
+    [[nodiscard]] std::vector<CompositionId> list_compositions() const;
 
     // ==================== Rendering Operations ====================
 
@@ -184,7 +182,7 @@ public:
     /**
      * Render a single block (for preview/testing)
      */
-    [[nodiscard]] Result<std::string> renderBlock(
+    [[nodiscard]] Result<std::string> render_block(
         const BlockId& blockId,
         const RenderContext& context = RenderContext{}
     );
@@ -192,7 +190,7 @@ public:
     /**
      * Render block with specific version
      */
-    [[nodiscard]] Result<std::string> renderBlock(
+    [[nodiscard]] Result<std::string> render_block(
         const BlockId& blockId,
         Version version,
         const RenderContext& context = RenderContext{}
@@ -231,12 +229,12 @@ public:
     /**
      * Validate a composition without rendering
      */
-    [[nodiscard]] Error validateComposition(const CompositionId& id);
+    [[nodiscard]] Error validate_composition(const CompositionId& id);
 
     /**
      * Validate a block
      */
-    [[nodiscard]] Error validateBlock(const BlockId& id);
+    [[nodiscard]] Error validate_block(const BlockId& id);
 
 private:
     EngineConfig config_;
@@ -258,9 +256,9 @@ public:
 
     [[nodiscard]] virtual Error save(const Block& block) = 0;
     [[nodiscard]] virtual Result<Block> load(const BlockId& id, Version version) = 0;
-    [[nodiscard]] virtual Result<Block> loadLatest(const BlockId& id) = 0;
+    [[nodiscard]] virtual Result<Block> load_latest(const BlockId& id) = 0;
     [[nodiscard]] virtual std::vector<BlockId> list(std::optional<BlockType> typeFilter = std::nullopt) = 0;
-    [[nodiscard]] virtual Result<Version> getLatestVersion(const BlockId& id) = 0;
+    [[nodiscard]] virtual Result<Version> get_latest_version(const BlockId& id) = 0;
     [[nodiscard]] virtual Error deprecate(const BlockId& id, Version version) = 0;
 };
 
@@ -274,9 +272,9 @@ public:
 
     [[nodiscard]] virtual Error save(const Composition& composition) = 0;
     [[nodiscard]] virtual Result<Composition> load(const CompositionId& id, Version version) = 0;
-    [[nodiscard]] virtual Result<Composition> loadLatest(const CompositionId& id) = 0;
+    [[nodiscard]] virtual Result<Composition> load_latest(const CompositionId& id) = 0;
     [[nodiscard]] virtual std::vector<CompositionId> list() = 0;
-    [[nodiscard]] virtual Result<Version> getLatestVersion(const CompositionId& id) = 0;
+    [[nodiscard]] virtual Result<Version> get_latest_version(const CompositionId& id) = 0;
     [[nodiscard]] virtual Error deprecate(const CompositionId& id, Version version) = 0;
 };
 

@@ -34,30 +34,4 @@ Error Fragment::validate(bool isDraftContext) const {
         return Error::success();
     }, data_);
 }
-
-// FragmentJsonSerializer stub implementations
-std::string FragmentJsonSerializer::serialize(const Fragment& fragment) {
-    // TODO: Implement JSON serialization
-    (void)fragment;
-    return "{}";
-}
-
-std::string FragmentJsonSerializer::serialize(const std::vector<Fragment>& fragments) {
-    // TODO: Implement JSON array serialization
-    (void)fragments;
-    return "[]";
-}
-
-Result<Fragment> FragmentJsonSerializer::deserialize(std::string_view json) {
-    // TODO: Implement JSON deserialization
-    (void)json;
-    return Result<Fragment>(Fragment::makeStaticText(""));
-}
-
-Result<std::vector<Fragment>> FragmentJsonSerializer::deserializeList(std::string_view json) {
-    // TODO: Implement JSON array deserialization
-    (void)json;
-    return Result<std::vector<Fragment>>(std::vector<Fragment>{});
-}
-
 } // namespace tf

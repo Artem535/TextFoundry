@@ -66,7 +66,7 @@ namespace tf {
      * Finds the maximum version for the given block ID and loads it.
      * Convenience method that calls getLatestVersion() followed by load().
      */
-    [[nodiscard]] Result<Block> loadLatest(const BlockId &id) override;
+    [[nodiscard]] Result<Block> load_latest(const BlockId &id) override;
 
     /**
      * @brief Lists all block IDs, optionally filtered by type
@@ -86,7 +86,7 @@ namespace tf {
      * Scans all versions of the block and returns the maximum
      * version number (comparing major first, then minor).
      */
-    [[nodiscard]] Result<Version> getLatestVersion(const BlockId &id) override;
+    [[nodiscard]] Result<Version> get_latest_version(const BlockId &id) override;
 
     /**
      * @brief Marks a specific block version as deprecated
@@ -159,7 +159,7 @@ namespace tf {
      * Finds the maximum version for the given composition ID and loads it.
      * Convenience method that calls getLatestVersion() followed by load().
      */
-    [[nodiscard]] Result<Composition> loadLatest(const CompositionId &id) override;
+    [[nodiscard]] Result<Composition> load_latest(const CompositionId &id) override;
 
     /**
      * @brief Lists all composition IDs in the database
@@ -178,7 +178,7 @@ namespace tf {
      * Scans all versions of the composition and returns the maximum
      * version number (comparing major first, then minor).
      */
-    [[nodiscard]] Result<Version> getLatestVersion(const CompositionId &id) override;
+    [[nodiscard]] Result<Version> get_latest_version(const CompositionId &id) override;
 
     /**
      * @brief Marks a specific composition version as deprecated

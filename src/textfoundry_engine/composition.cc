@@ -6,17 +6,17 @@
 
 namespace tf {
   // RenderContext implementation
-  RenderContext &RenderContext::withParam(const std::string &name, ParamValue value) {
+  RenderContext &RenderContext::with_param(const std::string &name, ParamValue value) {
     params[name] = std::move(value);
     return *this;
   }
 
-  RenderContext &RenderContext::withLanguage(std::string lang) {
+  RenderContext &RenderContext::with_language(std::string lang) {
     targetLanguage = std::move(lang);
     return *this;
   }
 
-  RenderContext &RenderContext::withStrictMode(bool strict) {
+  RenderContext &RenderContext::with_strict_mode(bool strict) {
     strictMode = strict;
     return *this;
   }
@@ -42,62 +42,62 @@ namespace tf {
   BlockState Composition::state() const noexcept { return state_; }
   const Version &Composition::version() const noexcept { return version_; }
   const std::vector<Fragment> &Composition::fragments() const noexcept { return fragments_; }
-  const std::optional<StyleProfile> &Composition::styleProfile() const noexcept { return styleProfile_; }
-  const std::string &Composition::projectKey() const noexcept { return projectKey_; }
+  const std::optional<StyleProfile> &Composition::style_profile() const noexcept { return style_profile_; }
+  const std::string &Composition::project_key() const noexcept { return project_key_; }
   const std::string &Composition::description() const noexcept { return description_; }
 
-  void Composition::setId(CompositionId id) { id_ = std::move(id); }
+  void Composition::set_id(CompositionId id) { id_ = std::move(id); }
 
-  void Composition::setState(const BlockState state) {
+  void Composition::set_state(const BlockState state) {
     state_ = state;
   }
 
-  void Composition::setStyleProfile(StyleProfile profile) { styleProfile_ = std::move(profile); }
-  void Composition::setProjectKey(std::string key) { projectKey_ = std::move(key); }
-  void Composition::setDescription(std::string desc) { description_ = std::move(desc); }
+  void Composition::set_style_profile(StyleProfile profile) { style_profile_ = std::move(profile); }
+  void Composition::set_project_key(std::string key) { project_key_ = std::move(key); }
+  void Composition::set_description(std::string desc) { description_ = std::move(desc); }
 
-  void Composition::setVersion(const Version& v) { version_ = v; }
+  void Composition::set_version(const Version &v) { version_ = v; }
 
   Fragment &Composition::fragment(size_t index) { return fragments_.at(index); }
   const Fragment &Composition::fragment(size_t index) const { return fragments_.at(index); }
   size_t Composition::fragmentCount() const noexcept { return fragments_.size(); }
 
-  Fragment &Composition::addBlockRef(const BlockId &blockId, Version version, Params localParams) {
+  Fragment &Composition::add_block_ref(const BlockId &blockId, Version version, Params localParams) {
     BlockRef ref(blockId, version, std::move(localParams));
-    fragments_.emplace_back(Fragment::makeBlockRef(std::move(ref)));
+    fragments_.emplace_back(Fragment::make_block_ref(std::move(ref)));
     return fragments_.back();
   }
 
-  Fragment &Composition::addBlockRefLatest(const BlockId &blockId, Params localParams) {
+  Fragment &Composition::add_block_ref_latest(const BlockId &blockId, Params localParams) {
     BlockRef ref(blockId);
-    ref.setLocalParams(std::move(localParams));
-    fragments_.emplace_back(Fragment::makeBlockRef(std::move(ref)));
+    ref.set_local_params(std::move(localParams));
+    fragments_.emplace_back(Fragment::make_block_ref(std::move(ref)));
     return fragments_.back();
   }
 
-  Fragment &Composition::addStaticText(std::string text) {
-    fragments_.emplace_back(Fragment::makeStaticText(std::move(text)));
+  Fragment &Composition::add_static_text(std::string text) {
+    fragments_.emplace_back(Fragment::make_static_text(std::move(text)));
     return fragments_.back();
   }
 
-  Fragment &Composition::addSeparator(SeparatorType type) {
-    fragments_.emplace_back(Fragment::makeSeparator(type));
+  Fragment &Composition::add_separator(SeparatorType type) {
+    fragments_.emplace_back(Fragment::make_separator(type));
     return fragments_.back();
   }
 
-  void Composition::insertFragment(size_t index, Fragment fragment) {
+  void Composition::insert_fragment(size_t index, Fragment fragment) {
     if (index <= fragments_.size()) {
       fragments_.insert(fragments_.begin() + static_cast<std::ptrdiff_t>(index), std::move(fragment));
     }
   }
 
-  void Composition::removeFragment(size_t index) {
+  void Composition::remove_fragment(size_t index) {
     if (index < fragments_.size()) {
       fragments_.erase(fragments_.begin() + static_cast<std::ptrdiff_t>(index));
     }
   }
 
-  void Composition::clearFragments() {
+  void Composition::clear_fragments() {
     fragments_.clear();
   }
 
@@ -109,7 +109,7 @@ namespace tf {
     // Validate all fragments
     for (const auto &fragment: fragments_) {
       auto err = fragment.validate(state_ == BlockState::Draft);
-      if (err.isError()) {
+      if (err.is_error()) {
         return err;
       }
     }
@@ -117,7 +117,7 @@ namespace tf {
     return Error::success();
   }
 
-  Error Composition::publish(Version newVersion) {
+  Error Composition::publish(Version new_version) {
     if (state_ != BlockState::Draft) {
       return Error{
         ErrorCode::InvalidStateTransition,
@@ -127,22 +127,22 @@ namespace tf {
 
     // Validate before publishing
     auto err = validate();
-    if (err.isError()) {
+    if (err.is_error()) {
       return err;
     }
 
     // Check all BlockRefs have versions (not use_latest)
     for (const auto &fragment: fragments_) {
-      if (fragment.isBlockRef()) {
-        const auto &blockRef = fragment.asBlockRef();
-        if (blockRef.useLatest()) {
-          return Error::versionRequired();
+      if (fragment.is_block_ref()) {
+        const auto &blockRef = fragment.as_block_ref();
+        if (blockRef.use_latest()) {
+          return Error::version_required();
         }
       }
     }
 
     state_ = BlockState::Published;
-    version_ = newVersion;
+    version_ = new_version;
     return Error::success();
   }
 
@@ -152,56 +152,43 @@ namespace tf {
     }
   }
 
-  std::string Composition::serializeFragments() const {
-    return FragmentJsonSerializer::serialize(fragments_);
-  }
-
-  Error Composition::deserializeFragments(const std::string &json) {
-    auto result = FragmentJsonSerializer::deserializeList(json);
-    if (result.hasError()) {
-      return result.error();
-    }
-    fragments_ = std::move(result.value());
-    return Error::success();
-  }
-
   // CompositionDraftBuilder implementation
   CompositionDraftBuilder::CompositionDraftBuilder(CompositionId id) : comp_(std::move(id)) {
   }
 
-  CompositionDraftBuilder &CompositionDraftBuilder::withId(CompositionId id) {
-    comp_.setId(std::move(id));
+  CompositionDraftBuilder &CompositionDraftBuilder::with_id(CompositionId id) {
+    comp_.set_id(std::move(id));
     return *this;
   }
 
-  CompositionDraftBuilder &CompositionDraftBuilder::withStyleProfile(StyleProfile profile) {
-    comp_.setStyleProfile(std::move(profile));
+  CompositionDraftBuilder &CompositionDraftBuilder::with_style_profile(StyleProfile profile) {
+    comp_.set_style_profile(std::move(profile));
     return *this;
   }
 
-  CompositionDraftBuilder &CompositionDraftBuilder::withProjectKey(std::string key) {
-    comp_.setProjectKey(std::move(key));
+  CompositionDraftBuilder &CompositionDraftBuilder::with_project_key(std::string key) {
+    comp_.set_project_key(std::move(key));
     return *this;
   }
 
-  CompositionDraftBuilder &CompositionDraftBuilder::withDescription(std::string desc) {
-    comp_.setDescription(std::move(desc));
+  CompositionDraftBuilder &CompositionDraftBuilder::with_description(std::string desc) {
+    comp_.set_description(std::move(desc));
     return *this;
   }
 
-  CompositionDraftBuilder &CompositionDraftBuilder::addBlockRef(const BlockId &blockId, Version version,
-                                                                Params localParams) {
-    comp_.addBlockRef(blockId, version, std::move(localParams));
+  CompositionDraftBuilder &CompositionDraftBuilder::add_block_ref(const BlockId &blockId, Version version,
+                                                                Params local_params) {
+    comp_.add_block_ref(blockId, version, std::move(local_params));
     return *this;
   }
 
-  CompositionDraftBuilder &CompositionDraftBuilder::addStaticText(std::string text) {
-    comp_.addStaticText(std::move(text));
+  CompositionDraftBuilder &CompositionDraftBuilder::add_static_text(std::string text) {
+    comp_.add_static_text(std::move(text));
     return *this;
   }
 
-  CompositionDraftBuilder &CompositionDraftBuilder::addSeparator(SeparatorType type) {
-    comp_.addSeparator(type);
+  CompositionDraftBuilder &CompositionDraftBuilder::add_separator(SeparatorType type) {
+    comp_.add_separator(type);
     return *this;
   }
 

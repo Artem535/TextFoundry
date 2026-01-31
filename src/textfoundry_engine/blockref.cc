@@ -5,69 +5,69 @@
 #include "blockref.h"
 
 namespace tf {
-  BlockRef::BlockRef(BlockId blockId) : blockId_(std::move(blockId)) {
+  BlockRef::BlockRef(BlockId block_id) : blockId_(std::move(block_id)) {
   }
 
   BlockRef::BlockRef(BlockId blockId, Version version) : blockId_(std::move(blockId)), version_(version),
-                                                         useLatest_(false), block_id_(std::move(blockId)) {
+                                                         useLatest_(false) {
   }
 
-  BlockRef::BlockRef(BlockId blockId, Version version, Params localParams): blockId_(std::move(blockId)),
+  BlockRef::BlockRef(BlockId blockId, Version version, Params local_params): blockId_(std::move(blockId)),
                                                                             version_(version),
-                                                                            localParams_(std::move(localParams)),
+                                                                            localParams_(std::move(local_params)),
                                                                             useLatest_(false) {
   }
 
-  const BlockId & BlockRef::blockId() const noexcept { return blockId_; }
+  const BlockId & BlockRef::block_id() const noexcept { return blockId_; }
 
   const std::optional<Version> & BlockRef::version() const noexcept { return version_; }
 
-  const Params & BlockRef::localParams() const noexcept { return localParams_; }
+  const Params & BlockRef::local_params() const noexcept { return localParams_; }
 
-  bool BlockRef::useLatest() const noexcept { return useLatest_; }
+  bool BlockRef::use_latest() const noexcept { return useLatest_; }
 
-  void BlockRef::setBlockId(BlockId id) { blockId_ = std::move(id); }
+  void BlockRef::set_block_id(BlockId id) { blockId_ = std::move(id); }
 
-  void BlockRef::setVersion(Version ver) {
+  void BlockRef::set_version(Version ver) {
     version_ = ver;
     useLatest_ = false;
   }
 
-  void BlockRef::setLocalParams(Params params) { localParams_ = std::move(params); }
+  void BlockRef::set_local_params(Params params) { localParams_ = std::move(params); }
 
-  void BlockRef::setUseLatest(const bool useLatest) {
-    useLatest_ = useLatest;
-    if (useLatest) {
+  void BlockRef::set_use_latest(const bool use_latest) {
+    useLatest_ = use_latest;
+    if (use_latest) {
       version_.reset();
     }
   }
 
-  BlockRef & BlockRef::withParam(const std::string &name, ParamValue value) {
+  BlockRef & BlockRef::with_param(const std::string &name, ParamValue value) {
     localParams_[name] = std::move(value);
     return *this;
   }
 
-  Error BlockRef::validate(bool isDraftContext) const {
+  Error BlockRef::validate(bool is_draft_context) const {
     if (blockId_.empty()) {
       return Error{ErrorCode::InvalidParamType, "BlockRef must have a blockId"};
     }
-    if (!isDraftContext && useLatest_) {
-      return Error::versionRequired();
+    if (!is_draft_context && useLatest_) {
+      return Error::version_required();
     }
     return Error::success();
   }
 
-  Result<Params> BlockRef::resolveParams(
+  Result<Params> BlockRef::resolve_params(
     const Block &block,
-    const Params &runtimeContext
+    const Params &runtime_context
   ) const {
     // Start with all parameters needed by the template
-    const auto paramNames = block.templ().extractParamNames();
+    const auto paramNames = block.templ().extract_param_names();
     Params resolved;
 
     for (const auto &paramName: paramNames) {
-      auto result = block.resolveParam(paramName, localParams_, runtimeContext);
-      if (result.hasError()) {
+      auto result = block.resolve_param(paramName, localParams_, runtime_context);
+      if (result.has_error()) {
         return Result<Params>(result.error());
       }
       resolved[paramName] = result.value();

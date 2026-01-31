@@ -27,7 +27,7 @@ namespace tf::utils {
   /**
    * Convert ObxBlock type (int8_t) to BlockType enum
    */
-  inline BlockType obxTypeToBlockType(int8_t type) {
+  inline BlockType obx_type_to_block_type(int8_t type) {
     // BlockType enum: Role=0, Constraint=1, Style=2, Domain=3, Meta=4
     switch (type) {
       case 0: return BlockType::Role;
@@ -42,7 +42,7 @@ namespace tf::utils {
   /**
    * Convert BlockType enum to ObxBlock type (int8_t)
    */
-  inline int8_t blockTypeToObxType(BlockType type) {
+  inline int8_t block_type_to_obx_type(BlockType type) {
     switch (type) {
       case BlockType::Role: return 0;
       case BlockType::Constraint: return 1;
@@ -57,7 +57,7 @@ namespace tf::utils {
    * Convert ObxState code (int8_t) to BlockState enum
    * ObxState codes: Draft=0, Published=1, Deprecated=2
    */
-  inline BlockState obxStateCodeToBlockState(int8_t code) {
+  inline BlockState obx_state_code_to_block_state(int8_t code) {
     switch (code) {
       case 0: return BlockState::Draft;
       case 1: return BlockState::Published;
@@ -69,7 +69,7 @@ namespace tf::utils {
   /**
    * Convert BlockState enum to ObxState code (int8_t)
    */
-  inline int8_t blockStateToObxStateCode(BlockState state) {
+  inline int8_t block_state_to_obx_state_code(BlockState state) {
     switch (state) {
       case BlockState::Draft: return 0;
       case BlockState::Published: return 1;
@@ -82,7 +82,7 @@ namespace tf::utils {
    * Convert ObxFragment separator type (int8_t) to SeparatorType enum
    * 0=None, 1=Newline, 2=Paragraph, 3=Hr
    */
-  inline SeparatorType obxSeparatorTypeToSeparatorType(int8_t type) {
+  inline SeparatorType obx_separator_type_to_separator_type(int8_t type) {
     switch (type) {
       case 1: return SeparatorType::Newline;
       case 2: return SeparatorType::Paragraph;
@@ -94,7 +94,7 @@ namespace tf::utils {
   /**
    * Convert SeparatorType enum to ObxFragment separator type (int8_t)
    */
-  inline int8_t separatorTypeToObxSeparatorType(SeparatorType type) {
+  inline int8_t separator_type_to_obx_separator_type(SeparatorType type) {
     switch (type) {
       case SeparatorType::Newline: return 1;
       case SeparatorType::Paragraph: return 2;
@@ -107,7 +107,7 @@ namespace tf::utils {
    * Convert ObxFragment fragment type (int8_t) to FragmentType enum
    * 0=BlockRef, 1=StaticText, 2=Separator
    */
-  inline FragmentType obxFragmentTypeToFragmentType(int8_t type) {
+  inline FragmentType obx_fragment_type_to_fragment_type(int8_t type) {
     switch (type) {
       case 0: return FragmentType::BlockRef;
       case 1: return FragmentType::StaticText;
@@ -119,7 +119,7 @@ namespace tf::utils {
   /**
    * Convert FragmentType enum to ObxFragment fragment type (int8_t)
    */
-  inline int8_t fragmentTypeToObxFragmentType(FragmentType type) {
+  inline int8_t fragment_type_to_obx_fragment_type(FragmentType type) {
     switch (type) {
       case FragmentType::BlockRef: return 0;
       case FragmentType::StaticText: return 1;
@@ -135,21 +135,21 @@ namespace tf::utils {
   /**
    * Create Version from major/minor components
    */
-  inline Version obxVersionToVersion(uint16_t major, uint16_t minor) {
+  inline Version obx_version_to_version(uint16_t major, uint16_t minor) {
     return Version{major, minor};
   }
 
   /**
    * Extract major version component from Version
    */
-  inline uint16_t versionToMajor(const Version &version) {
+  inline uint16_t version_to_major(const Version &version) {
     return version.major;
   }
 
   /**
    * Extract minor version component from Version
    */
-  inline uint16_t versionToMinor(const Version &version) {
+  inline uint16_t version_to_minor(const Version &version) {
     return version.minor;
   }
 
@@ -161,21 +161,21 @@ namespace tf::utils {
    * Convert ObxBlock to domain Block
    * Note: This creates a basic Block. Tags and ParamSchema require additional queries.
    */
-  inline Block obxBlockToBlock(const ObxBlock &obxBlock) {
+  inline Block obx_block_to_block(const ObxBlock &obxBlock) {
     Block block;
-    block.setId(obxBlock.blockId);
-    block.setVersion(Version{obxBlock.versionMajor, obxBlock.versionMinor});
-    block.setType(obxTypeToBlockType(obxBlock.type));
-    block.setState(obxStateCodeToBlockState(obxBlock.state));
-    block.setTemplate(Template(obxBlock.templateContent));
-    block.setDescription(obxBlock.description);
+    block.set_id(obxBlock.blockId);
+    block.set_version(Version{obxBlock.versionMajor, obxBlock.versionMinor});
+    block.set_type(obx_type_to_block_type(obxBlock.type));
+    block.set_state(obx_state_code_to_block_state(obxBlock.state));
+    block.set_template(Template(obxBlock.templateContent));
+    block.set_description(obxBlock.description);
 
     if (!obxBlock.defaultsJson.empty()) {
-      block.setDefaults(rfl::json::read<Params>(obxBlock.defaultsJson).value());
+      block.set_defaults(rfl::json::read<Params>(obxBlock.defaultsJson).value());
     }
 
     if (!obxBlock.paramsJson.empty()) {
-      block.setParamSchema(rfl::json::read<std::vector<ParamSchema> >(obxBlock.paramsJson).value());
+      block.set_param_schema(rfl::json::read<std::vector<ParamSchema> >(obxBlock.paramsJson).value());
     }
 
     return block;
@@ -186,14 +186,14 @@ namespace tf::utils {
    * Note: Sets all fields except relations (projectId, languageId, previousVersionId, nextVersionId)
    * which must be set separately based on context.
    */
-  inline ObxBlock blockToObxBlock(const Block &block, const obx_id id = 0) {
+  inline ObxBlock block_to_obx_block(const Block &block, const obx_id id = 0) {
     ObxBlock obxBlock;
     obxBlock.id = id;
     obxBlock.blockId = block.id();
     obxBlock.versionMajor = block.version().major;
     obxBlock.versionMinor = block.version().minor;
-    obxBlock.type = blockTypeToObxType(block.type());
-    obxBlock.state = blockStateToObxStateCode(block.state());
+    obxBlock.type = block_type_to_obx_type(block.type());
+    obxBlock.state = block_state_to_obx_state_code(block.state());
     obxBlock.templateContent = block.templ().content();
     obxBlock.defaultsJson = rfl::json::write(block.defaults());
     obxBlock.description = block.description();
@@ -209,16 +209,16 @@ namespace tf::utils {
    * Convert ObxComposition to domain Composition
    * Note: Fragments must be loaded and converted separately.
    */
-  inline Composition obxCompositionToComposition(const ObxComposition &obxComp) {
+  inline Composition obx_composition_to_composition(const ObxComposition &obxComp) {
     Composition comp;
-    comp.setId(obxComp.compositionId);
-    comp.setVersion(Version{obxComp.versionMajor, obxComp.versionMinor});
-    comp.setProjectKey(""); // Must be resolved from project relation
-    comp.setDescription(obxComp.description);
-    comp.setState(obxStateCodeToBlockState(obxComp.state));
+    comp.set_id(obxComp.compositionId);
+    comp.set_version(Version{obxComp.versionMajor, obxComp.versionMinor});
+    comp.set_project_key(""); // Must be resolved from project relation
+    comp.set_description(obxComp.description);
+    comp.set_state(obx_state_code_to_block_state(obxComp.state));
 
     if (!obxComp.styleProfileJson.empty()) {
-      comp.setStyleProfile(rfl::json::read<StyleProfile>(obxComp.styleProfileJson).value());
+      comp.set_style_profile(rfl::json::read<StyleProfile>(obxComp.styleProfileJson).value());
     }
 
     return comp;
@@ -229,15 +229,15 @@ namespace tf::utils {
    * Note: Sets basic fields. Relations (projectId, targetLanguageId,
    * previousVersionId, nextVersionId) must be set separately.
    */
-  inline ObxComposition compositionToObxComposition(const Composition &comp, obx_id id = 0) {
+  inline ObxComposition composition_to_obx_composition(const Composition &comp, obx_id id = 0) {
     ObxComposition obxComp;
     obxComp.id = id;
     obxComp.compositionId = comp.id();
     obxComp.versionMajor = comp.version().major;
     obxComp.versionMinor = comp.version().minor;
     obxComp.description = comp.description();
-    if (comp.styleProfile().has_value()) {
-      obxComp.styleProfileJson = rfl::json::write(comp.styleProfile());
+    if (comp.style_profile().has_value()) {
+      obxComp.styleProfileJson = rfl::json::write(comp.style_profile());
     }
     return obxComp;
   }
@@ -249,52 +249,52 @@ namespace tf::utils {
   /**
    * Convert ObxFragment to domain Fragment
    */
-  inline Fragment obxFragmentToFragment(const ObxFragment &obxFrag) {
-    FragmentType fragType = obxFragmentTypeToFragmentType(obxFrag.fragmentType);
+  inline Fragment obx_fragment_to_fragment(const ObxFragment &obxFrag) {
+    FragmentType fragType = obx_fragment_type_to_fragment_type(obxFrag.fragmentType);
 
     switch (fragType) {
       case FragmentType::BlockRef: {
         BlockRef ref;
-        ref.setBlockId(obxFrag.refBlockId);
+        ref.set_block_id(obxFrag.refBlockId);
         if (!obxFrag.refUseLatest) {
-          ref.setVersion(Version{obxFrag.refVersionMajor, obxFrag.refVersionMinor});
+          ref.set_version(Version{obxFrag.refVersionMajor, obxFrag.refVersionMinor});
         }
-        ref.setUseLatest(obxFrag.refUseLatest);
+        ref.set_use_latest(obxFrag.refUseLatest);
         if (!obxFrag.refLocalParamsJson.empty()) {
-          ref.setLocalParams(rfl::json::read<Params>(obxFrag.refLocalParamsJson).value());
+          ref.set_local_params(rfl::json::read<Params>(obxFrag.refLocalParamsJson).value());
         }
-        return Fragment::makeBlockRef(std::move(ref));
+        return Fragment::make_block_ref(std::move(ref));
       }
 
       case FragmentType::StaticText: {
-        return Fragment::makeStaticText(obxFrag.staticContent);
+        return Fragment::make_static_text(obxFrag.staticContent);
       }
 
       case FragmentType::Separator: {
-        SeparatorType sepType = obxSeparatorTypeToSeparatorType(obxFrag.separatorType);
-        return Fragment::makeSeparator(sepType);
+        SeparatorType sepType = obx_separator_type_to_separator_type(obxFrag.separatorType);
+        return Fragment::make_separator(sepType);
       }
     }
 
     // Fallback
-    return Fragment::makeStaticText("");
+    return Fragment::make_static_text("");
   }
 
   /**
    * Convert domain Fragment to ObxFragment for storage
    * Note: compositionId must be set separately
    */
-  inline ObxFragment fragmentToObxFragment(const Fragment &fragment, uint32_t orderIndex, obx_id id = 0) {
+  inline ObxFragment fragment_to_obx_fragment(const Fragment &fragment, uint32_t orderIndex, obx_id id = 0) {
     ObxFragment obxFrag;
     obxFrag.id = id;
     obxFrag.orderIndex = orderIndex;
-    obxFrag.fragmentType = fragmentTypeToObxFragmentType(fragment.type());
+    obxFrag.fragmentType = fragment_type_to_obx_fragment_type(fragment.type());
 
     switch (fragment.type()) {
       case FragmentType::BlockRef: {
-        const BlockRef &ref = fragment.asBlockRef();
-        obxFrag.refBlockId = ref.blockId();
-        obxFrag.refUseLatest = ref.useLatest();
+        const BlockRef &ref = fragment.as_block_ref();
+        obxFrag.refBlockId = ref.block_id();
+        obxFrag.refUseLatest = ref.use_latest();
         if (ref.version().has_value()) {
           obxFrag.refVersionMajor = ref.version().value().major;
           obxFrag.refVersionMinor = ref.version().value().minor;
@@ -303,17 +303,17 @@ namespace tf::utils {
           obxFrag.refVersionMinor = 0;
         }
         // Note: localParams should be serialized to refLocalParamsJson
-        obxFrag.refLocalParamsJson = rfl::json::write(ref.localParams());
+        obxFrag.refLocalParamsJson = rfl::json::write(ref.local_params());
         break;
       }
 
       case FragmentType::StaticText: {
-        obxFrag.staticContent = fragment.asStaticText().text();
+        obxFrag.staticContent = fragment.as_static_text().text();
         break;
       }
 
       case FragmentType::Separator: {
-        obxFrag.separatorType = separatorTypeToObxSeparatorType(fragment.asSeparator().type);
+        obxFrag.separatorType = separator_type_to_obx_separator_type(fragment.as_separator().type);
         break;
       }
     }
@@ -329,14 +329,14 @@ namespace tf::utils {
    * Convert ObxProject project entity
    * Note: Returns project key for use in domain objects
    */
-  inline std::string obxProjectToProjectKey(const ObxProject &obxProject) {
+  inline std::string obx_project_to_project_key(const ObxProject &obxProject) {
     return obxProject.key;
   }
 
   /**
    * Create ObxProject for storage
    */
-  inline ObxProject projectKeyToObxProject(const std::string &key,
+  inline ObxProject project_key_to_obx_project(const std::string &key,
                                            const std::string &name = "",
                                            const std::string &description = "") {
     ObxProject obxProject;
@@ -354,14 +354,14 @@ namespace tf::utils {
   /**
    * Convert ObxLanguage to language code string
    */
-  inline std::string obxLanguageToCode(const ObxLanguage &obxLang) {
+  inline std::string obx_language_to_code(const ObxLanguage &obxLang) {
     return obxLang.code;
   }
 
   /**
    * Create ObxLanguage for storage
    */
-  inline ObxLanguage codeToObxLanguage(const std::string &code,
+  inline ObxLanguage code_to_obx_language(const std::string &code,
                                        const std::string &nativeName = "") {
     ObxLanguage obxLang;
     obxLang.code = code;
@@ -376,7 +376,7 @@ namespace tf::utils {
   /**
    * Convert ObxTag to tag name string
    */
-  inline std::string obxTagToTagName(const ObxTag &obxTag) {
+  inline std::string obx_tag_to_tag_name(const ObxTag &obxTag) {
     return obxTag.name;
   }
 
@@ -384,7 +384,7 @@ namespace tf::utils {
    * Create ObxTag for storage
    * Note: projectId must be set separately
    */
-  inline ObxTag tagNameToObxTag(const std::string &name) {
+  inline ObxTag tag_name_to_obx_tag(const std::string &name) {
     ObxTag obxTag;
     obxTag.name = name;
     // Note: createdAt should be set by storage layer
@@ -394,7 +394,7 @@ namespace tf::utils {
   /**
    * Convert vector of ObxTag to unordered_set of tag names
    */
-  inline std::unordered_set<std::string> obxTagsToTagSet(const std::vector<ObxTag> &obxTags) {
+  inline std::unordered_set<std::string> obx_tags_to_tag_set(const std::vector<ObxTag> &obxTags) {
     std::unordered_set<std::string> tags;
     for (const auto &obxTag: obxTags) {
       tags.insert(obxTag.name);
@@ -409,7 +409,7 @@ namespace tf::utils {
   /**
    * Create ObxAuditLog entry
    */
-  inline ObxAuditLog createObxAuditLog(const std::string &entityType,
+  inline ObxAuditLog create_obx_audit_log(const std::string &entityType,
                                        uint64_t entityId,
                                        const std::string &operation,
                                        const std::string &userId = "",

@@ -26,35 +26,35 @@ namespace tf {
     full_init();
   }
 
-  void Engine::setBlockRepository(std::shared_ptr<IBlockRepository> repo) {
+  void Engine::set_block_repository(std::shared_ptr<IBlockRepository> repo) {
     blockRepo_ = std::move(repo);
     TF_LOG_DEBUG("Block repository set");
 
     // Create repository-backed block cache for renderer
     if (blockRepo_) {
-      renderer_->setBlockCache(std::make_unique<RepositoryBlockCache>(blockRepo_));
+      renderer_->set_block_cache(std::make_unique<RepositoryBlockCache>(blockRepo_));
       TF_LOG_DEBUG("Renderer block cache initialized");
     }
   }
 
-  void Engine::setCompositionRepository(std::shared_ptr<ICompositionRepository> repo) {
+  void Engine::set_composition_repository(std::shared_ptr<ICompositionRepository> repo) {
     compRepo_ = std::move(repo);
     TF_LOG_DEBUG("Composition repository set");
   }
 
-  void Engine::setNormalizer(std::shared_ptr<INormalizer> normalizer) {
+  void Engine::set_normalizer(std::shared_ptr<INormalizer> normalizer) {
     normalizer_ = std::move(normalizer);
     TF_LOG_DEBUG("Normalizer set");
   }
 
   // ==================== Block Operations ====================
 
-  Block Engine::createBlockDraft(const BlockId &id) {
+  Block Engine::create_block_draft(const BlockId &id) {
     TF_LOG_DEBUG("Creating block draft [id={}]", id);
     return Block(id);
   }
 
-  Error Engine::saveBlock(const Block &block) {
+  Error Engine::save_block(const Block &block) {
     if (!blockRepo_) {
       TF_LOG_ERROR("Cannot save block: no block repository configured");
       return Error{ErrorCode::StorageError, "No block repository configured"};
@@ -63,7 +63,7 @@ namespace tf {
     return blockRepo_->save(block);
   }
 
-  Result<Block> Engine::loadBlock(const BlockId &id, std::optional<Version> version) {
+  Result<Block> Engine::load_block(const BlockId &id, std::optional<Version> version) {
     if (!blockRepo_) {
       TF_LOG_ERROR("Cannot load block: no block repository configured");
       return Result<Block>(Error{ErrorCode::StorageError, "No block repository configured"});
@@ -73,26 +73,26 @@ namespace tf {
       return blockRepo_->load(id, version.value());
     }
     TF_LOG_DEBUG("Loading latest block [id={}]", id);
-    return blockRepo_->loadLatest(id);
+    return blockRepo_->load_latest(id);
   }
 
-  Result<Block> Engine::publishBlock(const BlockId &id, Version newVersion) {
+  Result<Block> Engine::publish_block(const BlockId &id, Version newVersion) {
     TF_LOG_INFO("Publishing block [id={} -> version={}.{}]", id, newVersion.major, newVersion.minor);
-    auto blockResult = loadBlock(id);
-    if (blockResult.hasError()) {
+    auto blockResult = load_block(id);
+    if (blockResult.has_error()) {
       TF_LOG_ERROR("Failed to publish block [id={}]: {}", id, blockResult.error().message);
       return Result<Block>(blockResult.error());
     }
 
     Block block = std::move(blockResult.value());
     auto err = block.publish(newVersion);
-    if (err.isError()) {
+    if (err.is_error()) {
       TF_LOG_ERROR("Failed to publish block [id={}]: {}", id, err.message);
       return Result<Block>(err);
     }
 
-    err = saveBlock(block);
-    if (err.isError()) {
+    err = save_block(block);
+    if (err.is_error()) {
       TF_LOG_ERROR("Failed to save published block [id={}]: {}", id, err.message);
       return Result<Block>(err);
     }
@@ -101,18 +101,18 @@ namespace tf {
     return Result<Block>(block);
   }
 
-  Error Engine::deprecateBlock(const BlockId &id, Version version) {
+  Error Engine::deprecate_block(const BlockId &id, Version version) {
     TF_LOG_INFO("Deprecating block [id={}, version={}.{}]", id, version.major, version.minor);
-    auto blockResult = loadBlock(id, version);
-    if (blockResult.hasError()) {
+    auto blockResult = load_block(id, version);
+    if (blockResult.has_error()) {
       TF_LOG_ERROR("Failed to deprecate block [id={}]: {}", id, blockResult.error().message);
       return blockResult.error();
     }
 
     Block block = std::move(blockResult.value());
     block.deprecate();
-    auto err = saveBlock(block);
-    if (err.isError()) {
+    auto err = save_block(block);
+    if (err.is_error()) {
       TF_LOG_ERROR("Failed to save deprecated block [id={}]: {}", id, err.message);
     } else {
       TF_LOG_INFO("Block deprecated successfully [id={}]", id);
@@ -120,16 +120,16 @@ namespace tf {
     return err;
   }
 
-  Result<Version> Engine::getLatestBlockVersion(const BlockId &id) {
+  Result<Version> Engine::get_latest_block_version(const BlockId &id) {
     if (!blockRepo_) {
       TF_LOG_ERROR("Cannot get latest block version: no block repository configured");
       return Result<Version>(Error{ErrorCode::StorageError, "No block repository configured"});
     }
     TF_LOG_DEBUG("Getting latest block version [id={}]", id);
-    return blockRepo_->getLatestVersion(id);
+    return blockRepo_->get_latest_version(id);
   }
 
-  std::vector<BlockId> Engine::listBlocks(std::optional<BlockType> typeFilter) {
+  std::vector<BlockId> Engine::list_blocks(std::optional<BlockType> typeFilter) {
     if (!blockRepo_) {
       TF_LOG_WARN("Cannot list blocks: no block repository configured");
       return {};
@@ -140,12 +140,12 @@ namespace tf {
 
   // ==================== Composition Operations ====================
 
-  Composition Engine::createCompositionDraft(const CompositionId &id) {
+  Composition Engine::create_composition_draft(const CompositionId &id) {
     TF_LOG_DEBUG("Creating composition draft [id={}]", id);
     return Composition(id);
   }
 
-  Error Engine::saveComposition(const Composition &composition) {
+  Error Engine::save_composition(const Composition &composition) {
     if (!compRepo_) {
       TF_LOG_ERROR("Cannot save composition: no composition repository configured");
       return Error{ErrorCode::StorageError, "No composition repository configured"};
@@ -155,7 +155,7 @@ namespace tf {
     return compRepo_->save(composition);
   }
 
-  Result<Composition> Engine::loadComposition(
+  Result<Composition> Engine::load_composition(
     const CompositionId &id,
     std::optional<Version> version
   ) {
@@ -168,26 +168,26 @@ namespace tf {
       return compRepo_->load(id, version.value());
     }
     TF_LOG_DEBUG("Loading latest composition [id={}]", id);
-    return compRepo_->loadLatest(id);
+    return compRepo_->load_latest(id);
   }
 
-  Result<Composition> Engine::publishComposition(const CompositionId &id, Version newVersion) {
+  Result<Composition> Engine::publish_composition(const CompositionId &id, Version newVersion) {
     TF_LOG_INFO("Publishing composition [id={} -> version={}.{}]", id, newVersion.major, newVersion.minor);
-    auto compResult = loadComposition(id);
-    if (compResult.hasError()) {
+    auto compResult = load_composition(id);
+    if (compResult.has_error()) {
       TF_LOG_ERROR("Failed to publish composition [id={}]: {}", id, compResult.error().message);
       return Result<Composition>(compResult.error());
     }
 
     Composition comp = std::move(compResult.value());
     auto err = comp.publish(newVersion);
-    if (err.isError()) {
+    if (err.is_error()) {
       TF_LOG_ERROR("Failed to publish composition [id={}]: {}", id, err.message);
       return Result<Composition>(err);
     }
 
-    err = saveComposition(comp);
-    if (err.isError()) {
+    err = save_composition(comp);
+    if (err.is_error()) {
       TF_LOG_ERROR("Failed to save published composition [id={}]: {}", id, err.message);
       return Result<Composition>(err);
     }
@@ -196,18 +196,18 @@ namespace tf {
     return Result<Composition>(comp);
   }
 
-  Error Engine::deprecateComposition(const CompositionId &id, Version version) {
+  Error Engine::deprecate_composition(const CompositionId &id, Version version) {
     TF_LOG_INFO("Deprecating composition [id={}, version={}.{}]", id, version.major, version.minor);
-    auto compResult = loadComposition(id, version);
-    if (compResult.hasError()) {
+    auto compResult = load_composition(id, version);
+    if (compResult.has_error()) {
       TF_LOG_ERROR("Failed to deprecate composition [id={}]: {}", id, compResult.error().message);
       return compResult.error();
     }
 
     Composition comp = std::move(compResult.value());
     comp.deprecate();
-    auto err = saveComposition(comp);
-    if (err.isError()) {
+    auto err = save_composition(comp);
+    if (err.is_error()) {
       TF_LOG_ERROR("Failed to save deprecated composition [id={}]: {}", id, err.message);
     } else {
       TF_LOG_INFO("Composition deprecated successfully [id={}]", id);
@@ -215,7 +215,7 @@ namespace tf {
     return err;
   }
 
-  std::vector<CompositionId> Engine::listCompositions() const {
+  std::vector<CompositionId> Engine::list_compositions() const {
     if (!compRepo_) {
       TF_LOG_WARN("Cannot list compositions: no composition repository configured");
       return {};
@@ -233,10 +233,10 @@ namespace tf {
     TF_LOG_INFO("Rendering composition [id={}]", compositionId);
 
     // Clear cache before rendering to ensure fresh data and prevent memory growth
-    renderer_->clearCache();
+    renderer_->clear_cache();
 
-    auto compResult = loadComposition(compositionId);
-    if (compResult.hasError()) {
+    auto compResult = load_composition(compositionId);
+    if (compResult.has_error()) {
       TF_LOG_ERROR("Failed to render composition [id={}]: {}", compositionId, compResult.error().message);
       return Result<RenderResult>(compResult.error());
     }
@@ -251,10 +251,10 @@ namespace tf {
     TF_LOG_INFO("Rendering composition [id={}, version={}.{}]", compositionId, version.major, version.minor);
 
     // Clear cache before rendering to ensure fresh data and prevent memory growth
-    renderer_->clearCache();
+    renderer_->clear_cache();
 
-    auto compResult = loadComposition(compositionId, version);
-    if (compResult.hasError()) {
+    auto compResult = load_composition(compositionId, version);
+    if (compResult.has_error()) {
       TF_LOG_ERROR("Failed to render composition [id={}, version={}.{}]: {}",
                    compositionId, version.major, version.minor, compResult.error().message);
       return Result<RenderResult>(compResult.error());
@@ -262,24 +262,24 @@ namespace tf {
     return renderer_->render(compResult.value(), context);
   }
 
-  Result<std::string> Engine::renderBlock(
+  Result<std::string> Engine::render_block(
     const BlockId &blockId,
     const RenderContext &context
   ) {
     TF_LOG_INFO("Rendering block [id={}]", blockId);
 
     // Clear cache before rendering to ensure fresh data and prevent memory growth
-    renderer_->clearCache();
+    renderer_->clear_cache();
 
-    auto blockResult = loadBlock(blockId);
-    if (blockResult.hasError()) {
+    auto blockResult = load_block(blockId);
+    if (blockResult.has_error()) {
       TF_LOG_ERROR("Failed to render block [id={}]: {}", blockId, blockResult.error().message);
       return Result<std::string>(blockResult.error());
     }
-    return renderer_->renderBlock(blockResult.value(), context);
+    return renderer_->render_block(blockResult.value(), context);
   }
 
-  Result<std::string> Engine::renderBlock(
+  Result<std::string> Engine::render_block(
     const BlockId &blockId,
     Version version,
     const RenderContext &context
@@ -287,15 +287,15 @@ namespace tf {
     TF_LOG_INFO("Rendering block [id={}, version={}.{}]", blockId, version.major, version.minor);
 
     // Clear cache before rendering to ensure fresh data and prevent memory growth
-    renderer_->clearCache();
+    renderer_->clear_cache();
 
-    auto blockResult = loadBlock(blockId, version);
-    if (blockResult.hasError()) {
+    auto blockResult = load_block(blockId, version);
+    if (blockResult.has_error()) {
       TF_LOG_ERROR("Failed to render block [id={}, version={}.{}]: {}",
                    blockId, version.major, version.minor, blockResult.error().message);
       return Result<std::string>(blockResult.error());
     }
-    return renderer_->renderBlock(blockResult.value(), context);
+    return renderer_->render_block(blockResult.value(), context);
   }
 
   // ==================== Normalization ====================
@@ -315,15 +315,15 @@ namespace tf {
 
   // ==================== Validation ====================
 
-  Error Engine::validateComposition(const CompositionId &id) {
+  Error Engine::validate_composition(const CompositionId &id) {
     TF_LOG_DEBUG("Validating composition [id={}]", id);
-    auto compResult = loadComposition(id);
-    if (compResult.hasError()) {
+    auto compResult = load_composition(id);
+    if (compResult.has_error()) {
       TF_LOG_ERROR("Failed to validate composition [id={}]: {}", id, compResult.error().message);
       return compResult.error();
     }
     auto err = compResult.value().validate();
-    if (err.isError()) {
+    if (err.is_error()) {
       TF_LOG_ERROR("Composition validation failed [id={}]: {}", id, err.message);
     } else {
       TF_LOG_DEBUG("Composition validated successfully [id={}]", id);
@@ -331,16 +331,16 @@ namespace tf {
     return err;
   }
 
-  Error Engine::validateBlock(const BlockId &id) {
+  Error Engine::validate_block(const BlockId &id) {
     TF_LOG_DEBUG("Validating block [id={}]", id);
-    auto blockResult = loadBlock(id);
-    if (blockResult.hasError()) {
+    auto blockResult = load_block(id);
+    if (blockResult.has_error()) {
       TF_LOG_ERROR("Failed to validate block [id={}]: {}", id, blockResult.error().message);
       return blockResult.error();
     }
     auto block = blockResult.value();
-    auto err = block.validateParams({}, {});
-    if (err.isError()) {
+    auto err = block.validate_params({}, {});
+    if (err.is_error()) {
       TF_LOG_ERROR("Block validation failed [id={}]: {}", id, err.message);
     } else {
       TF_LOG_DEBUG("Block validated successfully [id={}]", id);
@@ -364,7 +364,7 @@ namespace tf {
     const std::shared_ptr<ICompositionRepository> composition_repository = std::make_shared<
       CompositionRepository>(store);
 
-    setBlockRepository(block_repository);
-    setCompositionRepository(composition_repository);
+    set_block_repository(block_repository);
+    set_composition_repository(composition_repository);
   }
 } // namespace tf

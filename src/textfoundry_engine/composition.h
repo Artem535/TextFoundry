@@ -14,6 +14,8 @@
 #include <vector>
 #include <optional>
 
+#include <rfl/json.hpp>
+
 namespace tf {
 
 /**
@@ -33,17 +35,17 @@ struct RenderContext {
     /**
      * Add a runtime parameter
      */
-    RenderContext& withParam(const std::string& name, ParamValue value);
+    RenderContext& with_param(const std::string& name, ParamValue value);
 
     /**
      * Set target language
      */
-    RenderContext& withLanguage(std::string lang);
+    RenderContext& with_language(std::string lang);
 
     /**
      * Set strict mode
      */
-    RenderContext& withStrictMode(bool strict);
+    RenderContext& with_strict_mode(bool strict);
 };
 
 /**
@@ -78,7 +80,6 @@ struct StyleProfile {
     SemanticStyle semantic;
 
     [[nodiscard]] static StyleProfile plain();
-    [[nodiscard]] static StyleProfile markdown();
 };
 
 /**
@@ -94,18 +95,18 @@ public:
     [[nodiscard]] const CompositionId& id() const noexcept;
     [[nodiscard]] BlockState state() const noexcept;
     [[nodiscard]] const Version& version() const noexcept;
-    void setVersion(const Version& v);
+    void set_version(const Version& v);
     [[nodiscard]] const std::vector<Fragment>& fragments() const noexcept;
-    [[nodiscard]] const std::optional<StyleProfile>& styleProfile() const noexcept;
-    [[nodiscard]] const std::string& projectKey() const noexcept;
+    [[nodiscard]] const std::optional<StyleProfile>& style_profile() const noexcept;
+    [[nodiscard]] const std::string& project_key() const noexcept;
     [[nodiscard]] const std::string& description() const noexcept;
 
     // Setters (allowed only for Draft state)
-    void setId(CompositionId id);
-    void setState(BlockState state);
-    void setStyleProfile(StyleProfile profile);
-    void setProjectKey(std::string key);
-    void setDescription(std::string desc);
+    void set_id(CompositionId id);
+    void set_state(BlockState state);
+    void set_style_profile(StyleProfile profile);
+    void set_project_key(std::string key);
+    void set_description(std::string desc);
 
     /**
      * Add a BlockRef fragment with local parameters
@@ -113,37 +114,37 @@ public:
      * @param version Block version (mandatory for reproducibility)
      * @param localParams Local parameter overrides
      */
-    Fragment& addBlockRef(const BlockId& blockId, Version version, Params localParams = {});
+    Fragment& add_block_ref(const BlockId& blockId, Version version, Params localParams = {});
 
     /**
      * Add a BlockRef with use_latest flag (Draft only)
      */
-    Fragment& addBlockRefLatest(const BlockId& blockId, Params localParams = {});
+    Fragment& add_block_ref_latest(const BlockId& blockId, Params localParams = {});
 
     /**
      * Add static text fragment
      */
-    Fragment& addStaticText(std::string text);
+    Fragment& add_static_text(std::string text);
 
     /**
      * Add typed separator
      */
-    Fragment& addSeparator(SeparatorType type);
+    Fragment& add_separator(SeparatorType type);
 
     /**
      * Insert fragment at specific index
      */
-    void insertFragment(size_t index, Fragment fragment);
+    void insert_fragment(size_t index, Fragment fragment);
 
     /**
      * Remove fragment at index
      */
-    void removeFragment(size_t index);
+    void remove_fragment(size_t index);
 
     /**
      * Clear all fragments
      */
-    void clearFragments();
+    void clear_fragments();
 
     /**
      * Access fragment by index
@@ -161,36 +162,26 @@ public:
 
     /**
      * Publish this composition - creates immutable version
-     * @param newVersion version to assign
+     * @param new_version version to assign
      * @returns Error if cannot be published
      */
-    [[nodiscard]] Error publish(Version newVersion);
+    [[nodiscard]] Error publish(Version new_version);
 
     /**
      * Mark this version as deprecated
      */
     void deprecate();
 
-    /**
-     * Serialize fragments to JSON for storage
-     */
-    [[nodiscard]] std::string serializeFragments() const;
-
-    /**
-     * Deserialize fragments from JSON
-     */
-    [[nodiscard]] Error deserializeFragments(const std::string& json);
-
 private:
     // Identity
     CompositionId id_;
     BlockState state_ = BlockState::Draft;
     Version version_{0, 0};
-    std::string projectKey_ = "default";
+    std::string project_key_ = "default";
 
     // Content
     std::vector<Fragment> fragments_;
-    std::optional<StyleProfile> styleProfile_;
+    std::optional<StyleProfile> style_profile_;
 
     // Metadata
     std::string description_;
@@ -204,13 +195,13 @@ public:
     CompositionDraftBuilder() = default;
     explicit CompositionDraftBuilder(CompositionId id);
 
-    CompositionDraftBuilder& withId(CompositionId id);
-    CompositionDraftBuilder& withStyleProfile(StyleProfile profile);
-    CompositionDraftBuilder& withProjectKey(std::string key);
-    CompositionDraftBuilder& withDescription(std::string desc);
-    CompositionDraftBuilder& addBlockRef(const BlockId& blockId, Version version, Params localParams = {});
-    CompositionDraftBuilder& addStaticText(std::string text);
-    CompositionDraftBuilder& addSeparator(SeparatorType type);
+    CompositionDraftBuilder& with_id(CompositionId id);
+    CompositionDraftBuilder& with_style_profile(StyleProfile profile);
+    CompositionDraftBuilder& with_project_key(std::string key);
+    CompositionDraftBuilder& with_description(std::string desc);
+    CompositionDraftBuilder& add_block_ref(const BlockId& blockId, Version version, Params local_params = {});
+    CompositionDraftBuilder& add_static_text(std::string text);
+    CompositionDraftBuilder& add_separator(SeparatorType type);
 
     [[nodiscard]] Composition build() const;
 

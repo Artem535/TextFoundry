@@ -17,7 +17,7 @@ namespace tf {
   }
 
   Error BlockRepository::save(const Block &block) {
-    auto obx_block = utils::blockToObxBlock(block);
+    auto obx_block = utils::block_to_obx_block(block);
 
     // Store the block entity
     const obx_id result = box_block_->put(obx_block);
@@ -45,12 +45,12 @@ namespace tf {
       return Result<Block>(Error{ErrorCode::StorageError, "Block not found"});
     }
 
-    return Result(utils::obxBlockToBlock(*block));
+    return Result(utils::obx_block_to_block(*block));
   }
 
-  Result<Block> BlockRepository::loadLatest(const BlockId &id) {
-    const auto version = getLatestVersion(id);
-    if (version.hasError()) {
+  Result<Block> BlockRepository::load_latest(const BlockId &id) {
+    const auto version = get_latest_version(id);
+    if (version.has_error()) {
       TF_LOG_ERROR("BlockRepository::loadLatest| Error msg: {}", version.error().message);
       return Result<Block>(version.error());
     }
@@ -73,7 +73,7 @@ namespace tf {
       return {blockIds.begin(), blockIds.end()};
     }
     // If typeFilter is provided, return blocks by type
-    const auto obx_block_type = utils::blockTypeToObxType(*typeFilter);
+    const auto obx_block_type = utils::block_type_to_obx_type(*typeFilter);
     auto query = box_block_->query(ObxBlock_::type.equals(obx_block_type)).build();
     const auto objects = query.find();
 
@@ -90,7 +90,7 @@ namespace tf {
   }
 
 
-  Result<Version> BlockRepository::getLatestVersion(const BlockId &id) {
+  Result<Version> BlockRepository::get_latest_version(const BlockId &id) {
     auto query = box_block_->query(ObxBlock_::blockId.equals(id)).build();
     auto blocks = query.find();
 
@@ -120,7 +120,7 @@ namespace tf {
     }
 
     // Set state to Deprecated (2)
-    block->state = utils::blockStateToObxStateCode(BlockState::Deprecated);
+    block->state = utils::block_state_to_obx_state_code(BlockState::Deprecated);
 
     if (!box_block_->put(*block)) {
       TF_LOG_ERROR("BlockRepository::deprecate| Failed to save block");
@@ -142,8 +142,8 @@ namespace tf {
 
   Error CompositionRepository::save(const Composition &composition) {
     // Convert domain Composition to ObxComposition
-    auto obx_comp = utils::compositionToObxComposition(composition);
-    obx_comp.state = utils::blockStateToObxStateCode(composition.state());
+    auto obx_comp = utils::composition_to_obx_composition(composition);
+    obx_comp.state = utils::block_state_to_obx_state_code(composition.state());
 
     // Save the composition entity
     const obx_id comp_id = box_composition_->put(obx_comp);
@@ -162,7 +162,7 @@ namespace tf {
     // Save fragments
     uint32_t order_index = 0;
     for (const auto &fragment: composition.fragments()) {
-      auto obx_frag = utils::fragmentToObxFragment(fragment, order_index++);
+      auto obx_frag = utils::fragment_to_obx_fragment(fragment, order_index++);
       obx_frag.compositionId = comp_id;
       box_fragment_->put(obx_frag);
     }
@@ -188,8 +188,8 @@ namespace tf {
     }
 
     // Convert basic composition fields
-    Composition composition = utils::obxCompositionToComposition(*obx_comp);
-    composition.clearFragments();
+    Composition composition = utils::obx_composition_to_composition(*obx_comp);
+    composition.clear_fragments();
     
     // Load and convert fragments
     auto frag_query = box_fragment_->query(
@@ -198,8 +198,8 @@ namespace tf {
     auto obx_fragments = frag_query.find();
 
     for (const auto &obx_frag : obx_fragments) {
-      auto fragment = utils::obxFragmentToFragment(obx_frag);
-      composition.insertFragment(composition.fragmentCount(), std::move(fragment));
+      auto fragment = utils::obx_fragment_to_fragment(obx_frag);
+      composition.insert_fragment(composition.fragmentCount(), std::move(fragment));
     }
 
     TF_LOG_INFO("CompositionRepository::load| Composition loaded: {} v{}.{}",
@@ -207,9 +207,9 @@ namespace tf {
     return Result(std::move(composition));
   }
 
-  Result<Composition> CompositionRepository::loadLatest(const CompositionId &id) {
-    const auto version = getLatestVersion(id);
-    if (version.hasError()) {
+  Result<Composition> CompositionRepository::load_latest(const CompositionId &id) {
+    const auto version = get_latest_version(id);
+    if (version.has_error()) {
       TF_LOG_ERROR("CompositionRepository::loadLatest| Error: {}", version.error().message);
       return Result<Composition>(version.error());
     }
@@ -233,7 +233,7 @@ namespace tf {
     return {unique_ids.begin(), unique_ids.end()};
   }
 
-  Result<Version> CompositionRepository::getLatestVersion(const CompositionId &id) {
+  Result<Version> CompositionRepository::get_latest_version(const CompositionId &id) {
     auto query = box_composition_->query(ObxComposition_::compositionId.equals(id)).build();
     auto compositions = query.find();
 
@@ -266,7 +266,7 @@ namespace tf {
     }
 
     // Set state to Deprecated (2)
-    obx_comp->state = utils::blockStateToObxStateCode(BlockState::Deprecated);
+    obx_comp->state = utils::block_state_to_obx_state_code(BlockState::Deprecated);
 
     if (!box_composition_->put(*obx_comp)) {
       TF_LOG_ERROR("CompositionRepository::deprecate| Failed to save composition");

@@ -6,7 +6,7 @@
 
 namespace tf {
 
-const Block* RepositoryBlockCache::getBlock(const BlockId& id, Version version) const {
+const Block* RepositoryBlockCache::get_block(const BlockId& id, Version version) const {
     auto key = std::make_pair(id, version);
     auto it = cache_.find(key);
     if (it != cache_.end()) {
@@ -19,7 +19,7 @@ const Block* RepositoryBlockCache::getBlock(const BlockId& id, Version version) 
     }
 
     auto result = repo_->load(id, version);
-    if (result.hasError()) {
+    if (result.has_error()) {
         return nullptr;
     }
 
@@ -27,7 +27,7 @@ const Block* RepositoryBlockCache::getBlock(const BlockId& id, Version version) 
     return &inserted->second;
 }
 
-const Block* RepositoryBlockCache::getLatestBlock(const BlockId& id) const {
+const Block* RepositoryBlockCache::get_latest_block(const BlockId& id) const {
     const auto it = latestCache_.find(id);
     if (it != latestCache_.end()) {
         return &it->second;
@@ -38,8 +38,8 @@ const Block* RepositoryBlockCache::getLatestBlock(const BlockId& id) const {
         return nullptr;
     }
 
-    auto result = repo_->loadLatest(id);
-    if (result.hasError()) {
+    auto result = repo_->load_latest(id);
+    if (result.has_error()) {
         return nullptr;
     }
 

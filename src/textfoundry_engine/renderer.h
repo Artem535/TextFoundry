@@ -39,13 +39,13 @@ public:
      * Get block by ID and version
      * @returns Block or nullptr if not found
      */
-    [[nodiscard]] virtual const Block* getBlock(const BlockId& id, Version version) const = 0;
+    [[nodiscard]] virtual const Block* get_block(const BlockId& id, Version version) const = 0;
 
     /**
      * Get latest published version of a block
      * @returns Block or nullptr if not found
      */
-    [[nodiscard]] virtual const Block* getLatestBlock(const BlockId& id) const = 0;
+    [[nodiscard]] virtual const Block* get_latest_block(const BlockId& id) const = 0;
 
     /**
      * Clear all cached blocks
@@ -72,13 +72,13 @@ public:
     /**
      * Set block cache for block resolution
      */
-    void setBlockCache(std::unique_ptr<IBlockCache> cache);
+    void set_block_cache(std::unique_ptr<IBlockCache> cache);
 
     /**
      * Clear the block cache
      * Called before each render operation to ensure fresh data
      */
-    void clearCache();
+    void clear_cache();
 
     /**
      * Render composition to text
@@ -99,7 +99,7 @@ public:
      * @param context Runtime parameters
      * @returns Rendered string or Error
      */
-    [[nodiscard]] static Result<std::string> renderBlock(
+    [[nodiscard]] static Result<std::string> render_block(
         const Block& block,
         const RenderContext& context = RenderContext{}
     );
@@ -107,7 +107,7 @@ public:
     /**
      * Apply structural style to rendered fragments
      */
-    [[nodiscard]] static std::string applyStructuralStyle(
+    [[nodiscard]] static std::string apply_structural_style(
         const std::vector<std::string>& fragmentTexts,
         const StructuralStyle& style
     ) ;
@@ -118,7 +118,7 @@ private:
     /**
      * Render a single fragment
      */
-    [[nodiscard]] Result<std::string> renderFragment(
+    [[nodiscard]] Result<std::string> render_fragment(
         const Fragment& fragment,
         const RenderContext& context,
         std::vector<std::pair<BlockId, Version>>& blocksUsed
@@ -127,7 +127,7 @@ private:
     /**
      * Resolve and expand a BlockRef
      */
-    [[nodiscard]] Result<std::string> expandBlockRef(
+    [[nodiscard]] Result<std::string> expand_block_ref(
         const BlockRef& blockRef,
         const RenderContext& context,
         std::vector<std::pair<BlockId, Version>>& blocksUsed
@@ -136,7 +136,7 @@ private:
     /**
      * Get structural style from composition or default
      */
-    [[nodiscard]] static StructuralStyle getEffectiveStyle(const Composition& composition);
+    [[nodiscard]] static StructuralStyle get_effective_style(const Composition& composition);
 };
 
 } // namespace tf

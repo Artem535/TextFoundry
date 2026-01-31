@@ -11,7 +11,7 @@
 
 namespace tf {
   // Template implementation
-  std::vector<std::string> Template::extractParamNames() const {
+  std::vector<std::string> Template::extract_param_names() const {
     // Regex to match {{paramName}} pattern
     const auto names = ctre::search_all<R"(\{\{(\w+)\}\})">(content_)
                        | std::views::transform([](const auto &match) {
@@ -33,7 +33,7 @@ namespace tf {
       result.append(content_, last_pos, count_symb);
 
       if (!params.contains(paramName)) {
-        return Result<std::string>(Error::missingParam(paramName));
+        return Result<std::string>(Error::missing_param(paramName));
       }
 
       result += params.at(paramName);
@@ -44,46 +44,54 @@ namespace tf {
     return Result(result);
   }
 
+  const BlockId & Block::id() const noexcept { return id_; }
+
+  BlockType Block::type() const noexcept { return type_; }
+
+  BlockState Block::state() const noexcept { return state_; }
+
+  const Version & Block::version() const noexcept { return version_; }
+
   // Block implementation
-  Result<ParamValue> Block::resolveParam(
-    const std::string &paramName,
-    const Params &localOverride,
-    const Params &runtimeContext
+  Result<ParamValue> Block::resolve_param(
+    const std::string &param_name,
+    const Params &local_override,
+    const Params &runtime_context
   ) const {
     // 1. Check runtime context (highest priority)
-    if (const auto runtimeIt = runtimeContext.find(paramName); runtimeIt != runtimeContext.end()) {
+    if (const auto runtimeIt = runtime_context.find(param_name); runtimeIt != runtime_context.end()) {
       return Result{runtimeIt->second};
     }
 
     // 2. Check local override
-    if (const auto localIt = localOverride.find(paramName); localIt != localOverride.end()) {
+    if (const auto localIt = local_override.find(param_name); localIt != local_override.end()) {
       return Result{localIt->second};
     }
 
     // 3. Check block defaults (lowest priority)
-    if (const auto defaultIt = defaults_.find(paramName); defaultIt != defaults_.end()) {
+    if (const auto defaultIt = defaults_.find(param_name); defaultIt != defaults_.end()) {
       return Result{defaultIt->second};
     }
 
     // Parameter not found
-    return Result<ParamValue>(Error::missingParam(paramName));
+    return Result<ParamValue>(Error::missing_param(param_name));
   }
 
-  Error Block::validateParams(
-    const Params &localOverride,
-    const Params &runtimeContext
+  Error Block::validate_params(
+    const Params &local_override,
+    const Params &runtime_context
   ) const {
     // Check all parameters in template have values
-    const auto paramNames = template_.extractParamNames();
+    const auto paramNames = template_.extract_param_names();
     for (const auto &paramName: paramNames) {
-      if (!canResolveParam(paramName, localOverride, runtimeContext)) {
-        return Error::missingParam(paramName);
+      if (!can_resolve_param(paramName, local_override, runtime_context)) {
+        return Error::missing_param(paramName);
       }
     }
     return Error::success();
   }
 
-  Error Block::publish(const Version &newVersion) {
+  Error Block::publish(const Version &new_version) {
     if (state_ != BlockState::Draft) {
       return Error{
         ErrorCode::InvalidStateTransition,
@@ -98,7 +106,7 @@ namespace tf {
     }
 
     state_ = BlockState::Published;
-    version_ = newVersion;
+    version_ = new_version;
     return Error::success();
   }
 
@@ -108,25 +116,55 @@ namespace tf {
     }
   }
 
-  void Block::setVersion(const Version& v) { version_ = v; }
+  void Block::set_version(const Version& v) { version_ = v; }
 
-  bool Block::canResolveParam(
-    const std::string &paramName,
-    const Params &localOverride,
-    const Params &runtimeContext
+  const Template & Block::templ() const noexcept { return template_; }
+
+  const Params & Block::defaults() const noexcept { return defaults_; }
+
+  const std::vector<ParamSchema> & Block::param_schema() const noexcept { return paramSchema_; }
+
+  const std::unordered_set<std::string> & Block::tags() const noexcept { return tags_; }
+
+  const std::string & Block::language() const noexcept { return language_; }
+
+  const std::string & Block::description() const noexcept { return description_; }
+
+  void Block::set_id(BlockId id) { id_ = std::move(id); }
+
+  void Block::set_type(BlockType type) { type_ = type; }
+
+  void Block::set_state(BlockState state) { state_ = state; }
+
+  void Block::set_template(Template templ) { template_ = std::move(templ); }
+
+  void Block::set_defaults(Params defaults) { defaults_ = std::move(defaults); }
+
+  void Block::set_param_schema(std::vector<ParamSchema> schema) { paramSchema_ = std::move(schema); }
+
+  void Block::set_tags(std::unordered_set<std::string> tags) { tags_ = std::move(tags); }
+
+  void Block::set_language(std::string lang) { language_ = std::move(lang); }
+
+  void Block::set_description(std::string desc) { description_ = std::move(desc); }
+
+  bool Block::can_resolve_param(
+    const std::string &param_name,
+    const Params &local_override,
+    const Params &runtime_context
   ) const {
     // Check runtime context
-    if (runtimeContext.contains(paramName)) {
+    if (runtime_context.contains(param_name)) {
       return true;
     }
 
     // Check local override
-    if (localOverride.contains(paramName)) {
+    if (local_override.contains(param_name)) {
       return true;
     }
 
     // Check block defaults
-    if (defaults_.contains(paramName)) {
+    if (defaults_.contains(param_name)) {
       return true;
     }
 
@@ -136,47 +174,47 @@ namespace tf {
   BlockDraftBuilder::BlockDraftBuilder(BlockId id) : block_(std::move(id)) {
   }
 
-  BlockDraftBuilder &BlockDraftBuilder::withId(BlockId id) {
-    block_.setId(std::move(id));
+  BlockDraftBuilder &BlockDraftBuilder::with_id(BlockId id) {
+    block_.set_id(std::move(id));
     return *this;
   }
 
-  BlockDraftBuilder &BlockDraftBuilder::withType(const BlockType &type) {
-    block_.setType(type);
+  BlockDraftBuilder &BlockDraftBuilder::with_type(const BlockType &type) {
+    block_.set_type(type);
     return *this;
   }
 
-  BlockDraftBuilder &BlockDraftBuilder::withTemplate(Template templ) {
-    block_.setTemplate(std::move(templ));
+  BlockDraftBuilder &BlockDraftBuilder::with_template(Template templ) {
+    block_.set_template(std::move(templ));
     return *this;
   }
 
-  BlockDraftBuilder &BlockDraftBuilder::withDefault(const std::string &name, ParamValue value) {
+  BlockDraftBuilder &BlockDraftBuilder::with_default(const std::string &name, ParamValue value) {
     auto defaults = block_.defaults();
     defaults[name] = std::move(value);
-    block_.setDefaults(std::move(defaults));
+    block_.set_defaults(std::move(defaults));
     return *this;
   }
 
-  BlockDraftBuilder &BlockDraftBuilder::withDefaults(Params defaults) {
-    block_.setDefaults(std::move(defaults));
+  BlockDraftBuilder &BlockDraftBuilder::with_defaults(Params defaults) {
+    block_.set_defaults(std::move(defaults));
     return *this;
   }
 
-  BlockDraftBuilder &BlockDraftBuilder::withTag(const std::string &tag) {
+  BlockDraftBuilder &BlockDraftBuilder::with_tag(const std::string &tag) {
     auto tags = block_.tags();
     tags.insert(tag);
-    block_.setTags(std::move(tags));
+    block_.set_tags(std::move(tags));
     return *this;
   }
 
-  BlockDraftBuilder &BlockDraftBuilder::withLanguage(std::string lang) {
-    block_.setLanguage(std::move(lang));
+  BlockDraftBuilder &BlockDraftBuilder::with_language(std::string lang) {
+    block_.set_language(std::move(lang));
     return *this;
   }
 
-  BlockDraftBuilder &BlockDraftBuilder::withDescription(std::string desc) {
-    block_.setDescription(std::move(desc));
+  BlockDraftBuilder &BlockDraftBuilder::with_description(std::string desc) {
+    block_.set_description(std::move(desc));
     return *this;
   }
 

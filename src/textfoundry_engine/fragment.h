@@ -56,6 +56,9 @@ struct Separator {
  */
 class Fragment {
 public:
+
+
+
     // Constructors for each fragment type
     Fragment() : data_(StaticText("")) {}
 
@@ -69,15 +72,15 @@ public:
         : data_(separator) {}
 
     // Factory methods
-    [[nodiscard]] static Fragment makeBlockRef(BlockRef ref) {
+    [[nodiscard]] static Fragment make_block_ref(BlockRef ref) {
         return Fragment(std::move(ref));
     }
 
-    [[nodiscard]] static Fragment makeStaticText(std::string text) {
+    [[nodiscard]] static Fragment make_static_text(std::string text) {
         return Fragment(StaticText(std::move(text)));
     }
 
-    [[nodiscard]] static Fragment makeSeparator(SeparatorType type) {
+    [[nodiscard]] static Fragment make_separator(SeparatorType type) {
         return Fragment(Separator(type));
     }
 
@@ -92,65 +95,65 @@ public:
         }, data_);
     }
 
-    [[nodiscard]] bool isBlockRef() const noexcept {
+    [[nodiscard]] bool is_block_ref() const noexcept {
         return std::holds_alternative<BlockRef>(data_);
     }
 
-    [[nodiscard]] bool isStaticText() const noexcept {
+    [[nodiscard]] bool is_static_text() const noexcept {
         return std::holds_alternative<StaticText>(data_);
     }
 
-    [[nodiscard]] bool isSeparator() const noexcept {
+    [[nodiscard]] bool is_separator() const noexcept {
         return std::holds_alternative<Separator>(data_);
     }
 
     // Accessors (use only after checking type)
-    [[nodiscard]] BlockRef& asBlockRef() & {
+    [[nodiscard]] BlockRef& as_block_ref() & {
         return std::get<BlockRef>(data_);
     }
 
-    [[nodiscard]] const BlockRef& asBlockRef() const& {
+    [[nodiscard]] const BlockRef& as_block_ref() const& {
         return std::get<BlockRef>(data_);
     }
 
-    [[nodiscard]] StaticText& asStaticText() & {
+    [[nodiscard]] StaticText& as_static_text() & {
         return std::get<StaticText>(data_);
     }
 
-    [[nodiscard]] const StaticText& asStaticText() const& {
+    [[nodiscard]] const StaticText& as_static_text() const& {
         return std::get<StaticText>(data_);
     }
 
-    [[nodiscard]] Separator& asSeparator() & {
+    [[nodiscard]] Separator& as_separator() & {
         return std::get<Separator>(data_);
     }
 
-    [[nodiscard]] const Separator& asSeparator() const& {
+    [[nodiscard]] const Separator& as_separator() const& {
         return std::get<Separator>(data_);
     }
 
     // Safe accessors returning nullptr if wrong type
-    [[nodiscard]] BlockRef* getBlockRef() noexcept {
+    [[nodiscard]] BlockRef* get_block_ref() noexcept {
         return std::get_if<BlockRef>(&data_);
     }
 
-    [[nodiscard]] const BlockRef* getBlockRef() const noexcept {
+    [[nodiscard]] const BlockRef* get_block_ref() const noexcept {
         return std::get_if<BlockRef>(&data_);
     }
 
-    [[nodiscard]] StaticText* getStaticText() noexcept {
+    [[nodiscard]] StaticText* get_static_text() noexcept {
         return std::get_if<StaticText>(&data_);
     }
 
-    [[nodiscard]] const StaticText* getStaticText() const noexcept {
+    [[nodiscard]] const StaticText* get_static_text() const noexcept {
         return std::get_if<StaticText>(&data_);
     }
 
-    [[nodiscard]] Separator* getSeparator() noexcept {
+    [[nodiscard]] Separator* get_separator() noexcept {
         return std::get_if<Separator>(&data_);
     }
 
-    [[nodiscard]] const Separator* getSeparator() const noexcept {
+    [[nodiscard]] const Separator* get_separator() const noexcept {
         return std::get_if<Separator>(&data_);
     }
 
@@ -160,32 +163,4 @@ public:
 private:
     std::variant<BlockRef, StaticText, Separator> data_;
 };
-
-/**
- * JSON serialization helper for fragments
- * Used for storing Composition.fragments_json
- */
-class FragmentJsonSerializer {
-public:
-    /**
-     * Serialize fragment to JSON string
-     */
-    [[nodiscard]] static std::string serialize(const Fragment& fragment);
-
-    /**
-     * Serialize list of fragments to JSON array
-     */
-    [[nodiscard]] static std::string serialize(const std::vector<Fragment>& fragments);
-
-    /**
-     * Deserialize fragment from JSON
-     */
-    [[nodiscard]] static Result<Fragment> deserialize(std::string_view json);
-
-    /**
-     * Deserialize list of fragments from JSON array
-     */
-    [[nodiscard]] static Result<std::vector<Fragment>> deserializeList(std::string_view json);
-};
-
 } // namespace tf

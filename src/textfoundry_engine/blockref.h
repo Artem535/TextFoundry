@@ -20,44 +20,44 @@ namespace tf {
   public:
     BlockRef() = default;
 
-    explicit BlockRef(BlockId blockId);
+    explicit BlockRef(BlockId block_id);
 
     BlockRef(BlockId blockId, Version version);
 
-    BlockRef(BlockId blockId, Version version, Params localParams);
+    BlockRef(BlockId blockId, Version version, Params local_params);
 
     // Getters
-    [[nodiscard]] const BlockId &blockId() const noexcept;
+    [[nodiscard]] const BlockId &block_id() const noexcept;
 
     [[nodiscard]] const std::optional<Version> &version() const noexcept;
 
-    [[nodiscard]] const Params &localParams() const noexcept;
+    [[nodiscard]] const Params &local_params() const noexcept;
 
-    [[nodiscard]] bool useLatest() const noexcept;
+    [[nodiscard]] bool use_latest() const noexcept;
 
     // Setters
-    void setBlockId(BlockId id);
+    void set_block_id(BlockId id);
 
-    void setVersion(Version ver);
+    void set_version(Version ver);
 
-    void setLocalParams(Params params);
+    void set_local_params(Params params);
 
     /**
      * Set use_latest flag (only allowed in Draft Composition)
      */
-    void setUseLatest(bool useLatest);
+    void set_use_latest(bool use_latest);
 
     /**
      * Add a local parameter override
      */
-    BlockRef &withParam(const std::string &name, ParamValue value);
+    BlockRef &with_param(const std::string &name, ParamValue value);
 
     /**
      * Validate this BlockRef
-     * @param isDraftContext true if within Draft Composition (allows use_latest)
+     * @param is_draft_context true if within Draft Composition (allows use_latest)
      * @returns Error if invalid (e.g., version required but not specified)
      */
-    [[nodiscard]] Error validate(bool isDraftContext = false) const;
+    [[nodiscard]] Error validate(bool is_draft_context = false) const;
 
     /**
      * Resolve all parameters for this block reference using hierarchy:
@@ -66,12 +66,12 @@ namespace tf {
      * 3. Runtime Context (highest priority)
      *
      * @param block The referenced block (must be loaded from storage)
-     * @param runtimeContext Runtime parameters
+     * @param runtime_context Runtime parameters
      * @returns Resolved parameters or Error
      */
-    [[nodiscard]] Result<Params> resolveParams(
+    [[nodiscard]] Result<Params> resolve_params(
       const Block &block,
-      const Params &runtimeContext
+      const Params &runtime_context
     ) const;
 
   private:
@@ -79,6 +79,5 @@ namespace tf {
     std::optional<Version> version_;
     Params localParams_;
     bool useLatest_ = true; ///< If true, use latest version (Draft only)
-    BlockId block_id_;
   };
 } // namespace tf
