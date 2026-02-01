@@ -233,7 +233,6 @@ namespace tf {
   ) {
     Composition &comp = draft.internal_;
 
-    // Проверка на существование версии
     if (auto existing = compRepo_->load(comp.id(), explicit_version);
       existing.has_value()) {
       return Result<PublishedComposition>(Error{
@@ -242,7 +241,7 @@ namespace tf {
       });
     }
 
-    return publish_composition_internal({}, explicit_version);
+    return publish_composition_internal(comp, explicit_version);
   }
 
   Result<PublishedComposition> Engine::publish_composition_internal(Composition comp, Version version) {
