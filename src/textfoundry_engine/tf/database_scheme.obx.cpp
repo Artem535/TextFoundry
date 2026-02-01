@@ -252,18 +252,18 @@ const obx::Property<ObxComposition, OBXPropertyType_Byte> ObxComposition_::state
 const obx::Property<ObxComposition, OBXPropertyType_Short> ObxComposition_::versionMajor(5);
 const obx::Property<ObxComposition, OBXPropertyType_Short> ObxComposition_::versionMinor(6);
 const obx::RelationProperty<ObxComposition, ObxLanguage> ObxComposition_::targetLanguageId(7);
-const obx::Property<ObxComposition, OBXPropertyType_String> ObxComposition_::description(10);
-const obx::Property<ObxComposition, OBXPropertyType_Long> ObxComposition_::createdAt(11);
-const obx::Property<ObxComposition, OBXPropertyType_Long> ObxComposition_::updatedAt(12);
-const obx::RelationProperty<ObxComposition, ObxComposition> ObxComposition_::previousVersionId(13);
-const obx::RelationProperty<ObxComposition, ObxComposition> ObxComposition_::nextVersionId(14);
-const obx::Property<ObxComposition, OBXPropertyType_String> ObxComposition_::styleProfileJson(15);
+const obx::Property<ObxComposition, OBXPropertyType_String> ObxComposition_::styleProfileJson(8);
+const obx::Property<ObxComposition, OBXPropertyType_String> ObxComposition_::description(9);
+const obx::Property<ObxComposition, OBXPropertyType_Long> ObxComposition_::createdAt(10);
+const obx::Property<ObxComposition, OBXPropertyType_Long> ObxComposition_::updatedAt(11);
+const obx::RelationProperty<ObxComposition, ObxComposition> ObxComposition_::previousVersionId(12);
+const obx::RelationProperty<ObxComposition, ObxComposition> ObxComposition_::nextVersionId(13);
 
 void ObxComposition::_OBX_MetaInfo::toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb, const ObxComposition& object) {
     fbb.Clear();
     auto offsetcompositionId = fbb.CreateString(object.compositionId);
-    auto offsetdescription = fbb.CreateString(object.description);
     auto offsetstyleProfileJson = fbb.CreateString(object.styleProfileJson);
+    auto offsetdescription = fbb.CreateString(object.description);
     flatbuffers::uoffset_t fbStart = fbb.StartTable();
     fbb.AddElement(4, object.id);
     fbb.AddOffset(6, offsetcompositionId);
@@ -272,12 +272,12 @@ void ObxComposition::_OBX_MetaInfo::toFlatBuffer(flatbuffers::FlatBufferBuilder&
     fbb.AddElement(12, object.versionMajor);
     fbb.AddElement(14, object.versionMinor);
     fbb.AddElement(16, object.targetLanguageId);
-    fbb.AddOffset(22, offsetdescription);
-    fbb.AddElement(24, object.createdAt);
-    fbb.AddElement(26, object.updatedAt);
-    fbb.AddElement(28, object.previousVersionId);
-    fbb.AddElement(30, object.nextVersionId);
-    fbb.AddOffset(32, offsetstyleProfileJson);
+    fbb.AddOffset(18, offsetstyleProfileJson);
+    fbb.AddOffset(20, offsetdescription);
+    fbb.AddElement(22, object.createdAt);
+    fbb.AddElement(24, object.updatedAt);
+    fbb.AddElement(26, object.previousVersionId);
+    fbb.AddElement(28, object.nextVersionId);
     flatbuffers::Offset<flatbuffers::Table> offset;
     offset.o = fbb.EndTable(fbStart);
     fbb.Finish(offset);
@@ -313,25 +313,25 @@ void ObxComposition::_OBX_MetaInfo::fromFlatBuffer(const void* data, size_t, Obx
     outObject.versionMinor = table->GetField<uint16_t>(14, 0);
     outObject.targetLanguageId = table->GetField<obx_id>(16, 0);
     {
-        auto* ptr = table->GetPointer<const flatbuffers::String*>(22);
-        if (ptr) {
-            outObject.description.assign(ptr->c_str(), ptr->size());
-        } else {
-            outObject.description.clear();
-        }
-    }
-    outObject.createdAt = table->GetField<int64_t>(24, 0);
-    outObject.updatedAt = table->GetField<int64_t>(26, 0);
-    outObject.previousVersionId = table->GetField<obx_id>(28, 0);
-    outObject.nextVersionId = table->GetField<obx_id>(30, 0);
-    {
-        auto* ptr = table->GetPointer<const flatbuffers::String*>(32);
+        auto* ptr = table->GetPointer<const flatbuffers::String*>(18);
         if (ptr) {
             outObject.styleProfileJson.assign(ptr->c_str(), ptr->size());
         } else {
             outObject.styleProfileJson.clear();
         }
     }
+    {
+        auto* ptr = table->GetPointer<const flatbuffers::String*>(20);
+        if (ptr) {
+            outObject.description.assign(ptr->c_str(), ptr->size());
+        } else {
+            outObject.description.clear();
+        }
+    }
+    outObject.createdAt = table->GetField<int64_t>(22, 0);
+    outObject.updatedAt = table->GetField<int64_t>(24, 0);
+    outObject.previousVersionId = table->GetField<obx_id>(26, 0);
+    outObject.nextVersionId = table->GetField<obx_id>(28, 0);
 }
 
 const obx::Property<ObxFragment, OBXPropertyType_Long> ObxFragment_::id(1);

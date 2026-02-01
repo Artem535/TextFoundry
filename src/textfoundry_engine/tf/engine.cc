@@ -228,20 +228,33 @@ namespace tf {
   }
 
   Result<PublishedComposition> Engine::publish_composition(
-    CompositionDraft draft,
-    Version explicit_version
+      CompositionDraft draft,
+      Version explicit_version
   ) {
     Composition &comp = draft.internal_;
 
-    if (auto existing = compRepo_->load(comp.id(), explicit_version);
-      existing.has_value()) {
+    if (comp.state() != BlockState::Draft) {
       return Result<PublishedComposition>(Error{
-        ErrorCode::DuplicateId,
-        "Composition version already exists"
+          ErrorCode::InvalidStateTransition,
+          "Only Draft compositions can be published"
       });
     }
 
-    return publish_composition_internal(comp, explicit_version);
+    if (auto existing = compRepo_->load(comp.id(), explicit_version);
+        existing.has_value()) {
+      return Result<PublishedComposition>(Error{
+          ErrorCode::DuplicateId,
+          "Composition version already exists"
+      });
+        }
+
+    for (const auto &frag : comp.fragments()) {
+      if (frag.is_block_ref() && frag.as_block_ref().use_latest()) {
+        return Result<PublishedComposition>(Error::version_required());
+      }
+    }
+
+    return publish_composition_internal(std::move(comp), explicit_version);
   }
 
   Result<PublishedComposition> Engine::publish_composition_internal(Composition comp, Version version) {

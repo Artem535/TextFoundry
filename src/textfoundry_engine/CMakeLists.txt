@@ -18,36 +18,37 @@ find_package(reflectcpp CONFIG REQUIRED)
 
 
 add_library(textfoundry_core STATIC
-        engine.cc
-        engine.h
-        block.cc
-        block.h
-        blockref.cc
-        blockref.h
-        fragment.cc
-        fragment.h
-        composition.cc
-        composition.h
-        renderer.cc
-        renderer.h
-        blocktype.hpp
-        version.h
-        error.h
-        logger.h
-        logger.cc
-        objectboxrepository.cc
-        objectboxrepository.h
-        repository_block_cache.cpp
-        ../text_foundry_cli/main.cc
-        types.h
+        tf/engine.cc
+        tf/engine.h
+        tf/block.cc
+        tf/block.h
+        tf/blockref.cc
+        tf/blockref.h
+        tf/fragment.cc
+        tf/fragment.h
+        tf/composition.cc
+        tf/composition.h
+        tf/renderer.cc
+        tf/renderer.h
+        tf/blocktype.hpp
+        tf/version.h
+        tf/error.h
+        tf/logger.h
+        tf/logger.cc
+        tf/objectboxrepository.cc
+        tf/objectboxrepository.h
+        tf/repository_block_cache.cpp
+        tf/types.h
 )
 
 add_obx_schema(
         TARGET textfoundry_core
-        SCHEMA_FILES database_scheme.fbs
+        SCHEMA_FILES tf/database_scheme.fbs
         INSOURCE # Opt-in: Generate in source directory
         CXX_STANDARD 14 # Defaults to C++14 otherwise
 )
+
+target_include_directories(textfoundry_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
 target_link_libraries(textfoundry_core ctre::ctre spdlog::spdlog objectbox reflectcpp::reflectcpp)
 

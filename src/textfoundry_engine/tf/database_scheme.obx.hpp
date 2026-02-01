@@ -198,6 +198,9 @@ struct ObxComposition {
     uint16_t versionMinor;
     /// Many-to-One: Target language
     obx_id targetLanguageId;
+    /// Structural style JSON (blockWrapper, preamble, postamble, delimiter)
+    /// Semantic style JSON (tone, tense, targetLanguage, person)
+    std::string styleProfileJson;
     /// Human-readable description
     std::string description;
     /// Creation timestamp
@@ -208,9 +211,6 @@ struct ObxComposition {
     obx_id previousVersionId;
     /// Next version reference
     obx_id nextVersionId;
-    /// Structural style JSON (blockWrapper, preamble, postamble, delimiter)
-    /// Semantic style JSON (tone, tense, targetLanguage, person)
-    std::string styleProfileJson;
 
     struct _OBX_MetaInfo {
         static constexpr obx_schema_id entityId() { return 4; }
@@ -239,12 +239,12 @@ struct ObxComposition_ {
     static const obx::Property<ObxComposition, OBXPropertyType_Short> versionMajor;
     static const obx::Property<ObxComposition, OBXPropertyType_Short> versionMinor;
     static const obx::RelationProperty<ObxComposition, ObxLanguage> targetLanguageId;
+    static const obx::Property<ObxComposition, OBXPropertyType_String> styleProfileJson;
     static const obx::Property<ObxComposition, OBXPropertyType_String> description;
     static const obx::Property<ObxComposition, OBXPropertyType_Long> createdAt;
     static const obx::Property<ObxComposition, OBXPropertyType_Long> updatedAt;
     static const obx::RelationProperty<ObxComposition, ObxComposition> previousVersionId;
     static const obx::RelationProperty<ObxComposition, ObxComposition> nextVersionId;
-    static const obx::Property<ObxComposition, OBXPropertyType_String> styleProfileJson;
 };
 
 struct ObxComposition; 
