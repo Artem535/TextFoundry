@@ -246,12 +246,23 @@ namespace tf {
 
     CompositionDraftBuilder &add_block_ref(BlockRef ref);
 
+
+    CompositionDraftBuilder &add_block_ref(
+      const BlockId &id,
+      uint16_t major, uint16_t minor,
+      Params params = {}
+    );
+
+    CompositionDraftBuilder &add_block_ref(
+      const PublishedBlock &block,
+      Params params = {}
+    );
+
     CompositionDraftBuilder &add_static_text(std::string text);
 
     CompositionDraftBuilder &add_separator(SeparatorType type);
 
     [[nodiscard]] CompositionDraft build();
-
 
   private:
     Composition comp_;

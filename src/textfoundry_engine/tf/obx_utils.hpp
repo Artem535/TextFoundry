@@ -168,6 +168,12 @@ namespace tf::utils {
     block.set_type(obx_type_to_block_type(obxBlock.type));
     block.set_state(obx_state_code_to_block_state(obxBlock.state));
     block.set_template(Template(obxBlock.templateContent));
+    block.set_language(obxBlock.language);
+    if (!obxBlock.tagsJson.empty()) {
+      auto tags = rfl::json::read<std::vector<std::string>>(obxBlock.tagsJson).value_or(std::vector<std::string>{});
+      std::unordered_set<std::string> tags_set(tags.begin(), tags.end());
+      block.set_tags(std::move(tags_set));
+    }
     block.set_description(obxBlock.description);
 
     if (!obxBlock.defaultsJson.empty()) {
@@ -175,7 +181,7 @@ namespace tf::utils {
     }
 
     if (!obxBlock.paramsJson.empty()) {
-      block.set_param_schema(rfl::json::read<std::vector<ParamSchema> >(obxBlock.paramsJson).value());
+      block.set_param_schema(rfl::json::read<std::vector<ParamSchema>>(obxBlock.paramsJson).value());
     }
 
     return block;
@@ -196,6 +202,9 @@ namespace tf::utils {
     obxBlock.state = block_state_to_obx_state_code(block.state());
     obxBlock.templateContent = block.templ().content();
     obxBlock.defaultsJson = rfl::json::write(block.defaults());
+    obxBlock.language = block.language();
+    std::vector<std::string> tags_vec(block.tags().begin(), block.tags().end());
+    obxBlock.tagsJson = rfl::json::write(tags_vec);
     obxBlock.description = block.description();
     // Note: createdAt, updatedAt should be set by storage layer
     return obxBlock;
@@ -212,8 +221,8 @@ namespace tf::utils {
   inline Composition obx_composition_to_composition(const ObxComposition &obxComp) {
     Composition comp;
     comp.set_id(obxComp.compositionId);
+    comp.set_project_key(obxComp.projectKey);
     comp.set_version(Version{obxComp.versionMajor, obxComp.versionMinor});
-    comp.set_project_key(""); // Must be resolved from project relation
     comp.set_description(obxComp.description);
     comp.set_state(obx_state_code_to_block_state(obxComp.state));
 
@@ -233,11 +242,12 @@ namespace tf::utils {
     ObxComposition obxComp;
     obxComp.id = id;
     obxComp.compositionId = comp.id();
+    obxComp.projectKey = comp.project_key();
     obxComp.versionMajor = comp.version().major;
     obxComp.versionMinor = comp.version().minor;
     obxComp.description = comp.description();
     if (comp.style_profile().has_value()) {
-      obxComp.styleProfileJson = rfl::json::write(comp.style_profile());
+      obxComp.styleProfileJson = rfl::json::write(comp.style_profile().value());
     }
     return obxComp;
   }

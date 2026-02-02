@@ -231,9 +231,10 @@ curl -X POST https://api.example.com/v1/users \
         // strict_mode=true в конфиге - ошибка при отсутствии параметра
         auto bad_result = engine.render("bad.composition", Version{1, 0});
         if (bad_result.has_error()) {
-            std::cout << std::format("   ⚠️ Ожидаемая ошибка: {}\n",
+            std::cout << std::format("   ⚠️ Ожидаемая ошибка: {}",
                 bad_result.error().message);
         }
+
 
         std::cout << "\n✅ Демонстрация завершена!\n";
         return 0;

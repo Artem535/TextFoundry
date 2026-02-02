@@ -9,7 +9,6 @@ FetchContent_Declare(
 )
 
 FetchContent_MakeAvailable(objectbox)
-find_package(ObjectBoxGenerator 5.0.0 REQUIRED)
 
 # Other lib
 find_package(ctre CONFIG REQUIRED)
@@ -39,13 +38,9 @@ add_library(textfoundry_core STATIC
         tf/objectboxrepository.h
         tf/repository_block_cache.cpp
         tf/types.h
-)
-
-add_obx_schema(
-        TARGET textfoundry_core
-        SCHEMA_FILES tf/database_scheme.fbs
-        INSOURCE # Opt-in: Generate in source directory
-        CXX_STANDARD 14 # Defaults to C++14 otherwise
+        tf/objectbox-model.h
+        tf/database_scheme.obx.hpp
+        tf/database_scheme.obx.cpp
 )
 
 target_include_directories(textfoundry_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})

@@ -193,6 +193,17 @@ namespace tf {
     return *this;
   }
 
+  CompositionDraftBuilder & CompositionDraftBuilder::add_block_ref(const BlockId &id, uint16_t major, uint16_t minor,
+    Params params) {
+    return add_block_ref(BlockRef(id, Version{major, minor}, std::move(params)));
+  }
+
+  CompositionDraftBuilder & CompositionDraftBuilder::add_block_ref(const PublishedBlock &block, Params params) {
+    BlockRef ref = block.ref();
+    ref.set_local_params(std::move(params));
+    return add_block_ref(std::move(ref));
+  }
+
   CompositionDraftBuilder &CompositionDraftBuilder::add_static_text(std::string text) {
     comp_.add_static_text(std::move(text));
     return *this;

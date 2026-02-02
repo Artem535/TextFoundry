@@ -58,7 +58,6 @@ struct ObxAuditLog_ {
 };
 
 struct ObxBlock; 
-struct ObxLanguage; 
 struct ObxProject; 
 struct ObxTag; 
 
@@ -74,8 +73,8 @@ struct ObxBlock {
     uint16_t versionMinor;
     /// Many-to-One: ObxBlock belongs to ObxProject
     obx_id projectId;
-    /// Many-to-One: Language metadata for filtering
-    obx_id languageId;
+    /// Language code (e.g., "en")
+    std::string language;
     /// Lifecycle state: 0=Draft, 1=Published, 2=Deprecated
     int8_t state;
     /// Block type enum (Role/Constraint/Style/Domain/Meta)
@@ -87,6 +86,8 @@ struct ObxBlock {
     std::string defaultsJson;
     /// JSON Obx block parameters
     std::string paramsJson;
+    /// Tags JSON array
+    std::string tagsJson;
     /// Human-readable description
     std::string description;
     /// Creation timestamp
@@ -123,12 +124,13 @@ struct ObxBlock_ {
     static const obx::Property<ObxBlock, OBXPropertyType_Short> versionMajor;
     static const obx::Property<ObxBlock, OBXPropertyType_Short> versionMinor;
     static const obx::RelationProperty<ObxBlock, ObxProject> projectId;
-    static const obx::RelationProperty<ObxBlock, ObxLanguage> languageId;
+    static const obx::Property<ObxBlock, OBXPropertyType_String> language;
     static const obx::Property<ObxBlock, OBXPropertyType_Byte> state;
     static const obx::Property<ObxBlock, OBXPropertyType_Byte> type;
     static const obx::Property<ObxBlock, OBXPropertyType_String> templateContent;
     static const obx::Property<ObxBlock, OBXPropertyType_String> defaultsJson;
     static const obx::Property<ObxBlock, OBXPropertyType_String> paramsJson;
+    static const obx::Property<ObxBlock, OBXPropertyType_String> tagsJson;
     static const obx::Property<ObxBlock, OBXPropertyType_String> description;
     static const obx::Property<ObxBlock, OBXPropertyType_Long> createdAt;
     static const obx::Property<ObxBlock, OBXPropertyType_Long> updatedAt;
@@ -192,6 +194,8 @@ struct ObxComposition {
     std::string compositionId;
     /// Many-to-One: ObxComposition belongs to ObxProject
     obx_id projectId;
+    /// Project key string
+    std::string projectKey;
     /// Lifecycle state: 0=Draft, 1=Published, 2=Deprecated
     int8_t state;
     uint16_t versionMajor;
@@ -235,6 +239,7 @@ struct ObxComposition_ {
     static const obx::Property<ObxComposition, OBXPropertyType_Long> id;
     static const obx::Property<ObxComposition, OBXPropertyType_String> compositionId;
     static const obx::RelationProperty<ObxComposition, ObxProject> projectId;
+    static const obx::Property<ObxComposition, OBXPropertyType_String> projectKey;
     static const obx::Property<ObxComposition, OBXPropertyType_Byte> state;
     static const obx::Property<ObxComposition, OBXPropertyType_Short> versionMajor;
     static const obx::Property<ObxComposition, OBXPropertyType_Short> versionMinor;

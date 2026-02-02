@@ -67,9 +67,8 @@ table ObxBlock {
     /// objectbox:relation=ObxProject
     projectId: ulong;
 
-    /// Many-to-One: Language metadata for filtering
-    /// objectbox:relation=ObxLanguage
-    languageId: ulong;
+    /// Language code (e.g., "en")
+    language: string;
 
     /// Lifecycle state: 0=Draft, 1=Published, 2=Deprecated
     state: byte;
@@ -84,6 +83,8 @@ table ObxBlock {
     defaultsJson: string;
     /// JSON Obx block parameters
     paramsJson: string;
+    /// Tags JSON array
+    tagsJson: string;
     /// Human-readable description
     description: string;
     /// Creation timestamp
@@ -138,6 +139,8 @@ table ObxComposition {
     /// Many-to-One: ObxComposition belongs to ObxProject
     /// objectbox:relation=ObxProject
     projectId: ulong;
+    /// Project key string
+    projectKey: string;
     /// Lifecycle state: 0=Draft, 1=Published, 2=Deprecated
     state: byte;
 
