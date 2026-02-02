@@ -25,7 +25,7 @@ int main() {
         EngineConfig config{
             .project_key = "demo",
             .strict_mode = true,
-            .default_data_path = "./tf_data"
+            .default_data_path = "memory:test_app"
         };
         Engine engine(config);
 
@@ -211,7 +211,9 @@ Be constructive and precise.)"))
             .with_description("Document footer")
             .build();
         auto footer_pub = engine.publish_block(std::move(footer_draft), Version{1, 0});
+        if (!footer_pub.has_value()) { std::cerr << "Footer error: " << footer_pub.error().message << "\n"; return 1; }
         Version footer_version = footer_pub.value().version();
+
 
         std::cout << "✅ All 12 blocks published\n\n";
 
