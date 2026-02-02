@@ -11,12 +11,16 @@
       "version>=": "2.4.12"
     },
     {
+      "name": "reflectcpp",
+      "version>=": "0.23.0"
+    },
+    {
       "name": "spdlog",
       "version>=": "1.17.0"
     },
     {
-      "name": "reflectcpp",
-      "version>=": "0.23.0"
+      "name": "cli11",
+      "version>=": "2.6.1"
     }
   ]
 }

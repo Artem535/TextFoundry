@@ -3,7 +3,7 @@
 /cmake-build-debug/
 /build/
 .idea
-
+digest.txt
 
 # Compiled Object files
 *.slo
