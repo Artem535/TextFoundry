@@ -9,8 +9,8 @@
 #include <optional>
 #include <string>
 #include <vector>
-#include "../textfoundry_engine/tf/engine.h"
-#include "../textfoundry_engine/tf/types.h"
+#include "tf/engine.h"
+#include "tf/types.h"
 
 class Application {
 public:
@@ -20,42 +20,42 @@ private:
   void init_engine();
 
   // CLI setup methods
-  void setupGlobalOptions(CLI::App& app);
-  void setupBlockCommands(CLI::App& app);
-  void setupCompCommands(CLI::App& app);
-  void setupRenderCommand(CLI::App& app);
-  void setupValidateCommand(CLI::App& app);
+  void setup_global_options(CLI::App& app);
+  void setup_block_commands(CLI::App& app);
+  void setup_comp_commands(CLI::App& app);
+  void setup_render_command(CLI::App& app);
+  void setup_validate_command(CLI::App& app);
 
   // Block command handlers
-  void handleBlockCreate(const std::string& block_id, const std::string& block_template,
+  void handle_block_create(const std::string& block_id, const std::string& block_template,
                          const std::vector<std::string>& block_defaults_list,
                          const std::vector<std::string>& block_tags_list,
                          tf::BlockType block_type, const std::string& block_description,
                          const std::string& block_lang);
-  void handleBlockPublish(const std::string& block_id, const std::string& version_str);
-  void handleBlockList(const std::optional<tf::BlockType>& type_filter);
-  void handleBlockDeprecate(const std::string& block_id, const std::string& version_str);
-  void handleBlockInspect(const std::string& block_id, const std::optional<std::string>& version_str_opt);
+  void handle_block_publish(const std::string& block_id, const std::string& version_str);
+  void handle_block_list(const std::optional<tf::BlockType>& type_filter);
+  void handle_block_deprecate(const std::string& block_id, const std::string& version_str);
+  void handle_block_inspect(const std::string& block_id, const std::optional<std::string>& version_str_opt);
 
   // Composition command handlers
-  void handleCompCreate(const std::string& comp_id, const std::vector<std::string>& block_refs_list,
+  void handle_comp_create(const std::string& comp_id, const std::vector<std::string>& block_refs_list,
                         const std::vector<std::string>& static_texts, const std::string& description);
-  void handleCompList();
-  void handleCompDeprecate(const std::string& comp_id, const std::string& version_str);
-  void handleCompInspect(const std::string& comp_id, const std::optional<std::string>& version_str_opt);
+  void handle_comp_list();
+  void handle_comp_deprecate(const std::string& comp_id, const std::string& version_str);
+  void handle_comp_inspect(const std::string& comp_id, const std::optional<std::string>& version_str_opt);
 
   // Render command handler
-  void handleRender(const std::string& comp_id, const std::optional<std::string>& version_str_opt,
+  void handle_render(const std::string& comp_id, const std::optional<std::string>& version_str_opt,
                     const std::vector<std::string>& runtime_params_list, bool normalize);
 
   // Validate command handler
-  void handleValidate(const std::string& entity_id, const std::string& entity_type);
+  void handle_validate(const std::string& entity_id, const std::string& entity_type);
 
   // Helper methods
-  tf::Params parseParams(const std::vector<std::string>& kv_list);
-  tf::Version parseVersion(const std::string& version_str);
-  void printError(const std::string& message);
-  void outputTextList(const std::vector<std::string>& items, std::ostream& out);
+  tf::Params parse_params(const std::vector<std::string>& kv_list);
+  tf::Version parse_version(const std::string& version_str);
+  void print_error(const std::string& message);
+  void output_text_list(const std::vector<std::string>& items, std::ostream& out);
 
   ApplicationSettings settings_;
   std::optional<tf::Engine> engine_;

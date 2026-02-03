@@ -16,7 +16,7 @@
 // Helper methods implementation
 // ============================================================================
 
-tf::Params Application::parseParams(const std::vector<std::string> &kv_list) {
+tf::Params Application::parse_params(const std::vector<std::string> &kv_list) {
   tf::Params params;
   for (const auto &kv: kv_list) {
     size_t eq_pos = kv.find('=');
@@ -29,7 +29,7 @@ tf::Params Application::parseParams(const std::vector<std::string> &kv_list) {
   return params;
 }
 
-tf::Version Application::parseVersion(const std::string &version_str) {
+tf::Version Application::parse_version(const std::string &version_str) {
   size_t dot_pos = version_str.find('.');
   if (dot_pos == std::string::npos) {
     throw std::invalid_argument("Invalid version format: " + version_str + " (expected major.minor)");
@@ -39,11 +39,11 @@ tf::Version Application::parseVersion(const std::string &version_str) {
   return tf::Version{major, minor};
 }
 
-void Application::printError(const std::string &message) {
+void Application::print_error(const std::string &message) {
   std::cerr << "Error: " << message << std::endl;
 }
 
-void Application::outputTextList(const std::vector<std::string> &items, std::ostream &out) {
+void Application::output_text_list(const std::vector<std::string> &items, std::ostream &out) {
   for (const auto &item: items) {
     out << item << std::endl;
   }
@@ -53,7 +53,7 @@ void Application::outputTextList(const std::vector<std::string> &items, std::ost
 // Block command handlers
 // ============================================================================
 
-void Application::handleBlockCreate(const std::string &block_id, const std::string &block_template,
+void Application::handle_block_create(const std::string &block_id, const std::string &block_template,
                                     const std::vector<std::string> &block_defaults_list,
                                     const std::vector<std::string> &block_tags_list,
                                     tf::BlockType block_type, const std::string &block_description,
@@ -61,7 +61,7 @@ void Application::handleBlockCreate(const std::string &block_id, const std::stri
   init_engine();
 
   try {
-    auto defaults = parseParams(block_defaults_list);
+    auto defaults = parse_params(block_defaults_list);
 
     auto builder = tf::BlockDraftBuilder(block_id)
         .with_template(tf::Template(block_template))
@@ -89,33 +89,33 @@ void Application::handleBlockCreate(const std::string &block_id, const std::stri
 
     auto result = engine_.value().publish_block(std::move(draft), tf::Engine::VersionBump::Minor);
     if (result.has_error()) {
-      printError(result.error().message);
+      print_error(result.error().message);
       throw CLI::RuntimeError(1);
     }
 
     auto pub = result.value();
     std::cout << "Published block: " << pub.id() << "@" << pub.version().to_string() << std::endl;
   } catch (const std::invalid_argument &e) {
-    printError(e.what());
+    print_error(e.what());
     throw CLI::RuntimeError(1);
   }
 }
 
-void Application::handleBlockPublish(const std::string &block_id, const std::string &version_str) {
+void Application::handle_block_publish(const std::string &block_id, const std::string &version_str) {
   init_engine();
 
   try {
-    tf::Version explicit_version = parseVersion(version_str);
+    tf::Version explicit_version = parse_version(version_str);
 
     auto load_result = engine_.value().load_block(block_id);
     if (load_result.has_error()) {
-      printError("Block not found: " + block_id);
+      print_error("Block not found: " + block_id);
       throw CLI::RuntimeError(1);
     }
 
     auto block = load_result.value();
     if (block.state() != tf::BlockState::Draft) {
-      printError("Block is not in Draft state");
+      print_error("Block is not in Draft state");
       throw CLI::RuntimeError(1);
     }
 
@@ -132,19 +132,19 @@ void Application::handleBlockPublish(const std::string &block_id, const std::str
 
     auto result = engine_.value().publish_block(std::move(draft), explicit_version);
     if (result.has_error()) {
-      printError(result.error().message);
+      print_error(result.error().message);
       throw CLI::RuntimeError(1);
     }
 
     auto pub = result.value();
     std::cout << "Published block: " << pub.id() << "@" << pub.version().to_string() << std::endl;
   } catch (const std::exception &e) {
-    printError(std::string("Failed to publish: ") + e.what());
+    print_error(std::string("Failed to publish: ") + e.what());
     throw CLI::RuntimeError(1);
   }
 }
 
-void Application::handleBlockList(const std::optional<tf::BlockType> &type_filter) {
+void Application::handle_block_list(const std::optional<tf::BlockType> &type_filter) {
   init_engine();
 
   auto blocks = engine_.value().list_blocks(type_filter);
@@ -153,15 +153,15 @@ void Application::handleBlockList(const std::optional<tf::BlockType> &type_filte
     std::cout << "No blocks found" << std::endl;
   } else {
     std::cout << "Blocks (" << blocks.size() << "):" << std::endl;
-    outputTextList(blocks, std::cout);
+    output_text_list(blocks, std::cout);
   }
 }
 
-void Application::handleBlockDeprecate(const std::string &block_id, const std::string &version_str) {
+void Application::handle_block_deprecate(const std::string &block_id, const std::string &version_str) {
   init_engine();
 
   try {
-    tf::Version version = parseVersion(version_str);
+    tf::Version version = parse_version(version_str);
 
     if (settings_.dry_run) {
       std::cout << "Dry-run: Would deprecate " << block_id << "@" << version_str << std::endl;
@@ -170,31 +170,31 @@ void Application::handleBlockDeprecate(const std::string &block_id, const std::s
 
     auto err = engine_.value().deprecate_block(block_id, version);
     if (err.is_error()) {
-      printError(err.message);
+      print_error(err.message);
       throw CLI::RuntimeError(1);
     }
 
     std::cout << "Deprecated block: " << block_id << "@" << version_str << std::endl;
   } catch (const std::exception &e) {
-    printError(std::string("Failed to deprecate: ") + e.what());
+    print_error(std::string("Failed to deprecate: ") + e.what());
     throw CLI::RuntimeError(1);
   }
 }
 
-void Application::handleBlockInspect(const std::string &block_id, const std::optional<std::string> &version_str_opt) {
+void Application::handle_block_inspect(const std::string &block_id, const std::optional<std::string> &version_str_opt) {
   init_engine();
 
   std::optional<tf::Result<tf::Block> > result;
 
   if (version_str_opt) {
-    tf::Version version = parseVersion(*version_str_opt);
+    tf::Version version = parse_version(*version_str_opt);
     result = engine_.value().load_block(block_id, version);
   } else {
     result = engine_.value().load_block(block_id);
   }
 
   if (result->has_error()) {
-    printError("Block not found: " + block_id);
+    print_error("Block not found: " + block_id);
     throw CLI::RuntimeError(1);
   }
 
@@ -217,7 +217,7 @@ void Application::handleBlockInspect(const std::string &block_id, const std::opt
 // Composition command handlers
 // ============================================================================
 
-void Application::handleCompCreate(const std::string &comp_id, const std::vector<std::string> &block_refs_list,
+void Application::handle_comp_create(const std::string &comp_id, const std::vector<std::string> &block_refs_list,
                                    const std::vector<std::string> &static_texts, const std::string &description) {
   init_engine();
 
@@ -242,7 +242,7 @@ void Application::handleCompCreate(const std::string &comp_id, const std::vector
       std::string version_str = (q_pos != std::string::npos) ? rest.substr(0, q_pos) : rest;
       std::string params_str = (q_pos != std::string::npos) ? rest.substr(q_pos + 1) : "";
 
-      tf::Version version = parseVersion(version_str);
+      tf::Version version = parse_version(version_str);
 
       tf::Params local_params;
       if (!params_str.empty()) {
@@ -279,19 +279,19 @@ void Application::handleCompCreate(const std::string &comp_id, const std::vector
 
     auto result = engine_.value().publish_composition(std::move(draft), tf::Engine::VersionBump::Minor);
     if (result.has_error()) {
-      printError(result.error().message);
+      print_error(result.error().message);
       throw CLI::RuntimeError(1);
     }
 
     auto pub = result.value();
     std::cout << "Published composition: " << pub.id() << "@" << pub.version().to_string() << std::endl;
   } catch (const std::exception &e) {
-    printError(e.what());
+    print_error(e.what());
     throw CLI::RuntimeError(1);
   }
 }
 
-void Application::handleCompList() {
+void Application::handle_comp_list() {
   init_engine();
 
   auto comps = engine_.value().list_compositions();
@@ -300,15 +300,15 @@ void Application::handleCompList() {
     std::cout << "No compositions found" << std::endl;
   } else {
     std::cout << "Compositions (" << comps.size() << "):" << std::endl;
-    outputTextList(comps, std::cout);
+    output_text_list(comps, std::cout);
   }
 }
 
-void Application::handleCompDeprecate(const std::string &comp_id, const std::string &version_str) {
+void Application::handle_comp_deprecate(const std::string &comp_id, const std::string &version_str) {
   init_engine();
 
   try {
-    tf::Version version = parseVersion(version_str);
+    tf::Version version = parse_version(version_str);
 
     if (settings_.dry_run) {
       std::cout << "Dry-run: Would deprecate composition " << comp_id << "@" << version_str << std::endl;
@@ -317,31 +317,31 @@ void Application::handleCompDeprecate(const std::string &comp_id, const std::str
 
     auto err = engine_.value().deprecate_composition(comp_id, version);
     if (err.is_error()) {
-      printError(err.message);
+      print_error(err.message);
       throw CLI::RuntimeError(1);
     }
 
     std::cout << "Deprecated composition: " << comp_id << "@" << version_str << std::endl;
   } catch (const std::exception &e) {
-    printError(std::string("Failed to deprecate: ") + e.what());
+    print_error(std::string("Failed to deprecate: ") + e.what());
     throw CLI::RuntimeError(1);
   }
 }
 
-void Application::handleCompInspect(const std::string &comp_id, const std::optional<std::string> &version_str_opt) {
+void Application::handle_comp_inspect(const std::string &comp_id, const std::optional<std::string> &version_str_opt) {
   init_engine();
 
   std::optional<tf::Result<tf::Composition> > result;
 
   if (version_str_opt) {
-    tf::Version version = parseVersion(*version_str_opt);
+    tf::Version version = parse_version(*version_str_opt);
     result = engine_.value().load_composition(comp_id, version);
   } else {
     result = engine_.value().load_composition(comp_id);
   }
 
   if (result->has_error()) {
-    printError("Composition not found: " + comp_id);
+    print_error("Composition not found: " + comp_id);
     throw CLI::RuntimeError(1);
   }
 
@@ -356,12 +356,12 @@ void Application::handleCompInspect(const std::string &comp_id, const std::optio
 // Render command handler
 // ============================================================================
 
-void Application::handleRender(const std::string &comp_id, const std::optional<std::string> &version_str_opt,
+void Application::handle_render(const std::string &comp_id, const std::optional<std::string> &version_str_opt,
                                const std::vector<std::string> &runtime_params_list, bool normalize) {
   init_engine();
 
   try {
-    auto params = parseParams(runtime_params_list);
+    auto params = parse_params(runtime_params_list);
 
     tf::RenderContext ctx;
     ctx.params = std::move(params);
@@ -373,14 +373,14 @@ void Application::handleRender(const std::string &comp_id, const std::optional<s
     std::optional<tf::Result<tf::RenderResult> > result;
 
     if (version_str_opt) {
-      tf::Version version = parseVersion(*version_str_opt);
+      tf::Version version = parse_version(*version_str_opt);
       result = engine_.value().render(comp_id, version, ctx);
     } else {
       result = engine_.value().render(comp_id, ctx);
     }
 
     if (result->has_error()) {
-      printError(result->error().message);
+      print_error(result->error().message);
       throw CLI::RuntimeError(1);
     }
 
@@ -388,17 +388,17 @@ void Application::handleRender(const std::string &comp_id, const std::optional<s
 
     if (normalize) {
       if (!engine_.value().hasNormalizer()) {
-        printError("Normalization requested but no Normalizer configured");
+        print_error("Normalization requested but no Normalizer configured");
         throw CLI::RuntimeError(1);
       }
     }
 
     std::cout << text << std::endl;
   } catch (const std::invalid_argument &e) {
-    printError(e.what());
+    print_error(e.what());
     throw CLI::RuntimeError(1);
   } catch (const std::exception &e) {
-    printError(std::string("Render failed: ") + e.what());
+    print_error(std::string("Render failed: ") + e.what());
     throw CLI::RuntimeError(1);
   }
 }
@@ -407,7 +407,7 @@ void Application::handleRender(const std::string &comp_id, const std::optional<s
 // Validate command handler
 // ============================================================================
 
-void Application::handleValidate(const std::string &entity_id, const std::string &entity_type) {
+void Application::handle_validate(const std::string &entity_id, const std::string &entity_type) {
   init_engine();
 
   tf::Error err;
@@ -429,7 +429,7 @@ void Application::handleValidate(const std::string &entity_id, const std::string
 // CLI setup methods
 // ============================================================================
 
-void Application::setupGlobalOptions(CLI::App &app) {
+void Application::setup_global_options(CLI::App &app) {
   app.option_defaults()->configurable();
   app.add_option("-p,--project", settings_.project_key, "Project key for namespacing")
       ->default_val("default");
@@ -440,7 +440,7 @@ void Application::setupGlobalOptions(CLI::App &app) {
   app.add_option("-l,--lang", settings_.target_language, "Target language for rendering (e.g., en, ru)");
 }
 
-void Application::setupBlockCommands(CLI::App &app) {
+void Application::setup_block_commands(CLI::App &app) {
   auto block_cmd = app.add_subcommand("block", "Block operations (create, publish, list, deprecate, inspect)");
   block_cmd->require_subcommand(1);
 
@@ -469,7 +469,7 @@ void Application::setupBlockCommands(CLI::App &app) {
 
     cmd->callback([this, &block_id, &block_template, &block_defaults_list,
         &block_tags_list, &block_type, &block_description, &block_lang]() {
-        handleBlockCreate(block_id, block_template, block_defaults_list, block_tags_list,
+        handle_block_create(block_id, block_template, block_defaults_list, block_tags_list,
                           block_type, block_description, block_lang);
       });
   }
@@ -486,7 +486,7 @@ void Application::setupBlockCommands(CLI::App &app) {
         ->required();
 
     cmd->callback([this, &block_id, &version_str]() {
-      handleBlockPublish(block_id, version_str);
+      handle_block_publish(block_id, version_str);
     });
   }
 
@@ -500,7 +500,7 @@ void Application::setupBlockCommands(CLI::App &app) {
     cmd->add_flag("--deprecated", show_deprecated, "Include deprecated blocks");
 
     cmd->callback([this, &type_filter]() {
-      handleBlockList(type_filter);
+      handle_block_list(type_filter);
     });
   }
 
@@ -516,7 +516,7 @@ void Application::setupBlockCommands(CLI::App &app) {
         ->required();
 
     cmd->callback([this, &block_id, &version_str]() {
-      handleBlockDeprecate(block_id, version_str);
+      handle_block_deprecate(block_id, version_str);
     });
   }
 
@@ -531,12 +531,12 @@ void Application::setupBlockCommands(CLI::App &app) {
     cmd->add_option("-v,--version", version_str_opt, "Specific version (default: latest)");
 
     cmd->callback([this, &block_id, &version_str_opt]() {
-      handleBlockInspect(block_id, version_str_opt);
+      handle_block_inspect(block_id, version_str_opt);
     });
   }
 }
 
-void Application::setupCompCommands(CLI::App &app) {
+void Application::setup_comp_commands(CLI::App &app) {
   auto comp_cmd = app.add_subcommand("comp", "Composition operations (create, list, deprecate, inspect)");
   comp_cmd->require_subcommand(1);
 
@@ -557,7 +557,7 @@ void Application::setupCompCommands(CLI::App &app) {
     cmd->add_option("--desc", description, "Composition description");
 
     cmd->callback([this, &comp_id, &block_refs_list, &static_texts, &description]() {
-      handleCompCreate(comp_id, block_refs_list, static_texts, description);
+      handle_comp_create(comp_id, block_refs_list, static_texts, description);
     });
   }
 
@@ -566,7 +566,7 @@ void Application::setupCompCommands(CLI::App &app) {
     auto cmd = comp_cmd->add_subcommand("list", "List all compositions");
 
     cmd->callback([this]() {
-      handleCompList();
+      handle_comp_list();
     });
   }
 
@@ -582,7 +582,7 @@ void Application::setupCompCommands(CLI::App &app) {
         ->required();
 
     cmd->callback([this, &comp_id, &version_str]() {
-      handleCompDeprecate(comp_id, version_str);
+      handle_comp_deprecate(comp_id, version_str);
     });
   }
 
@@ -597,12 +597,12 @@ void Application::setupCompCommands(CLI::App &app) {
     cmd->add_option("-v,--version", version_str_opt, "Specific version (default: latest)");
 
     cmd->callback([this, &comp_id, &version_str_opt]() {
-      handleCompInspect(comp_id, version_str_opt);
+      handle_comp_inspect(comp_id, version_str_opt);
     });
   }
 }
 
-void Application::setupRenderCommand(CLI::App &app) {
+void Application::setup_render_command(CLI::App &app) {
   std::string comp_id;
   std::optional<std::string> version_str_opt;
   std::vector<std::string> runtime_params_list;
@@ -617,11 +617,11 @@ void Application::setupRenderCommand(CLI::App &app) {
   cmd->add_flag("--normalize", normalize, "Apply semantic normalization (requires Normalizer)");
 
   cmd->callback([this, &comp_id, &version_str_opt, &runtime_params_list, &normalize]() {
-    handleRender(comp_id, version_str_opt, runtime_params_list, normalize);
+    handle_render(comp_id, version_str_opt, runtime_params_list, normalize);
   });
 }
 
-void Application::setupValidateCommand(CLI::App &app) {
+void Application::setup_validate_command(CLI::App &app) {
   std::string entity_id;
   std::string entity_type;
 
@@ -633,7 +633,7 @@ void Application::setupValidateCommand(CLI::App &app) {
       ->required();
 
   cmd->callback([this, &entity_id, &entity_type]() {
-    handleValidate(entity_id, entity_type);
+    handle_validate(entity_id, entity_type);
   });
 }
 
@@ -665,14 +665,14 @@ int Application::run(int argc, char **argv) {
   };
   app.set_version_flag("-v,--version", "0.1.0 (MVP)");
 
-  setupGlobalOptions(app);
+  setup_global_options(app);
 
   app.require_subcommand(1);
 
-  setupBlockCommands(app);
-  setupCompCommands(app);
-  setupRenderCommand(app);
-  setupValidateCommand(app);
+  setup_block_commands(app);
+  setup_comp_commands(app);
+  setup_render_command(app);
+  setup_validate_command(app);
 
   CLI11_PARSE(app, argc, argv);
   return 0;
