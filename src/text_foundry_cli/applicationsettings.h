@@ -2,13 +2,18 @@
 
 #pragma once
 
+#include <sago/platform_folders.h>
+
 #include <optional>
 #include <string>
+#include <filesystem>
+
+namespace fs = std::filesystem;
 
 struct ApplicationSettings {
-    std::string project_key{"default"};
-    std::string data_path{"memory:objectbox"};
-    bool dry_run{false};
-    bool strict_mode{false};
-    std::optional<std::string> target_language;
+  std::string project_key{"default"};
+  fs::path data_path{fs::path(sago::getConfigHome()) / "TextFoundry"};
+  bool dry_run{false};
+  bool strict_mode{false};
+  std::optional<std::string> target_language;
 };

@@ -21,6 +21,10 @@
     {
       "name": "cli11",
       "version>=": "2.6.1"
+    },
+    {
+      "name": "platform-folders",
+      "version>=": "4.3.0"
     }
   ]
 }
