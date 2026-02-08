@@ -30,7 +30,8 @@ void Logger::init(LogLevel level) {
         return;
     }
 
-    instance_ = spdlog::stdout_color_mt("textfoundry");
+    // Use stderr for logs to avoid corrupting stdout-based TUI rendering.
+    instance_ = spdlog::stderr_color_mt("textfoundry");
     instance_->set_level(toSpdlogLevel(level));
     instance_->set_pattern("[%Y-%m-%d %H:%M:%S.%e] [%l] %v");
 

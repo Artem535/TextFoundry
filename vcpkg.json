@@ -25,10 +25,6 @@
     {
       "name": "platform-folders",
       "version>=": "4.3.0"
-    },
-    {
-      "name": "ftxui",
-      "version>=": "6.1.9"
     }
   ]
 }

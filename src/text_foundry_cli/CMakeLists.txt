@@ -2,7 +2,6 @@ find_package(CLI11 CONFIG REQUIRED)
 find_package(reflectcpp CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(platform_folders CONFIG REQUIRED)
-find_package(ftxui CONFIG REQUIRED)
 
 
 add_executable(tf
@@ -12,6 +11,10 @@ add_executable(tf
         applicationsettings.h
         tui.cc
         tui.h
+)
+
+target_include_directories(tf BEFORE PRIVATE
+        ${ftxui_SOURCE_DIR}/include
 )
 
 target_link_libraries(tf

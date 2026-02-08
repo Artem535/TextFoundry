@@ -8,12 +8,14 @@
 #include <ftxui/component/screen_interactive.hpp>
 #include <string>
 #include <vector>
+#include <memory>
 
 // Forward declaration
-namespace tf { class Engine; }
+namespace tf {
+  class Engine;
+}
 
 namespace tf {
-
   /**
    * Simplified TUI using FTXUI
    *
@@ -22,18 +24,17 @@ namespace tf {
    */
   class Tui {
   public:
-    explicit Tui(Engine& engine);
+    explicit Tui(Engine &engine);
 
     // Main entry point
     void run();
 
   private:
-    Engine& engine_;
-    ftxui::ScreenInteractive screen_ = ftxui::ScreenInteractive::Fullscreen();
+    Engine &engine_;
 
     // State
     int selected_tab_ = 0;
-    bool show_welcome_ = true;  // Modal is opt-in via env to avoid blank-screen issues.
+    bool show_welcome_ = true;
     // Tab state (for data binding)
     std::vector<std::string> tab_names_ = {"Blocks", "Compositions", "Render", "Settings"};
 
@@ -60,13 +61,13 @@ namespace tf {
     // Each returns a Component (interactive UI element)
 
     // Main layout with tabs
-    ftxui::Component main_layout();
+    ftxui::Component main_layout(auto &screen);
+
 
     // Individual tabs
-    ftxui::Component blocks_tab();       // List + details
+    ftxui::Component blocks_tab(); // List + details
     ftxui::Component compositions_tab(); // List of compositions
-    ftxui::Component render_tab();       // Input fields + output
-    ftxui::Component settings_tab();     // Config options
+    ftxui::Component render_tab(); // Input fields + output
+    ftxui::Component settings_tab(); // Config options
   };
-
 } // namespace tf

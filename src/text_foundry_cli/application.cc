@@ -12,6 +12,7 @@
 #include "../textfoundry_engine/tf/block.h"
 #include "../textfoundry_engine/tf/composition.h"
 #include "../textfoundry_engine/tf/error.h"
+#include "../textfoundry_engine/tf/logger.h"
 #include "../textfoundry_engine/tf/renderer.h"
 
 // ============================================================================
@@ -644,6 +645,8 @@ void Application::setup_validate_command(CLI::App &app) {
 void Application::setup_tui_commands(CLI::App &app) {
   const auto cmd = app.add_subcommand("tui", "TextFoundry TUI");
   cmd->callback([this]() {
+    tf::Logger::init(tf::LogLevel::Off);
+    tf::Logger::set_level(tf::LogLevel::Off);
     init_engine();
     tui_.emplace(engine_.value());
     tui_->run();
