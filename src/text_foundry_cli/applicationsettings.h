@@ -15,5 +15,6 @@ struct ApplicationSettings {
   fs::path data_path{fs::path(sago::getConfigHome()) / "TextFoundry"};
   bool dry_run{false};
   bool strict_mode{false};
+  bool tui{false};
   std::optional<std::string> target_language;
 };

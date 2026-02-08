@@ -9,6 +9,9 @@
 #include <optional>
 #include <string>
 #include <vector>
+#include <ftxui/dom/canvas.hpp>
+
+#include "tui.h"
 #include "tf/engine.h"
 #include "tf/types.h"
 
@@ -17,6 +20,11 @@ public:
   int run(int argc, char **argv);
 
 private:
+  ApplicationSettings settings_;
+  std::optional<tf::Engine> engine_;
+  tf::Tui tui_;
+
+
   void init_engine();
 
   // CLI setup methods
@@ -25,6 +33,7 @@ private:
   void setup_comp_commands(CLI::App& app);
   void setup_render_command(CLI::App& app);
   void setup_validate_command(CLI::App& app);
+  void setup_tui_commands(CLI::App& app);
 
   // Block command handlers
   void handle_block_create(const std::string& block_id, const std::string& block_template,
@@ -52,11 +61,9 @@ private:
   void handle_validate(const std::string& entity_id, const std::string& entity_type);
 
   // Helper methods
-  tf::Params parse_params(const std::vector<std::string>& kv_list);
-  tf::Version parse_version(const std::string& version_str);
-  void print_error(const std::string& message);
-  void output_text_list(const std::vector<std::string>& items, std::ostream& out);
+  static tf::Params parse_params(const std::vector<std::string>& kv_list);
+  static tf::Version parse_version(const std::string& version_str);
+  static void print_error(const std::string& message);
+  static void output_text_list(const std::vector<std::string>& items, std::ostream& out);
 
-  ApplicationSettings settings_;
-  std::optional<tf::Engine> engine_;
 };

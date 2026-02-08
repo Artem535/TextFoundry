@@ -7,6 +7,8 @@
 #include <iostream>
 #include <sstream>
 #include <string_view>
+
+#include "tui.h"
 #include "../textfoundry_engine/tf/block.h"
 #include "../textfoundry_engine/tf/composition.h"
 #include "../textfoundry_engine/tf/error.h"
@@ -54,10 +56,10 @@ void Application::output_text_list(const std::vector<std::string> &items, std::o
 // ============================================================================
 
 void Application::handle_block_create(const std::string &block_id, const std::string &block_template,
-                                    const std::vector<std::string> &block_defaults_list,
-                                    const std::vector<std::string> &block_tags_list,
-                                    tf::BlockType block_type, const std::string &block_description,
-                                    const std::string &block_lang) {
+                                      const std::vector<std::string> &block_defaults_list,
+                                      const std::vector<std::string> &block_tags_list,
+                                      tf::BlockType block_type, const std::string &block_description,
+                                      const std::string &block_lang) {
   init_engine();
 
   try {
@@ -161,15 +163,14 @@ void Application::handle_block_deprecate(const std::string &block_id, const std:
   init_engine();
 
   try {
-    tf::Version version = parse_version(version_str);
+    const tf::Version version = parse_version(version_str);
 
     if (settings_.dry_run) {
       std::cout << "Dry-run: Would deprecate " << block_id << "@" << version_str << std::endl;
       return;
     }
 
-    auto err = engine_.value().deprecate_block(block_id, version);
-    if (err.is_error()) {
+    if (const auto err = engine_.value().deprecate_block(block_id, version); err.is_error()) {
       print_error(err.message);
       throw CLI::RuntimeError(1);
     }
@@ -198,7 +199,7 @@ void Application::handle_block_inspect(const std::string &block_id, const std::o
     throw CLI::RuntimeError(1);
   }
 
-  auto block = result->value();
+  const auto block = result->value();
 
   std::cout << "Block: " << block.id() << std::endl;
   std::cout << "  Version: " << block.version().to_string() << std::endl;
@@ -218,7 +219,7 @@ void Application::handle_block_inspect(const std::string &block_id, const std::o
 // ============================================================================
 
 void Application::handle_comp_create(const std::string &comp_id, const std::vector<std::string> &block_refs_list,
-                                   const std::vector<std::string> &static_texts, const std::string &description) {
+                                     const std::vector<std::string> &static_texts, const std::string &description) {
   init_engine();
 
   try {
@@ -242,7 +243,7 @@ void Application::handle_comp_create(const std::string &comp_id, const std::vect
       std::string version_str = (q_pos != std::string::npos) ? rest.substr(0, q_pos) : rest;
       std::string params_str = (q_pos != std::string::npos) ? rest.substr(q_pos + 1) : "";
 
-      tf::Version version = parse_version(version_str);
+      auto [major, minor] = parse_version(version_str);
 
       tf::Params local_params;
       if (!params_str.empty()) {
@@ -263,7 +264,7 @@ void Application::handle_comp_create(const std::string &comp_id, const std::vect
         }
       }
 
-      builder.add_block_ref(block_id, version.major, version.minor, local_params);
+      builder.add_block_ref(block_id, major, minor, local_params);
     }
 
     for (const auto &text: static_texts) {
@@ -283,7 +284,7 @@ void Application::handle_comp_create(const std::string &comp_id, const std::vect
       throw CLI::RuntimeError(1);
     }
 
-    auto pub = result.value();
+    const auto &pub = result.value();
     std::cout << "Published composition: " << pub.id() << "@" << pub.version().to_string() << std::endl;
   } catch (const std::exception &e) {
     print_error(e.what());
@@ -294,9 +295,7 @@ void Application::handle_comp_create(const std::string &comp_id, const std::vect
 void Application::handle_comp_list() {
   init_engine();
 
-  auto comps = engine_.value().list_compositions();
-
-  if (comps.empty()) {
+  if (const auto comps = engine_.value().list_compositions(); comps.empty()) {
     std::cout << "No compositions found" << std::endl;
   } else {
     std::cout << "Compositions (" << comps.size() << "):" << std::endl;
@@ -308,15 +307,14 @@ void Application::handle_comp_deprecate(const std::string &comp_id, const std::s
   init_engine();
 
   try {
-    tf::Version version = parse_version(version_str);
+    const tf::Version version = parse_version(version_str);
 
     if (settings_.dry_run) {
       std::cout << "Dry-run: Would deprecate composition " << comp_id << "@" << version_str << std::endl;
       return;
     }
 
-    auto err = engine_.value().deprecate_composition(comp_id, version);
-    if (err.is_error()) {
+    if (const auto err = engine_.value().deprecate_composition(comp_id, version); err.is_error()) {
       print_error(err.message);
       throw CLI::RuntimeError(1);
     }
@@ -345,7 +343,7 @@ void Application::handle_comp_inspect(const std::string &comp_id, const std::opt
     throw CLI::RuntimeError(1);
   }
 
-  auto comp = result->value();
+  const auto comp = result->value();
 
   std::cout << "Composition: " << comp.id() << std::endl;
   std::cout << "  Version: " << comp.version().to_string() << std::endl;
@@ -357,7 +355,7 @@ void Application::handle_comp_inspect(const std::string &comp_id, const std::opt
 // ============================================================================
 
 void Application::handle_render(const std::string &comp_id, const std::optional<std::string> &version_str_opt,
-                               const std::vector<std::string> &runtime_params_list, bool normalize) {
+                                const std::vector<std::string> &runtime_params_list, bool normalize) {
   init_engine();
 
   try {
@@ -449,7 +447,7 @@ void Application::setup_block_commands(CLI::App &app) {
     std::string block_id, block_template, block_description;
     std::vector<std::string> block_defaults_list;
     std::vector<std::string> block_tags_list;
-    tf::BlockType block_type = tf::BlockType::Domain;
+    auto block_type = tf::BlockType::Domain;
     std::string block_lang = "en";
 
     auto cmd = block_cmd->add_subcommand("create", "Create and publish a new block");
@@ -470,7 +468,7 @@ void Application::setup_block_commands(CLI::App &app) {
     cmd->callback([this, &block_id, &block_template, &block_defaults_list,
         &block_tags_list, &block_type, &block_description, &block_lang]() {
         handle_block_create(block_id, block_template, block_defaults_list, block_tags_list,
-                          block_type, block_description, block_lang);
+                            block_type, block_description, block_lang);
       });
   }
 
@@ -637,6 +635,13 @@ void Application::setup_validate_command(CLI::App &app) {
   });
 }
 
+void Application::setup_tui_commands(CLI::App &app) {
+  const auto cmd = app.add_subcommand("tui", "TextFoundry TUI");
+  cmd->callback([this]() {
+    tui_.run();
+  });
+}
+
 // ============================================================================
 // Engine initialization
 // ============================================================================
@@ -669,10 +674,12 @@ int Application::run(int argc, char **argv) {
 
   app.require_subcommand(1);
 
+  setup_tui_commands(app);
   setup_block_commands(app);
   setup_comp_commands(app);
   setup_render_command(app);
   setup_validate_command(app);
+
 
   CLI11_PARSE(app, argc, argv);
   return 0;

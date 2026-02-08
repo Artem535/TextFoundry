@@ -2,6 +2,7 @@ find_package(CLI11 CONFIG REQUIRED)
 find_package(reflectcpp CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(platform_folders CONFIG REQUIRED)
+find_package(ftxui CONFIG REQUIRED)
 
 
 add_executable(tf
@@ -9,6 +10,8 @@ add_executable(tf
         application.cc
         application.h
         applicationsettings.h
+        tui.cc
+        tui.h
 )
 
 target_link_libraries(tf
@@ -17,4 +20,5 @@ target_link_libraries(tf
         reflectcpp::reflectcpp
         spdlog::spdlog
         sago::platform_folders
+        ftxui::dom ftxui::screen ftxui::component
 )
