@@ -17,12 +17,13 @@
 
 class Application {
 public:
+  Application();
   int run(int argc, char **argv);
 
 private:
   ApplicationSettings settings_;
   std::optional<tf::Engine> engine_;
-  tf::Tui tui_;
+  std::optional<tf::Tui> tui_;
 
 
   void init_engine();

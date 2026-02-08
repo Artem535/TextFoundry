@@ -15,6 +15,12 @@
 #include "../textfoundry_engine/tf/renderer.h"
 
 // ============================================================================
+// Constructor
+// ============================================================================
+
+Application::Application() = default;
+
+// ============================================================================
 // Helper methods implementation
 // ============================================================================
 
@@ -638,7 +644,9 @@ void Application::setup_validate_command(CLI::App &app) {
 void Application::setup_tui_commands(CLI::App &app) {
   const auto cmd = app.add_subcommand("tui", "TextFoundry TUI");
   cmd->callback([this]() {
-    tui_.run();
+    init_engine();
+    tui_.emplace(engine_.value());
+    tui_->run();
   });
 }
 
@@ -656,7 +664,7 @@ void Application::init_engine() {
   };
 
   engine_.emplace(config);
-  engine_->full_init();
+  // full_init() уже вызывается в конструкторе Engine
 }
 
 // ============================================================================
