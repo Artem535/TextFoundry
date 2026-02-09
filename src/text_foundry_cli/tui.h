@@ -48,6 +48,14 @@ class Tui {
   std::vector<std::string> block_ids_;
   int selected_block_ = 0;
   std::string details_text_ = "Select a block to see details";
+  std::string create_block_id_;
+  std::string create_template_;
+  std::string create_defaults_;
+  std::string create_tags_;
+  std::string create_description_;
+  std::string create_language_ = "en";
+  int create_block_type_ = 3;  // domain
+  std::string create_status_ = "Fill in fields and press Create";
 
   // ===== Compositions tab state =====
   std::vector<std::string> comp_ids_;
@@ -75,5 +83,12 @@ class Tui {
   ftxui::Component CompositionsTab();  // List of compositions
   ftxui::Component RenderTab();        // Input fields + output
   ftxui::Component SettingsTab();      // Config options
+
+  // ===== Blocks helpers =====
+  void RefreshBlocksList();
+  void UpdateSelectedBlockDetails();
+  void ResetCreateBlockForm(const std::string& status = "Form reset");
+  void SelectBlockById(const std::string& block_id);
+  void TryCreateBlock();
 };
 }  // namespace tf
