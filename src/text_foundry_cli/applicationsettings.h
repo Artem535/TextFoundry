@@ -4,9 +4,9 @@
 
 #include <sago/platform_folders.h>
 
+#include <filesystem>
 #include <optional>
 #include <string>
-#include <filesystem>
 
 namespace fs = std::filesystem;
 

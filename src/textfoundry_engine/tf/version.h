@@ -4,10 +4,11 @@
 
 #pragma once
 
+#include <fmt/base.h>
+
 #include <cstdint>
 #include <format>
 #include <string>
-#include <fmt/base.h>
 
 namespace tf {
 
@@ -17,42 +18,41 @@ namespace tf {
  * New versions are created for any change to Published entity.
  */
 struct Version {
-    uint16_t major = 0;  ///< Major version - breaking changes
-    uint16_t minor = 0;  ///< Minor version - backward compatible additions
+  uint16_t major = 0;  ///< Major version - breaking changes
+  uint16_t minor = 0;  ///< Minor version - backward compatible additions
 
-    [[nodiscard]] constexpr auto operator<=>(const Version&) const = default;
-    [[nodiscard]] constexpr bool operator==(const Version&) const = default;
+  [[nodiscard]] constexpr auto operator<=>(const Version&) const = default;
+  [[nodiscard]] constexpr bool operator==(const Version&) const = default;
 
-    /**
-     * Convert version to string format "major.minor"
-     */
-    [[nodiscard]] std::string to_string() const {
-        return std::format("{}.{}", major, minor);
-    }
+  /**
+   * Convert version to string format "major.minor"
+   */
+  [[nodiscard]] std::string to_string() const {
+    return std::format("{}.{}", major, minor);
+  }
 };
 
-} // namespace tf
-
+}  // namespace tf
 
 // fmt support for spdlog (corrected for fmt v9+)
-template<>
+template <>
 struct fmt::formatter<tf::Version> {
-    template<typename ParseContext>
-    constexpr auto parse(ParseContext& ctx) {
-        return ctx.begin();
-    }
+  template <typename ParseContext>
+  constexpr auto parse(ParseContext& ctx) {
+    return ctx.begin();
+  }
 
-    template<typename FormatContext>
-    auto format(const tf::Version& v, FormatContext& ctx) const {
-        return fmt::format_to(ctx.out(), "{}.{}", v.major, v.minor);
-    }
+  template <typename FormatContext>
+  auto format(const tf::Version& v, FormatContext& ctx) const {
+    return fmt::format_to(ctx.out(), "{}.{}", v.major, v.minor);
+  }
 };
 
 // C++23 std::format support
-template<>
+template <>
 struct std::formatter<tf::Version> : std::formatter<std::string> {
-    template<typename FormatContext>
-    auto format(const tf::Version& v, FormatContext& ctx) const {
-        return std::formatter<std::string>::format(v.to_string(), ctx);
-    }
+  template <typename FormatContext>
+  auto format(const tf::Version& v, FormatContext& ctx) const {
+    return std::formatter<std::string>::format(v.to_string(), ctx);
+  }
 };

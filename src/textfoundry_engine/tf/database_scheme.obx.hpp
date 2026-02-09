@@ -9,425 +9,471 @@
 #include "objectbox.h"
 #include "objectbox.hpp"
 
-
 struct ObxAuditLog_;
 
 /// Audit log for tracking changes (optional, for compliance).
 struct ObxAuditLog {
-    obx_id id;
-    /// Timestamp of the change
-    int64_t createdAt;
-    /// Entity type: "ObxBlock", "ObxComposition", "ObxProject", etc.
-    std::string entityType;
-    /// Entity ID
-    uint64_t entityId;
-    /// Operation: "CREATE", "UPDATE", "DELETE", "PUBLISH", "DEPRECATE"
-    std::string operation;
-    /// User identifier (if available)
-    std::string userId;
-    /// Change details JSON
-    std::string detailsJson;
+  obx_id id;
+  /// Timestamp of the change
+  int64_t createdAt;
+  /// Entity type: "ObxBlock", "ObxComposition", "ObxProject", etc.
+  std::string entityType;
+  /// Entity ID
+  uint64_t entityId;
+  /// Operation: "CREATE", "UPDATE", "DELETE", "PUBLISH", "DEPRECATE"
+  std::string operation;
+  /// User identifier (if available)
+  std::string userId;
+  /// Change details JSON
+  std::string detailsJson;
 
-    struct _OBX_MetaInfo {
-        static constexpr obx_schema_id entityId() { return 1; }
-    
-        static void setObjectId(ObxAuditLog& object, obx_id newId) { object.id = newId; }
-    
-        /// Write given object to the FlatBufferBuilder
-        static void toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb, const ObxAuditLog& object);
-    
-        /// Read an object from a valid FlatBuffer
-        static ObxAuditLog fromFlatBuffer(const void* data, size_t size);
-    
-        /// Read an object from a valid FlatBuffer
-        static std::unique_ptr<ObxAuditLog> newFromFlatBuffer(const void* data, size_t size);
-    
-        /// Read an object from a valid FlatBuffer
-        static void fromFlatBuffer(const void* data, size_t size, ObxAuditLog& outObject);
-    };
+  struct _OBX_MetaInfo {
+    static constexpr obx_schema_id entityId() { return 1; }
+
+    static void setObjectId(ObxAuditLog& object, obx_id newId) {
+      object.id = newId;
+    }
+
+    /// Write given object to the FlatBufferBuilder
+    static void toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb,
+                             const ObxAuditLog& object);
+
+    /// Read an object from a valid FlatBuffer
+    static ObxAuditLog fromFlatBuffer(const void* data, size_t size);
+
+    /// Read an object from a valid FlatBuffer
+    static std::unique_ptr<ObxAuditLog> newFromFlatBuffer(const void* data,
+                                                          size_t size);
+
+    /// Read an object from a valid FlatBuffer
+    static void fromFlatBuffer(const void* data, size_t size,
+                               ObxAuditLog& outObject);
+  };
 };
 
 struct ObxAuditLog_ {
-    static const obx::Property<ObxAuditLog, OBXPropertyType_Long> id;
-    static const obx::Property<ObxAuditLog, OBXPropertyType_Date> createdAt;
-    static const obx::Property<ObxAuditLog, OBXPropertyType_String> entityType;
-    static const obx::Property<ObxAuditLog, OBXPropertyType_Long> entityId;
-    static const obx::Property<ObxAuditLog, OBXPropertyType_String> operation;
-    static const obx::Property<ObxAuditLog, OBXPropertyType_String> userId;
-    static const obx::Property<ObxAuditLog, OBXPropertyType_String> detailsJson;
+  static const obx::Property<ObxAuditLog, OBXPropertyType_Long> id;
+  static const obx::Property<ObxAuditLog, OBXPropertyType_Date> createdAt;
+  static const obx::Property<ObxAuditLog, OBXPropertyType_String> entityType;
+  static const obx::Property<ObxAuditLog, OBXPropertyType_Long> entityId;
+  static const obx::Property<ObxAuditLog, OBXPropertyType_String> operation;
+  static const obx::Property<ObxAuditLog, OBXPropertyType_String> userId;
+  static const obx::Property<ObxAuditLog, OBXPropertyType_String> detailsJson;
 };
 
-struct ObxBlock; 
-struct ObxProject; 
-struct ObxTag; 
+struct ObxBlock;
+struct ObxProject;
+struct ObxTag;
 
 struct ObxBlock_;
 
 /// ObxBlock - reusable logical text fragment
 /// Many-to-Many relation with ObxTag: standalone relation stored separately
 struct ObxBlock {
-    obx_id id;
-    /// Logical block identifier (e.g., "greeting.formal")
-    std::string blockId;
-    uint16_t versionMajor;
-    uint16_t versionMinor;
-    /// Many-to-One: ObxBlock belongs to ObxProject
-    obx_id projectId;
-    /// Language code (e.g., "en")
-    std::string language;
-    /// Lifecycle state: 0=Draft, 1=Published, 2=Deprecated
-    int8_t state;
-    /// Block type enum (Role/Constraint/Style/Domain/Meta)
-    /// Kept as embedded byte since it's taxonomy, not lifecycle metadata
-    int8_t type;
-    /// Template content with placeholders
-    std::string templateContent;
-    /// JSON object with default parameter values
-    std::string defaultsJson;
-    /// JSON Obx block parameters
-    std::string paramsJson;
-    /// Tags JSON array
-    std::string tagsJson;
-    /// Human-readable description
-    std::string description;
-    /// Creation timestamp
-    int64_t createdAt;
-    /// Last modification timestamp
-    int64_t updatedAt;
-    /// Previous version reference (for version chain)
-    obx_id previousVersionId;
-    /// Next version reference (for version chain)
-    obx_id nextVersionId;
+  obx_id id;
+  /// Logical block identifier (e.g., "greeting.formal")
+  std::string blockId;
+  uint16_t versionMajor;
+  uint16_t versionMinor;
+  /// Many-to-One: ObxBlock belongs to ObxProject
+  obx_id projectId;
+  /// Language code (e.g., "en")
+  std::string language;
+  /// Lifecycle state: 0=Draft, 1=Published, 2=Deprecated
+  int8_t state;
+  /// Block type enum (Role/Constraint/Style/Domain/Meta)
+  /// Kept as embedded byte since it's taxonomy, not lifecycle metadata
+  int8_t type;
+  /// Template content with placeholders
+  std::string templateContent;
+  /// JSON object with default parameter values
+  std::string defaultsJson;
+  /// JSON Obx block parameters
+  std::string paramsJson;
+  /// Tags JSON array
+  std::string tagsJson;
+  /// Human-readable description
+  std::string description;
+  /// Creation timestamp
+  int64_t createdAt;
+  /// Last modification timestamp
+  int64_t updatedAt;
+  /// Previous version reference (for version chain)
+  obx_id previousVersionId;
+  /// Next version reference (for version chain)
+  obx_id nextVersionId;
 
-    struct _OBX_MetaInfo {
-        static constexpr obx_schema_id entityId() { return 2; }
-    
-        static void setObjectId(ObxBlock& object, obx_id newId) { object.id = newId; }
-    
-        /// Write given object to the FlatBufferBuilder
-        static void toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb, const ObxBlock& object);
-    
-        /// Read an object from a valid FlatBuffer
-        static ObxBlock fromFlatBuffer(const void* data, size_t size);
-    
-        /// Read an object from a valid FlatBuffer
-        static std::unique_ptr<ObxBlock> newFromFlatBuffer(const void* data, size_t size);
-    
-        /// Read an object from a valid FlatBuffer
-        static void fromFlatBuffer(const void* data, size_t size, ObxBlock& outObject);
-    };
+  struct _OBX_MetaInfo {
+    static constexpr obx_schema_id entityId() { return 2; }
+
+    static void setObjectId(ObxBlock& object, obx_id newId) {
+      object.id = newId;
+    }
+
+    /// Write given object to the FlatBufferBuilder
+    static void toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb,
+                             const ObxBlock& object);
+
+    /// Read an object from a valid FlatBuffer
+    static ObxBlock fromFlatBuffer(const void* data, size_t size);
+
+    /// Read an object from a valid FlatBuffer
+    static std::unique_ptr<ObxBlock> newFromFlatBuffer(const void* data,
+                                                       size_t size);
+
+    /// Read an object from a valid FlatBuffer
+    static void fromFlatBuffer(const void* data, size_t size,
+                               ObxBlock& outObject);
+  };
 };
 
 struct ObxBlock_ {
-    static const obx::Property<ObxBlock, OBXPropertyType_Long> id;
-    static const obx::Property<ObxBlock, OBXPropertyType_String> blockId;
-    static const obx::Property<ObxBlock, OBXPropertyType_Short> versionMajor;
-    static const obx::Property<ObxBlock, OBXPropertyType_Short> versionMinor;
-    static const obx::RelationProperty<ObxBlock, ObxProject> projectId;
-    static const obx::Property<ObxBlock, OBXPropertyType_String> language;
-    static const obx::Property<ObxBlock, OBXPropertyType_Byte> state;
-    static const obx::Property<ObxBlock, OBXPropertyType_Byte> type;
-    static const obx::Property<ObxBlock, OBXPropertyType_String> templateContent;
-    static const obx::Property<ObxBlock, OBXPropertyType_String> defaultsJson;
-    static const obx::Property<ObxBlock, OBXPropertyType_String> paramsJson;
-    static const obx::Property<ObxBlock, OBXPropertyType_String> tagsJson;
-    static const obx::Property<ObxBlock, OBXPropertyType_String> description;
-    static const obx::Property<ObxBlock, OBXPropertyType_Long> createdAt;
-    static const obx::Property<ObxBlock, OBXPropertyType_Long> updatedAt;
-    static const obx::RelationProperty<ObxBlock, ObxBlock> previousVersionId;
-    static const obx::RelationProperty<ObxBlock, ObxBlock> nextVersionId;
-    static const obx::RelationStandalone<ObxBlock, ObxTag> tags;
+  static const obx::Property<ObxBlock, OBXPropertyType_Long> id;
+  static const obx::Property<ObxBlock, OBXPropertyType_String> blockId;
+  static const obx::Property<ObxBlock, OBXPropertyType_Short> versionMajor;
+  static const obx::Property<ObxBlock, OBXPropertyType_Short> versionMinor;
+  static const obx::RelationProperty<ObxBlock, ObxProject> projectId;
+  static const obx::Property<ObxBlock, OBXPropertyType_String> language;
+  static const obx::Property<ObxBlock, OBXPropertyType_Byte> state;
+  static const obx::Property<ObxBlock, OBXPropertyType_Byte> type;
+  static const obx::Property<ObxBlock, OBXPropertyType_String> templateContent;
+  static const obx::Property<ObxBlock, OBXPropertyType_String> defaultsJson;
+  static const obx::Property<ObxBlock, OBXPropertyType_String> paramsJson;
+  static const obx::Property<ObxBlock, OBXPropertyType_String> tagsJson;
+  static const obx::Property<ObxBlock, OBXPropertyType_String> description;
+  static const obx::Property<ObxBlock, OBXPropertyType_Long> createdAt;
+  static const obx::Property<ObxBlock, OBXPropertyType_Long> updatedAt;
+  static const obx::RelationProperty<ObxBlock, ObxBlock> previousVersionId;
+  static const obx::RelationProperty<ObxBlock, ObxBlock> nextVersionId;
+  static const obx::RelationStandalone<ObxBlock, ObxTag> tags;
 };
 
-struct ObxBlock; 
+struct ObxBlock;
 
 struct ObxBlockUsage_;
 
 /// Block usage statistics (for analytics) (NOT IMPLEMENTED)
 struct ObxBlockUsage {
-    obx_id id;
-    /// Many-to-One: ObxBlock being tracked
-    obx_id blockId;
-    /// Usage count
-    uint64_t usageCount;
-    /// Last used timestamp
-    int64_t lastUsedAt;
-    /// Compositions where block is used (JSON array of composition IDs)
-    std::string compositionIdsJson;
+  obx_id id;
+  /// Many-to-One: ObxBlock being tracked
+  obx_id blockId;
+  /// Usage count
+  uint64_t usageCount;
+  /// Last used timestamp
+  int64_t lastUsedAt;
+  /// Compositions where block is used (JSON array of composition IDs)
+  std::string compositionIdsJson;
 
-    struct _OBX_MetaInfo {
-        static constexpr obx_schema_id entityId() { return 3; }
-    
-        static void setObjectId(ObxBlockUsage& object, obx_id newId) { object.id = newId; }
-    
-        /// Write given object to the FlatBufferBuilder
-        static void toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb, const ObxBlockUsage& object);
-    
-        /// Read an object from a valid FlatBuffer
-        static ObxBlockUsage fromFlatBuffer(const void* data, size_t size);
-    
-        /// Read an object from a valid FlatBuffer
-        static std::unique_ptr<ObxBlockUsage> newFromFlatBuffer(const void* data, size_t size);
-    
-        /// Read an object from a valid FlatBuffer
-        static void fromFlatBuffer(const void* data, size_t size, ObxBlockUsage& outObject);
-    };
+  struct _OBX_MetaInfo {
+    static constexpr obx_schema_id entityId() { return 3; }
+
+    static void setObjectId(ObxBlockUsage& object, obx_id newId) {
+      object.id = newId;
+    }
+
+    /// Write given object to the FlatBufferBuilder
+    static void toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb,
+                             const ObxBlockUsage& object);
+
+    /// Read an object from a valid FlatBuffer
+    static ObxBlockUsage fromFlatBuffer(const void* data, size_t size);
+
+    /// Read an object from a valid FlatBuffer
+    static std::unique_ptr<ObxBlockUsage> newFromFlatBuffer(const void* data,
+                                                            size_t size);
+
+    /// Read an object from a valid FlatBuffer
+    static void fromFlatBuffer(const void* data, size_t size,
+                               ObxBlockUsage& outObject);
+  };
 };
 
 struct ObxBlockUsage_ {
-    static const obx::Property<ObxBlockUsage, OBXPropertyType_Long> id;
-    static const obx::RelationProperty<ObxBlockUsage, ObxBlock> blockId;
-    static const obx::Property<ObxBlockUsage, OBXPropertyType_Long> usageCount;
-    static const obx::Property<ObxBlockUsage, OBXPropertyType_Long> lastUsedAt;
-    static const obx::Property<ObxBlockUsage, OBXPropertyType_String> compositionIdsJson;
+  static const obx::Property<ObxBlockUsage, OBXPropertyType_Long> id;
+  static const obx::RelationProperty<ObxBlockUsage, ObxBlock> blockId;
+  static const obx::Property<ObxBlockUsage, OBXPropertyType_Long> usageCount;
+  static const obx::Property<ObxBlockUsage, OBXPropertyType_Long> lastUsedAt;
+  static const obx::Property<ObxBlockUsage, OBXPropertyType_String>
+      compositionIdsJson;
 };
 
-struct ObxComposition; 
-struct ObxLanguage; 
-struct ObxProject; 
+struct ObxComposition;
+struct ObxLanguage;
+struct ObxProject;
 
 struct ObxComposition_;
 
 struct ObxComposition {
-    obx_id id;
-    /// Logical composition identifier
-    std::string compositionId;
-    /// Many-to-One: ObxComposition belongs to ObxProject
-    obx_id projectId;
-    /// Project key string
-    std::string projectKey;
-    /// Lifecycle state: 0=Draft, 1=Published, 2=Deprecated
-    int8_t state;
-    uint16_t versionMajor;
-    uint16_t versionMinor;
-    /// Many-to-One: Target language
-    obx_id targetLanguageId;
-    /// Structural style JSON (blockWrapper, preamble, postamble, delimiter)
-    /// Semantic style JSON (tone, tense, targetLanguage, person)
-    std::string styleProfileJson;
-    /// Human-readable description
-    std::string description;
-    /// Creation timestamp
-    int64_t createdAt;
-    /// Last modification timestamp
-    int64_t updatedAt;
-    /// Previous version reference
-    obx_id previousVersionId;
-    /// Next version reference
-    obx_id nextVersionId;
+  obx_id id;
+  /// Logical composition identifier
+  std::string compositionId;
+  /// Many-to-One: ObxComposition belongs to ObxProject
+  obx_id projectId;
+  /// Project key string
+  std::string projectKey;
+  /// Lifecycle state: 0=Draft, 1=Published, 2=Deprecated
+  int8_t state;
+  uint16_t versionMajor;
+  uint16_t versionMinor;
+  /// Many-to-One: Target language
+  obx_id targetLanguageId;
+  /// Structural style JSON (blockWrapper, preamble, postamble, delimiter)
+  /// Semantic style JSON (tone, tense, targetLanguage, person)
+  std::string styleProfileJson;
+  /// Human-readable description
+  std::string description;
+  /// Creation timestamp
+  int64_t createdAt;
+  /// Last modification timestamp
+  int64_t updatedAt;
+  /// Previous version reference
+  obx_id previousVersionId;
+  /// Next version reference
+  obx_id nextVersionId;
 
-    struct _OBX_MetaInfo {
-        static constexpr obx_schema_id entityId() { return 4; }
-    
-        static void setObjectId(ObxComposition& object, obx_id newId) { object.id = newId; }
-    
-        /// Write given object to the FlatBufferBuilder
-        static void toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb, const ObxComposition& object);
-    
-        /// Read an object from a valid FlatBuffer
-        static ObxComposition fromFlatBuffer(const void* data, size_t size);
-    
-        /// Read an object from a valid FlatBuffer
-        static std::unique_ptr<ObxComposition> newFromFlatBuffer(const void* data, size_t size);
-    
-        /// Read an object from a valid FlatBuffer
-        static void fromFlatBuffer(const void* data, size_t size, ObxComposition& outObject);
-    };
+  struct _OBX_MetaInfo {
+    static constexpr obx_schema_id entityId() { return 4; }
+
+    static void setObjectId(ObxComposition& object, obx_id newId) {
+      object.id = newId;
+    }
+
+    /// Write given object to the FlatBufferBuilder
+    static void toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb,
+                             const ObxComposition& object);
+
+    /// Read an object from a valid FlatBuffer
+    static ObxComposition fromFlatBuffer(const void* data, size_t size);
+
+    /// Read an object from a valid FlatBuffer
+    static std::unique_ptr<ObxComposition> newFromFlatBuffer(const void* data,
+                                                             size_t size);
+
+    /// Read an object from a valid FlatBuffer
+    static void fromFlatBuffer(const void* data, size_t size,
+                               ObxComposition& outObject);
+  };
 };
 
 struct ObxComposition_ {
-    static const obx::Property<ObxComposition, OBXPropertyType_Long> id;
-    static const obx::Property<ObxComposition, OBXPropertyType_String> compositionId;
-    static const obx::RelationProperty<ObxComposition, ObxProject> projectId;
-    static const obx::Property<ObxComposition, OBXPropertyType_String> projectKey;
-    static const obx::Property<ObxComposition, OBXPropertyType_Byte> state;
-    static const obx::Property<ObxComposition, OBXPropertyType_Short> versionMajor;
-    static const obx::Property<ObxComposition, OBXPropertyType_Short> versionMinor;
-    static const obx::RelationProperty<ObxComposition, ObxLanguage> targetLanguageId;
-    static const obx::Property<ObxComposition, OBXPropertyType_String> styleProfileJson;
-    static const obx::Property<ObxComposition, OBXPropertyType_String> description;
-    static const obx::Property<ObxComposition, OBXPropertyType_Long> createdAt;
-    static const obx::Property<ObxComposition, OBXPropertyType_Long> updatedAt;
-    static const obx::RelationProperty<ObxComposition, ObxComposition> previousVersionId;
-    static const obx::RelationProperty<ObxComposition, ObxComposition> nextVersionId;
+  static const obx::Property<ObxComposition, OBXPropertyType_Long> id;
+  static const obx::Property<ObxComposition, OBXPropertyType_String>
+      compositionId;
+  static const obx::RelationProperty<ObxComposition, ObxProject> projectId;
+  static const obx::Property<ObxComposition, OBXPropertyType_String> projectKey;
+  static const obx::Property<ObxComposition, OBXPropertyType_Byte> state;
+  static const obx::Property<ObxComposition, OBXPropertyType_Short>
+      versionMajor;
+  static const obx::Property<ObxComposition, OBXPropertyType_Short>
+      versionMinor;
+  static const obx::RelationProperty<ObxComposition, ObxLanguage>
+      targetLanguageId;
+  static const obx::Property<ObxComposition, OBXPropertyType_String>
+      styleProfileJson;
+  static const obx::Property<ObxComposition, OBXPropertyType_String>
+      description;
+  static const obx::Property<ObxComposition, OBXPropertyType_Long> createdAt;
+  static const obx::Property<ObxComposition, OBXPropertyType_Long> updatedAt;
+  static const obx::RelationProperty<ObxComposition, ObxComposition>
+      previousVersionId;
+  static const obx::RelationProperty<ObxComposition, ObxComposition>
+      nextVersionId;
 };
 
-struct ObxComposition; 
+struct ObxComposition;
 
 struct ObxFragment_;
 
 /// Fragment stored as separate entity for queryability and large compositions
 struct ObxFragment {
-    obx_id id;
-    /// Many-to-One: ObxFragment belongs to ObxComposition
-    obx_id compositionId;
-    /// Order index within composition
-    uint32_t orderIndex;
-    /// Fragment type: 0=BlockRef, 1=StaticText, 2=Separator
-    int8_t fragmentType;
-    /// For BlockRef: referenced block ID
-    std::string refBlockId;
-    /// For BlockRef: block version major
-    uint16_t refVersionMajor;
-    /// For BlockRef: block version minor
-    uint16_t refVersionMinor;
-    /// For BlockRef: use latest version flag
-    bool refUseLatest;
-    /// For BlockRef: local parameters JSON
-    std::string refLocalParamsJson;
-    /// For StaticText: raw content
-    std::string staticContent;
-    /// For Separator: separator type (0=None, 1=Newline, 2=Paragraph, 3=Hr)
-    int8_t separatorType;
+  obx_id id;
+  /// Many-to-One: ObxFragment belongs to ObxComposition
+  obx_id compositionId;
+  /// Order index within composition
+  uint32_t orderIndex;
+  /// Fragment type: 0=BlockRef, 1=StaticText, 2=Separator
+  int8_t fragmentType;
+  /// For BlockRef: referenced block ID
+  std::string refBlockId;
+  /// For BlockRef: block version major
+  uint16_t refVersionMajor;
+  /// For BlockRef: block version minor
+  uint16_t refVersionMinor;
+  /// For BlockRef: use latest version flag
+  bool refUseLatest;
+  /// For BlockRef: local parameters JSON
+  std::string refLocalParamsJson;
+  /// For StaticText: raw content
+  std::string staticContent;
+  /// For Separator: separator type (0=None, 1=Newline, 2=Paragraph, 3=Hr)
+  int8_t separatorType;
 
-    struct _OBX_MetaInfo {
-        static constexpr obx_schema_id entityId() { return 5; }
-    
-        static void setObjectId(ObxFragment& object, obx_id newId) { object.id = newId; }
-    
-        /// Write given object to the FlatBufferBuilder
-        static void toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb, const ObxFragment& object);
-    
-        /// Read an object from a valid FlatBuffer
-        static ObxFragment fromFlatBuffer(const void* data, size_t size);
-    
-        /// Read an object from a valid FlatBuffer
-        static std::unique_ptr<ObxFragment> newFromFlatBuffer(const void* data, size_t size);
-    
-        /// Read an object from a valid FlatBuffer
-        static void fromFlatBuffer(const void* data, size_t size, ObxFragment& outObject);
-    };
+  struct _OBX_MetaInfo {
+    static constexpr obx_schema_id entityId() { return 5; }
+
+    static void setObjectId(ObxFragment& object, obx_id newId) {
+      object.id = newId;
+    }
+
+    /// Write given object to the FlatBufferBuilder
+    static void toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb,
+                             const ObxFragment& object);
+
+    /// Read an object from a valid FlatBuffer
+    static ObxFragment fromFlatBuffer(const void* data, size_t size);
+
+    /// Read an object from a valid FlatBuffer
+    static std::unique_ptr<ObxFragment> newFromFlatBuffer(const void* data,
+                                                          size_t size);
+
+    /// Read an object from a valid FlatBuffer
+    static void fromFlatBuffer(const void* data, size_t size,
+                               ObxFragment& outObject);
+  };
 };
 
 struct ObxFragment_ {
-    static const obx::Property<ObxFragment, OBXPropertyType_Long> id;
-    static const obx::RelationProperty<ObxFragment, ObxComposition> compositionId;
-    static const obx::Property<ObxFragment, OBXPropertyType_Int> orderIndex;
-    static const obx::Property<ObxFragment, OBXPropertyType_Byte> fragmentType;
-    static const obx::Property<ObxFragment, OBXPropertyType_String> refBlockId;
-    static const obx::Property<ObxFragment, OBXPropertyType_Short> refVersionMajor;
-    static const obx::Property<ObxFragment, OBXPropertyType_Short> refVersionMinor;
-    static const obx::Property<ObxFragment, OBXPropertyType_Bool> refUseLatest;
-    static const obx::Property<ObxFragment, OBXPropertyType_String> refLocalParamsJson;
-    static const obx::Property<ObxFragment, OBXPropertyType_String> staticContent;
-    static const obx::Property<ObxFragment, OBXPropertyType_Byte> separatorType;
+  static const obx::Property<ObxFragment, OBXPropertyType_Long> id;
+  static const obx::RelationProperty<ObxFragment, ObxComposition> compositionId;
+  static const obx::Property<ObxFragment, OBXPropertyType_Int> orderIndex;
+  static const obx::Property<ObxFragment, OBXPropertyType_Byte> fragmentType;
+  static const obx::Property<ObxFragment, OBXPropertyType_String> refBlockId;
+  static const obx::Property<ObxFragment, OBXPropertyType_Short>
+      refVersionMajor;
+  static const obx::Property<ObxFragment, OBXPropertyType_Short>
+      refVersionMinor;
+  static const obx::Property<ObxFragment, OBXPropertyType_Bool> refUseLatest;
+  static const obx::Property<ObxFragment, OBXPropertyType_String>
+      refLocalParamsJson;
+  static const obx::Property<ObxFragment, OBXPropertyType_String> staticContent;
+  static const obx::Property<ObxFragment, OBXPropertyType_Byte> separatorType;
 };
-
 
 struct ObxLanguage_;
 
 struct ObxLanguage {
-    obx_id id;
-    /// ISO 639-1 code (e.g., "en", "ru", "de")
-    std::string code;
-    /// Native name (e.g., "English", "Русский")
-    std::string nativeName;
+  obx_id id;
+  /// ISO 639-1 code (e.g., "en", "ru", "de")
+  std::string code;
+  /// Native name (e.g., "English", "Русский")
+  std::string nativeName;
 
-    struct _OBX_MetaInfo {
-        static constexpr obx_schema_id entityId() { return 6; }
-    
-        static void setObjectId(ObxLanguage& object, obx_id newId) { object.id = newId; }
-    
-        /// Write given object to the FlatBufferBuilder
-        static void toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb, const ObxLanguage& object);
-    
-        /// Read an object from a valid FlatBuffer
-        static ObxLanguage fromFlatBuffer(const void* data, size_t size);
-    
-        /// Read an object from a valid FlatBuffer
-        static std::unique_ptr<ObxLanguage> newFromFlatBuffer(const void* data, size_t size);
-    
-        /// Read an object from a valid FlatBuffer
-        static void fromFlatBuffer(const void* data, size_t size, ObxLanguage& outObject);
-    };
+  struct _OBX_MetaInfo {
+    static constexpr obx_schema_id entityId() { return 6; }
+
+    static void setObjectId(ObxLanguage& object, obx_id newId) {
+      object.id = newId;
+    }
+
+    /// Write given object to the FlatBufferBuilder
+    static void toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb,
+                             const ObxLanguage& object);
+
+    /// Read an object from a valid FlatBuffer
+    static ObxLanguage fromFlatBuffer(const void* data, size_t size);
+
+    /// Read an object from a valid FlatBuffer
+    static std::unique_ptr<ObxLanguage> newFromFlatBuffer(const void* data,
+                                                          size_t size);
+
+    /// Read an object from a valid FlatBuffer
+    static void fromFlatBuffer(const void* data, size_t size,
+                               ObxLanguage& outObject);
+  };
 };
 
 struct ObxLanguage_ {
-    static const obx::Property<ObxLanguage, OBXPropertyType_Long> id;
-    static const obx::Property<ObxLanguage, OBXPropertyType_String> code;
-    static const obx::Property<ObxLanguage, OBXPropertyType_String> nativeName;
+  static const obx::Property<ObxLanguage, OBXPropertyType_Long> id;
+  static const obx::Property<ObxLanguage, OBXPropertyType_String> code;
+  static const obx::Property<ObxLanguage, OBXPropertyType_String> nativeName;
 };
-
 
 struct ObxProject_;
 
 struct ObxProject {
-    obx_id id;
-    /// Unique project identifier (e.g., "myapp", "docs")
-    std::string key;
-    /// Display name
-    std::string name;
-    /// Project description
-    std::string description;
-    /// Creation timestamp (Unix milliseconds)
-    int64_t createdAt;
-    /// Last modification timestamp
-    int64_t updatedAt;
+  obx_id id;
+  /// Unique project identifier (e.g., "myapp", "docs")
+  std::string key;
+  /// Display name
+  std::string name;
+  /// Project description
+  std::string description;
+  /// Creation timestamp (Unix milliseconds)
+  int64_t createdAt;
+  /// Last modification timestamp
+  int64_t updatedAt;
 
-    struct _OBX_MetaInfo {
-        static constexpr obx_schema_id entityId() { return 7; }
-    
-        static void setObjectId(ObxProject& object, obx_id newId) { object.id = newId; }
-    
-        /// Write given object to the FlatBufferBuilder
-        static void toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb, const ObxProject& object);
-    
-        /// Read an object from a valid FlatBuffer
-        static ObxProject fromFlatBuffer(const void* data, size_t size);
-    
-        /// Read an object from a valid FlatBuffer
-        static std::unique_ptr<ObxProject> newFromFlatBuffer(const void* data, size_t size);
-    
-        /// Read an object from a valid FlatBuffer
-        static void fromFlatBuffer(const void* data, size_t size, ObxProject& outObject);
-    };
+  struct _OBX_MetaInfo {
+    static constexpr obx_schema_id entityId() { return 7; }
+
+    static void setObjectId(ObxProject& object, obx_id newId) {
+      object.id = newId;
+    }
+
+    /// Write given object to the FlatBufferBuilder
+    static void toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb,
+                             const ObxProject& object);
+
+    /// Read an object from a valid FlatBuffer
+    static ObxProject fromFlatBuffer(const void* data, size_t size);
+
+    /// Read an object from a valid FlatBuffer
+    static std::unique_ptr<ObxProject> newFromFlatBuffer(const void* data,
+                                                         size_t size);
+
+    /// Read an object from a valid FlatBuffer
+    static void fromFlatBuffer(const void* data, size_t size,
+                               ObxProject& outObject);
+  };
 };
 
 struct ObxProject_ {
-    static const obx::Property<ObxProject, OBXPropertyType_Long> id;
-    static const obx::Property<ObxProject, OBXPropertyType_String> key;
-    static const obx::Property<ObxProject, OBXPropertyType_String> name;
-    static const obx::Property<ObxProject, OBXPropertyType_String> description;
-    static const obx::Property<ObxProject, OBXPropertyType_Long> createdAt;
-    static const obx::Property<ObxProject, OBXPropertyType_Long> updatedAt;
+  static const obx::Property<ObxProject, OBXPropertyType_Long> id;
+  static const obx::Property<ObxProject, OBXPropertyType_String> key;
+  static const obx::Property<ObxProject, OBXPropertyType_String> name;
+  static const obx::Property<ObxProject, OBXPropertyType_String> description;
+  static const obx::Property<ObxProject, OBXPropertyType_Long> createdAt;
+  static const obx::Property<ObxProject, OBXPropertyType_Long> updatedAt;
 };
 
-struct ObxProject; 
+struct ObxProject;
 
 struct ObxTag_;
 
 struct ObxTag {
-    obx_id id;
-    /// Many-to-One: Tag belongs to ObxProject
-    obx_id projectId;
-    /// Tag name (unique within project)
-    std::string name;
-    /// Creation timestamp
-    int64_t createdAt;
+  obx_id id;
+  /// Many-to-One: Tag belongs to ObxProject
+  obx_id projectId;
+  /// Tag name (unique within project)
+  std::string name;
+  /// Creation timestamp
+  int64_t createdAt;
 
-    struct _OBX_MetaInfo {
-        static constexpr obx_schema_id entityId() { return 8; }
-    
-        static void setObjectId(ObxTag& object, obx_id newId) { object.id = newId; }
-    
-        /// Write given object to the FlatBufferBuilder
-        static void toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb, const ObxTag& object);
-    
-        /// Read an object from a valid FlatBuffer
-        static ObxTag fromFlatBuffer(const void* data, size_t size);
-    
-        /// Read an object from a valid FlatBuffer
-        static std::unique_ptr<ObxTag> newFromFlatBuffer(const void* data, size_t size);
-    
-        /// Read an object from a valid FlatBuffer
-        static void fromFlatBuffer(const void* data, size_t size, ObxTag& outObject);
-    };
+  struct _OBX_MetaInfo {
+    static constexpr obx_schema_id entityId() { return 8; }
+
+    static void setObjectId(ObxTag& object, obx_id newId) { object.id = newId; }
+
+    /// Write given object to the FlatBufferBuilder
+    static void toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb,
+                             const ObxTag& object);
+
+    /// Read an object from a valid FlatBuffer
+    static ObxTag fromFlatBuffer(const void* data, size_t size);
+
+    /// Read an object from a valid FlatBuffer
+    static std::unique_ptr<ObxTag> newFromFlatBuffer(const void* data,
+                                                     size_t size);
+
+    /// Read an object from a valid FlatBuffer
+    static void fromFlatBuffer(const void* data, size_t size,
+                               ObxTag& outObject);
+  };
 };
 
 struct ObxTag_ {
-    static const obx::Property<ObxTag, OBXPropertyType_Long> id;
-    static const obx::RelationProperty<ObxTag, ObxProject> projectId;
-    static const obx::Property<ObxTag, OBXPropertyType_String> name;
-    static const obx::Property<ObxTag, OBXPropertyType_Date> createdAt;
+  static const obx::Property<ObxTag, OBXPropertyType_Long> id;
+  static const obx::RelationProperty<ObxTag, ObxProject> projectId;
+  static const obx::Property<ObxTag, OBXPropertyType_String> name;
+  static const obx::Property<ObxTag, OBXPropertyType_Date> createdAt;
 };
-
