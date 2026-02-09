@@ -46,7 +46,7 @@ ftxui::Element make_header(std::string text,
 
 // Consider "user input" as any non-mouse, non-cursor, non-custom event.
 // This includes arrows, enter, function keys, etc.
-bool is_user_input_event(const ftxui::Event& e) {
+bool IsUserInputEvent(const ftxui::Event& e) {
   if (e.is_mouse()) return false;
   if (e.is_cursor_position()) return false;
   if (e.is_cursor_shape()) return false;
@@ -56,7 +56,7 @@ bool is_user_input_event(const ftxui::Event& e) {
 
 // Exit shortcuts. F10 mapping can vary between terminals; Esc and 'q' are
 // reliable.
-bool is_exit_event(const ftxui::Event& e) {
+bool IsExitEvent(const ftxui::Event& e) {
   if (e == ftxui::Event::F10) return true;
   if (e == ftxui::Event::Escape) return true;
   if (e == ftxui::Event::Character('q')) return true;
@@ -65,7 +65,7 @@ bool is_exit_event(const ftxui::Event& e) {
   return false;
 }
 
-void clamp_index(int& idx, int size) {
+void ClampIndex(int& idx, int size) {
   if (size <= 0) {
     idx = 0;
     return;
@@ -94,7 +94,7 @@ inline void trim(std::string& s) {
 // Parse "key=value, key2=value2" into ctx.params.
 // Spaces around keys are trimmed; values are kept as-is (except surrounding
 // spaces).
-void parse_params_into(tf::RenderContext& ctx, const std::string& raw) {
+void ParseParamsInto(tf::RenderContext& ctx, const std::string& raw) {
   std::size_t pos = 0;
   while (pos < raw.size()) {
     // Skip separators/spaces
@@ -151,7 +151,7 @@ void Tui::run() {
   auto screen = use_terminal_output ? ftxui::ScreenInteractive::TerminalOutput()
                                     : ftxui::ScreenInteractive::Fullscreen();
 
-  auto root = main_layout(screen);
+  auto root = MainLayout(screen);
   // Force first repaint to avoid occasional "blank frame" on startup.
   screen.PostEvent(ftxui::Event::Custom);
   screen.Loop(root);
@@ -161,14 +161,14 @@ void Tui::run() {
 // Main Layout
 // ============================================================================
 
-ftxui::Component Tui::main_layout(auto& screen) {
+ftxui::Component Tui::MainLayout(auto& screen) {
   auto tab_toggle = ftxui::Toggle(&tab_names_, &selected_tab_);
   auto tab_container = ftxui::Container::Tab(
       {
-          blocks_tab(),
-          compositions_tab(),
-          render_tab(),
-          settings_tab(),
+          BlocksTab(),
+          CompositionsTab(),
+          RenderTab(),
+          SettingsTab(),
       },
       &selected_tab_);
 
@@ -205,11 +205,11 @@ ftxui::Component Tui::main_layout(auto& screen) {
   auto with_modal = ftxui::Modal(layout, modal, &show_welcome_);
 
   return ftxui::CatchEvent(with_modal, [&, tab_toggle](const ftxui::Event& e) {
-    if (is_exit_event(e)) {
+    if (IsExitEvent(e)) {
       screen.ExitLoopClosure()();
       return true;
     }
-    if (show_welcome_ && is_user_input_event(e)) {
+    if (show_welcome_ && IsUserInputEvent(e)) {
       show_welcome_ = false;
       tab_toggle->TakeFocus();
       return true;
@@ -222,22 +222,22 @@ ftxui::Component Tui::main_layout(auto& screen) {
 // Blocks Tab
 // ============================================================================
 
-ftxui::Component Tui::blocks_tab() {
-  block_ids_ = engine_.list_blocks();
-  clamp_index(selected_block_, static_cast<int>(block_ids_.size()));
+ftxui::Component Tui::BlocksTab() {
+  block_ids_ = engine_.ListBlocks();
+  ClampIndex(selected_block_, static_cast<int>(block_ids_.size()));
 
   auto update_details = [this] {
     if (block_ids_.empty()) {
       details_text_ = "No blocks found.";
       return;
     }
-    auto result = engine_.load_block(block_ids_[selected_block_]);
-    if (result.has_value()) {
+    auto result = engine_.LoadBlock(block_ids_[selected_block_]);
+    if (result.HasValue()) {
       const auto& b = result.value();
       details_text_ =
-          fmt::format("ID: {}\nVersion: {}.{}\nType: {}\nTemplate: {}", b.id(),
+          fmt::format("ID: {}\nVersion: {}.{}\nType: {}\nTemplate: {}", b.Id(),
                       b.version().major, b.version().minor,
-                      BlockTypeToString(b.type()), b.templ().content());
+                      BlockTypeToString(b.type()), b.templ().Сontent());
     } else {
       details_text_ = "Error: " + result.error().message;
     }
@@ -258,7 +258,7 @@ ftxui::Component Tui::blocks_tab() {
       ftxui::CatchEvent([this, update_details](const ftxui::Event& e) {
         if (e == ftxui::Event::ArrowUp || e == ftxui::Event::ArrowDown ||
             e == ftxui::Event::Return || e.is_mouse()) {
-          clamp_index(selected_block_, static_cast<int>(block_ids_.size()));
+          ClampIndex(selected_block_, static_cast<int>(block_ids_.size()));
           update_details();
         }
         return false;
@@ -282,7 +282,7 @@ ftxui::Component Tui::blocks_tab() {
 // Compositions Tab
 // ============================================================================
 
-ftxui::Component Tui::compositions_tab() {
+ftxui::Component Tui::CompositionsTab() {
   auto root = ftxui::Container::Vertical({});
   return ftxui::Renderer(root, [] {
     return ftxui::vbox({
@@ -300,7 +300,7 @@ ftxui::Component Tui::compositions_tab() {
 // Render Tab
 // ============================================================================
 
-ftxui::Component Tui::render_tab() {
+ftxui::Component Tui::RenderTab() {
   auto root = ftxui::Container::Vertical({});
   return ftxui::Renderer(root, [] {
     return ftxui::vbox({
@@ -318,7 +318,7 @@ ftxui::Component Tui::render_tab() {
 // Settings Tab
 // ============================================================================
 
-ftxui::Component Tui::settings_tab() {
+ftxui::Component Tui::SettingsTab() {
   auto root = ftxui::Container::Vertical({});
   return ftxui::Renderer(root, [] {
     return ftxui::vbox({

@@ -70,7 +70,7 @@ std::shared_ptr<spdlog::logger> Logger::get() {
   return instance_;
 }
 
-void Logger::set_level(LogLevel level) {
+void Logger::SetLevel(LogLevel level) {
   if (instance_) {
     instance_->set_level(toSpdlogLevel(level));
   }

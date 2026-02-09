@@ -45,7 +45,7 @@ class Logger {
   /**
    * Set global log level
    */
-  static void set_level(LogLevel level);
+  static void SetLevel(LogLevel level);
 
  private:
   static std::shared_ptr<spdlog::logger> instance_;

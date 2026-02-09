@@ -26,7 +26,7 @@ namespace tf::utils {
 /**
  * Convert ObxBlock type (int8_t) to BlockType enum
  */
-inline BlockType obx_type_to_block_type(int8_t type) {
+inline BlockType ObxTypeToBlockType(int8_t type) {
   // BlockType enum: Role=0, Constraint=1, Style=2, Domain=3, Meta=4
   switch (type) {
     case 0:
@@ -47,14 +47,14 @@ inline BlockType obx_type_to_block_type(int8_t type) {
 /**
  * Convert ObxBlock type (int8_t) to BlockType string representation
  */
-inline std::string_view obx_type_to_block_type_string(int8_t type) {
-  return BlockTypeToString(obx_type_to_block_type(type));
+inline std::string_view ObxTypeToBlockTypeString(int8_t type) {
+  return BlockTypeToString(ObxTypeToBlockType(type));
 }
 
 /**
  * Convert BlockType enum to ObxBlock type (int8_t)
  */
-inline int8_t block_type_to_obx_type(BlockType type) {
+inline int8_t BlockTypeToObxType(BlockType type) {
   switch (type) {
     case BlockType::Role:
       return 0;
@@ -74,7 +74,7 @@ inline int8_t block_type_to_obx_type(BlockType type) {
  * Convert ObxState code (int8_t) to BlockState enum
  * ObxState codes: Draft=0, Published=1, Deprecated=2
  */
-inline BlockState obx_state_code_to_block_state(int8_t code) {
+inline BlockState ObxStateCodeToBlockState(int8_t code) {
   switch (code) {
     case 0:
       return BlockState::Draft;
@@ -90,7 +90,7 @@ inline BlockState obx_state_code_to_block_state(int8_t code) {
 /**
  * Convert BlockState enum to ObxState code (int8_t)
  */
-inline int8_t block_state_to_obx_state_code(BlockState state) {
+inline int8_t BlockStateToObxStateCode(BlockState state) {
   switch (state) {
     case BlockState::Draft:
       return 0;
@@ -106,7 +106,7 @@ inline int8_t block_state_to_obx_state_code(BlockState state) {
  * Convert ObxFragment separator type (int8_t) to SeparatorType enum
  * 0=None, 1=Newline, 2=Paragraph, 3=Hr
  */
-inline SeparatorType obx_separator_type_to_separator_type(int8_t type) {
+inline SeparatorType ObxSeparatorTypeToSeparatorType(int8_t type) {
   switch (type) {
     case 1:
       return SeparatorType::Newline;
@@ -122,7 +122,7 @@ inline SeparatorType obx_separator_type_to_separator_type(int8_t type) {
 /**
  * Convert SeparatorType enum to ObxFragment separator type (int8_t)
  */
-inline int8_t separator_type_to_obx_separator_type(SeparatorType type) {
+inline int8_t SeparatorTypeToObxSeparatorType(SeparatorType type) {
   switch (type) {
     case SeparatorType::Newline:
       return 1;
@@ -138,7 +138,7 @@ inline int8_t separator_type_to_obx_separator_type(SeparatorType type) {
  * Convert ObxFragment fragment type (int8_t) to FragmentType enum
  * 0=BlockRef, 1=StaticText, 2=Separator
  */
-inline FragmentType obx_fragment_type_to_fragment_type(int8_t type) {
+inline FragmentType ObxFragmentTypeToFragmentType(int8_t type) {
   switch (type) {
     case 0:
       return FragmentType::BlockRef;
@@ -154,7 +154,7 @@ inline FragmentType obx_fragment_type_to_fragment_type(int8_t type) {
 /**
  * Convert FragmentType enum to ObxFragment fragment type (int8_t)
  */
-inline int8_t fragment_type_to_obx_fragment_type(FragmentType type) {
+inline int8_t FragmentTypeToObxFragmentType(FragmentType type) {
   switch (type) {
     case FragmentType::BlockRef:
       return 0;
@@ -173,21 +173,21 @@ inline int8_t fragment_type_to_obx_fragment_type(FragmentType type) {
 /**
  * Create Version from major/minor components
  */
-inline Version obx_version_to_version(uint16_t major, uint16_t minor) {
+inline Version ObxVersionToVersion(uint16_t major, uint16_t minor) {
   return Version{major, minor};
 }
 
 /**
  * Extract major version component from Version
  */
-inline uint16_t version_to_major(const Version& version) {
+inline uint16_t VersionToMajor(const Version& version) {
   return version.major;
 }
 
 /**
  * Extract minor version component from Version
  */
-inline uint16_t version_to_minor(const Version& version) {
+inline uint16_t VersionToMinor(const Version& version) {
   return version.minor;
 }
 
@@ -200,28 +200,28 @@ inline uint16_t version_to_minor(const Version& version) {
  * Note: This creates a basic Block. Tags and ParamSchema require additional
  * queries.
  */
-inline Block obx_block_to_block(const ObxBlock& obxBlock) {
+inline Block ObxBlockToBlock(const ObxBlock& obxBlock) {
   Block block;
-  block.set_id(obxBlock.blockId);
-  block.set_version(Version{obxBlock.versionMajor, obxBlock.versionMinor});
-  block.set_type(obx_type_to_block_type(obxBlock.type));
-  block.set_state(obx_state_code_to_block_state(obxBlock.state));
-  block.set_template(Template(obxBlock.templateContent));
-  block.set_language(obxBlock.language);
+  block.SetId(obxBlock.blockId);
+  block.SetVersion(Version{obxBlock.versionMajor, obxBlock.versionMinor});
+  block.SetType(ObxTypeToBlockType(obxBlock.type));
+  block.SetState(ObxStateCodeToBlockState(obxBlock.state));
+  block.SetTemplate(Template(obxBlock.templateContent));
+  block.SetLanguage(obxBlock.language);
   if (!obxBlock.tagsJson.empty()) {
     auto tags = rfl::json::read<std::vector<std::string>>(obxBlock.tagsJson)
                     .value_or(std::vector<std::string>{});
     std::unordered_set<std::string> tags_set(tags.begin(), tags.end());
-    block.set_tags(std::move(tags_set));
+    block.SetTags(std::move(tags_set));
   }
-  block.set_description(obxBlock.description);
+  block.SetDescription(obxBlock.description);
 
   if (!obxBlock.defaultsJson.empty()) {
-    block.set_defaults(rfl::json::read<Params>(obxBlock.defaultsJson).value());
+    block.SetDefaults(rfl::json::read<Params>(obxBlock.defaultsJson).value());
   }
 
   if (!obxBlock.paramsJson.empty()) {
-    block.set_param_schema(
+    block.SetParamSchema(
         rfl::json::read<std::vector<ParamSchema>>(obxBlock.paramsJson).value());
   }
 
@@ -234,15 +234,15 @@ inline Block obx_block_to_block(const ObxBlock& obxBlock) {
  * previousVersionId, nextVersionId) which must be set separately based on
  * context.
  */
-inline ObxBlock block_to_obx_block(const Block& block, const obx_id id = 0) {
+inline ObxBlock BlockToObxBlock(const Block& block, const obx_id id = 0) {
   ObxBlock obxBlock;
   obxBlock.id = id;
-  obxBlock.blockId = block.id();
+  obxBlock.blockId = block.Id();
   obxBlock.versionMajor = block.version().major;
   obxBlock.versionMinor = block.version().minor;
-  obxBlock.type = block_type_to_obx_type(block.type());
-  obxBlock.state = block_state_to_obx_state_code(block.state());
-  obxBlock.templateContent = block.templ().content();
+  obxBlock.type = BlockTypeToObxType(block.type());
+  obxBlock.state = BlockStateToObxStateCode(block.state());
+  obxBlock.templateContent = block.templ().Сontent();
   obxBlock.defaultsJson = rfl::json::write(block.defaults());
   obxBlock.language = block.language();
   std::vector<std::string> tags_vec(block.tags().begin(), block.tags().end());
@@ -263,14 +263,14 @@ inline ObxBlock block_to_obx_block(const Block& block, const obx_id id = 0) {
 inline Composition obx_composition_to_composition(
     const ObxComposition& obxComp) {
   Composition comp;
-  comp.set_id(obxComp.compositionId);
-  comp.set_project_key(obxComp.projectKey);
-  comp.set_version(Version{obxComp.versionMajor, obxComp.versionMinor});
-  comp.set_description(obxComp.description);
-  comp.set_state(obx_state_code_to_block_state(obxComp.state));
+  comp.SetId(obxComp.compositionId);
+  comp.SetProjectKey(obxComp.projectKey);
+  comp.SetVersion(Version{obxComp.versionMajor, obxComp.versionMinor});
+  comp.SetDescription(obxComp.description);
+  comp.SetState(ObxStateCodeToBlockState(obxComp.state));
 
   if (!obxComp.styleProfileJson.empty()) {
-    comp.set_style_profile(
+    comp.SetStyleProfile(
         rfl::json::read<StyleProfile>(obxComp.styleProfileJson).value());
   }
 
@@ -287,12 +287,12 @@ inline ObxComposition composition_to_obx_composition(const Composition& comp,
   ObxComposition obxComp;
   obxComp.id = id;
   obxComp.compositionId = comp.id();
-  obxComp.projectKey = comp.project_key();
+  obxComp.projectKey = comp.ProjectKey();
   obxComp.versionMajor = comp.version().major;
   obxComp.versionMinor = comp.version().minor;
   obxComp.description = comp.description();
-  if (comp.style_profile().has_value()) {
-    obxComp.styleProfileJson = rfl::json::write(comp.style_profile().value());
+  if (comp.GetStyleProfile().has_value()) {
+    obxComp.styleProfileJson = rfl::json::write(comp.GetStyleProfile().value());
   }
   return obxComp;
 }
@@ -304,39 +304,39 @@ inline ObxComposition composition_to_obx_composition(const Composition& comp,
 /**
  * Convert ObxFragment to domain Fragment
  */
-inline Fragment obx_fragment_to_fragment(const ObxFragment& obxFrag) {
+inline Fragment ObxFragmentToFragment(const ObxFragment& obxFrag) {
   FragmentType fragType =
-      obx_fragment_type_to_fragment_type(obxFrag.fragmentType);
+      ObxFragmentTypeToFragmentType(obxFrag.fragmentType);
 
   switch (fragType) {
     case FragmentType::BlockRef: {
       BlockRef ref;
-      ref.set_block_id(obxFrag.refBlockId);
+      ref.SetBlockId(obxFrag.refBlockId);
       if (!obxFrag.refUseLatest) {
-        ref.set_version(
+        ref.SetVersion(
             Version{obxFrag.refVersionMajor, obxFrag.refVersionMinor});
       }
-      ref.set_use_latest(obxFrag.refUseLatest);
+      ref.SetUseLatest(obxFrag.refUseLatest);
       if (!obxFrag.refLocalParamsJson.empty()) {
-        ref.set_local_params(
+        ref.SetLocalParams(
             rfl::json::read<Params>(obxFrag.refLocalParamsJson).value());
       }
-      return Fragment::make_block_ref(std::move(ref));
+      return Fragment::MakeBlockRef(std::move(ref));
     }
 
     case FragmentType::StaticText: {
-      return Fragment::make_static_text(obxFrag.staticContent);
+      return Fragment::MakeStaticText(obxFrag.staticContent);
     }
 
     case FragmentType::Separator: {
       SeparatorType sepType =
-          obx_separator_type_to_separator_type(obxFrag.separatorType);
-      return Fragment::make_separator(sepType);
+          ObxSeparatorTypeToSeparatorType(obxFrag.separatorType);
+      return Fragment::MakeSeparator(sepType);
     }
   }
 
   // Fallback
-  return Fragment::make_static_text("");
+  return Fragment::MakeStaticText("");
 }
 
 /**
@@ -349,13 +349,13 @@ inline ObxFragment fragment_to_obx_fragment(const Fragment& fragment,
   ObxFragment obxFrag;
   obxFrag.id = id;
   obxFrag.orderIndex = orderIndex;
-  obxFrag.fragmentType = fragment_type_to_obx_fragment_type(fragment.type());
+  obxFrag.fragmentType = FragmentTypeToObxFragmentType(fragment.type());
 
   switch (fragment.type()) {
     case FragmentType::BlockRef: {
-      const BlockRef& ref = fragment.as_block_ref();
-      obxFrag.refBlockId = ref.block_id();
-      obxFrag.refUseLatest = ref.use_latest();
+      const BlockRef& ref = fragment.AsBlockRef();
+      obxFrag.refBlockId = ref.GetBlockId();
+      obxFrag.refUseLatest = ref.UseLatest();
       if (ref.version().has_value()) {
         obxFrag.refVersionMajor = ref.version().value().major;
         obxFrag.refVersionMinor = ref.version().value().minor;
@@ -364,18 +364,18 @@ inline ObxFragment fragment_to_obx_fragment(const Fragment& fragment,
         obxFrag.refVersionMinor = 0;
       }
       // Note: localParams should be serialized to refLocalParamsJson
-      obxFrag.refLocalParamsJson = rfl::json::write(ref.local_params());
+      obxFrag.refLocalParamsJson = rfl::json::write(ref.LocalParams());
       break;
     }
 
     case FragmentType::StaticText: {
-      obxFrag.staticContent = fragment.as_static_text().text();
+      obxFrag.staticContent = fragment.AsStaticText().text();
       break;
     }
 
     case FragmentType::Separator: {
       obxFrag.separatorType =
-          separator_type_to_obx_separator_type(fragment.as_separator().type);
+          SeparatorTypeToObxSeparatorType(fragment.AsSeparator().type);
       break;
     }
   }
@@ -391,7 +391,7 @@ inline ObxFragment fragment_to_obx_fragment(const Fragment& fragment,
  * Convert ObxProject project entity
  * Note: Returns project key for use in domain objects
  */
-inline std::string obx_project_to_project_key(const ObxProject& obxProject) {
+inline std::string ObxProjectToProjectKey(const ObxProject& obxProject) {
   return obxProject.key;
 }
 
@@ -416,7 +416,7 @@ inline ObxProject project_key_to_obx_project(
 /**
  * Convert ObxLanguage to language code string
  */
-inline std::string obx_language_to_code(const ObxLanguage& obxLang) {
+inline std::string ObxLanguageToCode(const ObxLanguage& obxLang) {
   return obxLang.code;
 }
 
@@ -438,7 +438,7 @@ inline ObxLanguage code_to_obx_language(const std::string& code,
 /**
  * Convert ObxTag to tag name string
  */
-inline std::string obx_tag_to_tag_name(const ObxTag& obxTag) {
+inline std::string ObxTagToTagName(const ObxTag& obxTag) {
   return obxTag.name;
 }
 
@@ -446,7 +446,7 @@ inline std::string obx_tag_to_tag_name(const ObxTag& obxTag) {
  * Create ObxTag for storage
  * Note: projectId must be set separately
  */
-inline ObxTag tag_name_to_obx_tag(const std::string& name) {
+inline ObxTag TagNameToObxTag(const std::string& name) {
   ObxTag obxTag;
   obxTag.name = name;
   // Note: createdAt should be set by storage layer

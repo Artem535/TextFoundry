@@ -66,15 +66,15 @@ class Fragment {
   explicit Fragment(Separator separator) : data_(separator) {}
 
   // Factory methods
-  [[nodiscard]] static Fragment make_block_ref(BlockRef ref) {
+  [[nodiscard]] static Fragment MakeBlockRef(BlockRef ref) {
     return Fragment(std::move(ref));
   }
 
-  [[nodiscard]] static Fragment make_static_text(std::string text) {
+  [[nodiscard]] static Fragment MakeStaticText(std::string text) {
     return Fragment(StaticText(std::move(text)));
   }
 
-  [[nodiscard]] static Fragment make_separator(SeparatorType type) {
+  [[nodiscard]] static Fragment MakeSeparator(SeparatorType type) {
     return Fragment(Separator(type));
   }
 
@@ -94,63 +94,63 @@ class Fragment {
         data_);
   }
 
-  [[nodiscard]] bool is_block_ref() const noexcept {
+  [[nodiscard]] bool IsBlockRef() const noexcept {
     return std::holds_alternative<BlockRef>(data_);
   }
 
-  [[nodiscard]] bool is_static_text() const noexcept {
+  [[nodiscard]] bool IsStaticText() const noexcept {
     return std::holds_alternative<StaticText>(data_);
   }
 
-  [[nodiscard]] bool is_separator() const noexcept {
+  [[nodiscard]] bool IsSeparator() const noexcept {
     return std::holds_alternative<Separator>(data_);
   }
 
   // Accessors (use only after checking type)
-  [[nodiscard]] BlockRef& as_block_ref() & { return std::get<BlockRef>(data_); }
+  [[nodiscard]] BlockRef& AsBlockRef() & { return std::get<BlockRef>(data_); }
 
-  [[nodiscard]] const BlockRef& as_block_ref() const& {
+  [[nodiscard]] const BlockRef& AsBlockRef() const& {
     return std::get<BlockRef>(data_);
   }
 
-  [[nodiscard]] StaticText& as_static_text() & {
+  [[nodiscard]] StaticText& AsStaticText() & {
     return std::get<StaticText>(data_);
   }
 
-  [[nodiscard]] const StaticText& as_static_text() const& {
+  [[nodiscard]] const StaticText& AsStaticText() const& {
     return std::get<StaticText>(data_);
   }
 
-  [[nodiscard]] Separator& as_separator() & {
+  [[nodiscard]] Separator& AsSeparator() & {
     return std::get<Separator>(data_);
   }
 
-  [[nodiscard]] const Separator& as_separator() const& {
+  [[nodiscard]] const Separator& AsSeparator() const& {
     return std::get<Separator>(data_);
   }
 
   // Safe accessors returning nullptr if wrong type
-  [[nodiscard]] BlockRef* get_block_ref() noexcept {
+  [[nodiscard]] BlockRef* GetBlockRef() noexcept {
     return std::get_if<BlockRef>(&data_);
   }
 
-  [[nodiscard]] const BlockRef* get_block_ref() const noexcept {
+  [[nodiscard]] const BlockRef* GetBlockRef() const noexcept {
     return std::get_if<BlockRef>(&data_);
   }
 
-  [[nodiscard]] StaticText* get_static_text() noexcept {
+  [[nodiscard]] StaticText* GetStaticText() noexcept {
     return std::get_if<StaticText>(&data_);
   }
 
-  [[nodiscard]] const StaticText* get_static_text() const noexcept {
+  [[nodiscard]] const StaticText* GetStaticText() const noexcept {
     return std::get_if<StaticText>(&data_);
   }
 
-  [[nodiscard]] Separator* get_separator() noexcept {
+  [[nodiscard]] Separator* GetSeparator() noexcept {
     return std::get_if<Separator>(&data_);
   }
 
-  [[nodiscard]] const Separator* get_separator() const noexcept {
+  [[nodiscard]] const Separator* GetSeparator() const noexcept {
     return std::get_if<Separator>(&data_);
   }
 

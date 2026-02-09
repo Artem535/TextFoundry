@@ -34,12 +34,12 @@ struct RenderContext {
   /**
    * Add a runtime parameter
    */
-  RenderContext& with_param(const std::string& name, ParamValue value);
+  RenderContext& WithParam(const std::string& name, ParamValue value);
 
   /**
    * Set target language
    */
-  RenderContext& with_language(std::string lang);
+  RenderContext& WithLanguage(std::string lang);
 
   /**
    * Set strict mode
@@ -99,27 +99,27 @@ class Composition {
 
   [[nodiscard]] const Version& version() const noexcept;
 
-  void set_version(const Version& v);
+  void SetVersion(const Version& v);
 
   [[nodiscard]] const std::vector<Fragment>& fragments() const noexcept;
 
-  [[nodiscard]] const std::optional<StyleProfile>& style_profile()
+  [[nodiscard]] const std::optional<StyleProfile>& GetStyleProfile()
       const noexcept;
 
-  [[nodiscard]] const std::string& project_key() const noexcept;
+  [[nodiscard]] const std::string& ProjectKey() const noexcept;
 
   [[nodiscard]] const std::string& description() const noexcept;
 
   // Setters (allowed only for Draft state)
-  void set_id(CompositionId id);
+  void SetId(CompositionId id);
 
-  void set_state(BlockState state);
+  void SetState(BlockState state);
 
-  void set_style_profile(StyleProfile profile);
+  void SetStyleProfile(StyleProfile profile);
 
-  void set_project_key(std::string key);
+  void SetProjectKey(std::string key);
 
-  void set_description(std::string desc);
+  void SetDescription(std::string desc);
 
   /**
    * Add a BlockRef fragment with local parameters
@@ -127,39 +127,39 @@ class Composition {
    * @param version Block version (mandatory for reproducibility)
    * @param localParams Local parameter overrides
    */
-  Fragment& add_block_ref(const BlockId& blockId, Version version,
+  Fragment& AddBlockRef(const BlockId& blockId, Version version,
                           Params localParams = {});
 
   /**
-   * Add a BlockRef with use_latest flag (Draft only)
+   * Add a BlockRef with UseLatest flag (Draft only)
    */
-  Fragment& add_block_ref_latest(const BlockId& blockId,
+  Fragment& AddBlockRefLatest(const BlockId& blockId,
                                  Params localParams = {});
 
   /**
    * Add static text fragment
    */
-  Fragment& add_static_text(std::string text);
+  Fragment& AddStaticText(std::string text);
 
   /**
    * Add typed separator
    */
-  Fragment& add_separator(SeparatorType type);
+  Fragment& AddSeparator(SeparatorType type);
 
   /**
    * Insert fragment at specific index
    */
-  void insert_fragment(size_t index, Fragment fragment);
+  void InsertFragment(size_t index, Fragment fragment);
 
   /**
    * Remove fragment at index
    */
-  void remove_fragment(size_t index);
+  void RemoveFragment(size_t index);
 
   /**
    * Clear all fragments
    */
-  void clear_fragments();
+  void ClearFragments();
 
   /**
    * Access fragment by index
@@ -240,25 +240,25 @@ class CompositionDraftBuilder {
 
   explicit CompositionDraftBuilder(CompositionId id);
 
-  CompositionDraftBuilder& with_id(CompositionId id);
+  CompositionDraftBuilder& WithId(CompositionId id);
 
-  CompositionDraftBuilder& with_style_profile(StyleProfile profile);
+  CompositionDraftBuilder& WithStyleProfile(StyleProfile profile);
 
-  CompositionDraftBuilder& with_project_key(std::string key);
+  CompositionDraftBuilder& WithProjectKey(std::string key);
 
-  CompositionDraftBuilder& with_description(std::string desc);
+  CompositionDraftBuilder& WithDescription(std::string desc);
 
-  CompositionDraftBuilder& add_block_ref(BlockRef ref);
+  CompositionDraftBuilder& AddBlockRef(BlockRef ref);
 
-  CompositionDraftBuilder& add_block_ref(const BlockId& id, uint16_t major,
+  CompositionDraftBuilder& AddBlockRef(const BlockId& id, uint16_t major,
                                          uint16_t minor, Params params = {});
 
-  CompositionDraftBuilder& add_block_ref(const PublishedBlock& block,
+  CompositionDraftBuilder& AddBlockRef(const PublishedBlock& block,
                                          Params params = {});
 
-  CompositionDraftBuilder& add_static_text(std::string text);
+  CompositionDraftBuilder& AddStaticText(std::string text);
 
-  CompositionDraftBuilder& add_separator(SeparatorType type);
+  CompositionDraftBuilder& AddSeparator(SeparatorType type);
 
   [[nodiscard]] CompositionDraft build();
 

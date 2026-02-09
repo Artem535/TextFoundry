@@ -23,7 +23,7 @@ class ICompositionRepository;
  * Engine configuration
  */
 struct EngineConfig {
-  std::string project_key = "default";
+  std::string ProjectKey = "default";
   bool strict_mode = false;  ///< Default strict mode for rendering
   std::string default_data_path =
       "memory:tf";  ///< Default data path for block and composition
@@ -69,74 +69,74 @@ class Engine {
   /**
    * Set block repository for persistence
    */
-  void set_block_repository(std::shared_ptr<IBlockRepository> repo);
+  void SetBlockRepository(std::shared_ptr<IBlockRepository> repo);
 
   /**
    * Set composition repository for persistence
    */
-  void set_composition_repository(std::shared_ptr<ICompositionRepository> repo);
+  void SetCompositionRepository(std::shared_ptr<ICompositionRepository> repo);
 
   /**
    * Set normalizer for semantic transformations
    */
-  void set_normalizer(std::shared_ptr<INormalizer> normalizer);
+  void SetNormalizer(std::shared_ptr<INormalizer> normalizer);
 
   // ==================== Block Operations ====================
 
   /**
    * Load block from storage
    */
-  [[nodiscard]] Result<Block> load_block(
+  [[nodiscard]] Result<Block> LoadBlock(
       const BlockId& id, std::optional<Version> version = std::nullopt) const;
 
   /**
    * Deprecate a published block
    */
-  [[nodiscard]] Error deprecate_block(const BlockId& id, Version version);
+  [[nodiscard]] Error DeprecateBlock(const BlockId& id, Version version);
 
   /**
    * Get latest version of a block
    */
-  [[nodiscard]] Result<Version> get_latest_block_version(const BlockId& id);
+  [[nodiscard]] Result<Version> GetLatestBlockVersion(const BlockId& id);
 
   /**
    * List all blocks (optionally filtered by type)
    */
-  [[nodiscard]] std::vector<BlockId> list_blocks(
+  [[nodiscard]] std::vector<BlockId> ListBlocks(
       std::optional<BlockType> typeFilter = std::nullopt);
 
-  [[nodiscard]] Result<PublishedBlock> publish_block(
+  [[nodiscard]] Result<PublishedBlock> PublishBlock(
       BlockDraft draft, VersionBump bump = VersionBump::Minor);
 
-  [[nodiscard]] Result<PublishedBlock> publish_block(BlockDraft draft,
+  [[nodiscard]] Result<PublishedBlock> PublishBlock(BlockDraft draft,
                                                      Version explicit_version);
 
   // ==================== Composition Operations ====================
 
-  [[nodiscard]] Result<PublishedComposition> publish_composition(
+  [[nodiscard]] Result<PublishedComposition> PublishComposition(
       CompositionDraft draft, VersionBump bump = VersionBump::Minor);
 
-  [[nodiscard]] Result<PublishedComposition> publish_composition(
+  [[nodiscard]] Result<PublishedComposition> PublishComposition(
       CompositionDraft draft, Version explicit_version);
 
-  Result<Version> get_latest_composition_version(const CompositionId& id);
+  Result<Version> GetLatestCompositionVersion(const CompositionId& id);
 
   /**
    * Load composition from storage
    */
-  [[nodiscard]] Result<Composition> load_composition(
+  [[nodiscard]] Result<Composition> LoadComposition(
       const CompositionId& id, std::optional<Version> version = std::nullopt);
 
   /**
    * Deprecate a published composition
    */
-  [[nodiscard]] Error deprecate_composition(const CompositionId& id,
+  [[nodiscard]] Error DeprecateComposition(const CompositionId& id,
                                             Version version);
 
   /**
    * List all compositions
    */
-  [[nodiscard]] std::vector<CompositionId> list_compositions() const;
+  [[nodiscard]] std::vector<CompositionId> ListCompositions() const;
 
   // ==================== Rendering Operations ====================
 
@@ -165,13 +165,13 @@ class Engine {
   /**
    * Render a single block (for preview/testing)
    */
-  [[nodiscard]] Result<std::string> render_block(
+  [[nodiscard]] Result<std::string> RenderBlock(
       const BlockId& blockId, const RenderContext& context = RenderContext{});
 
   /**
    * Render block with specific version
    */
-  [[nodiscard]] Result<std::string> render_block(
+  [[nodiscard]] Result<std::string> RenderBlock(
       const BlockId& blockId, Version version,
       const RenderContext& context = RenderContext{});
 
@@ -199,19 +199,19 @@ class Engine {
    * Initialize engine with ObjectBox repositories
    * Uses config_.defaultDataPath as database directory
    */
-  void full_init();
+  void FullInit();
 
   // ==================== Validation ====================
 
   /**
    * Validate a composition without rendering
    */
-  [[nodiscard]] Error validate_composition(const CompositionId& id);
+  [[nodiscard]] Error ValidateComposition(const CompositionId& id);
 
   /**
    * Validate a block
    */
-  [[nodiscard]] Error validate_block(const BlockId& id);
+  [[nodiscard]] Error ValidateBlock(const BlockId& id);
 
  private:
   EngineConfig config_;
@@ -220,23 +220,23 @@ class Engine {
   std::shared_ptr<INormalizer> normalizer_;
   std::unique_ptr<Renderer> renderer_;
 
-  Result<PublishedComposition> publish_composition_internal(Composition comp,
+  Result<PublishedComposition> PublishCompositionInternal(Composition comp,
                                                             Version version);
 
-  Result<PublishedBlock> publish_block_internal(Block block, Version version);
+  Result<PublishedBlock> PublishBlockInternal(Block block, Version version);
 
   /**
    * Save block draft to storage
    */
-  [[nodiscard]] Error save_block(const Block& block);
+  [[nodiscard]] Error SaveBlock(const Block& block);
 
   /**
    * Save composition draft to storage
    */
-  [[nodiscard]] Error save_composition(const Composition& composition);
+  [[nodiscard]] Error SaveComposition(const Composition& composition);
 
   // ==================== Helpers ====================
-  Result<Version> get_next_version(const BlockId& id, VersionBump bump);
+  Result<Version> GetNextVersion(const BlockId& id, VersionBump bump);
 };
 
 // ==================== Repository Interfaces ====================
@@ -254,12 +254,12 @@ class IBlockRepository {
   [[nodiscard]] virtual Result<Block> load(const BlockId& id,
                                            Version version) = 0;
 
-  [[nodiscard]] virtual Result<Block> load_latest(const BlockId& id) = 0;
+  [[nodiscard]] virtual Result<Block> LoadLatest(const BlockId& id) = 0;
 
   [[nodiscard]] virtual std::vector<BlockId> list(
       std::optional<BlockType> typeFilter = std::nullopt) = 0;
 
-  [[nodiscard]] virtual Result<Version> get_latest_version(
+  [[nodiscard]] virtual Result<Version> GetLatestVersion(
       const BlockId& id) = 0;
 
   [[nodiscard]] virtual Error deprecate(const BlockId& id, Version version) = 0;
@@ -278,12 +278,12 @@ class ICompositionRepository {
   [[nodiscard]] virtual Result<Composition> load(const CompositionId& id,
                                                  Version version) = 0;
 
-  [[nodiscard]] virtual Result<Composition> load_latest(
+  [[nodiscard]] virtual Result<Composition> LoadLatest(
       const CompositionId& id) = 0;
 
   [[nodiscard]] virtual std::vector<CompositionId> list() = 0;
 
-  [[nodiscard]] virtual Result<Version> get_latest_version(
+  [[nodiscard]] virtual Result<Version> GetLatestVersion(
       const CompositionId& id) = 0;
 
   [[nodiscard]] virtual Error deprecate(const CompositionId& id,

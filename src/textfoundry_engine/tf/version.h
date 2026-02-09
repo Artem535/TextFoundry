@@ -27,7 +27,7 @@ struct Version {
   /**
    * Convert version to string format "major.minor"
    */
-  [[nodiscard]] std::string to_string() const {
+  [[nodiscard]] std::string ToString() const {
     return std::format("{}.{}", major, minor);
   }
 };
@@ -53,6 +53,6 @@ template <>
 struct std::formatter<tf::Version> : std::formatter<std::string> {
   template <typename FormatContext>
   auto format(const tf::Version& v, FormatContext& ctx) const {
-    return std::formatter<std::string>::format(v.to_string(), ctx);
+    return std::formatter<std::string>::format(v.ToString(), ctx);
   }
 };

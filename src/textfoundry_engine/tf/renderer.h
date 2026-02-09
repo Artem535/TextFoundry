@@ -40,14 +40,14 @@ class IBlockCache {
    * Get block by ID and version
    * @returns Block or nullptr if not found
    */
-  [[nodiscard]] virtual const Block* get_block(const BlockId& id,
+  [[nodiscard]] virtual const Block* GetBlock(const BlockId& id,
                                                Version version) const = 0;
 
   /**
    * Get latest published version of a block
    * @returns Block or nullptr if not found
    */
-  [[nodiscard]] virtual const Block* get_latest_block(
+  [[nodiscard]] virtual const Block* GetLatestBlock(
       const BlockId& id) const = 0;
 
   /**
@@ -75,13 +75,13 @@ class Renderer {
   /**
    * Set block cache for block resolution
    */
-  void set_block_cache(std::unique_ptr<IBlockCache> cache);
+  void SetBlockCache(std::unique_ptr<IBlockCache> cache);
 
   /**
    * Clear the block cache
    * Called before each render operation to ensure fresh data
    */
-  void clear_cache();
+  void ClearCache();
 
   /**
    * Render composition to text
@@ -101,13 +101,13 @@ class Renderer {
    * @param context Runtime parameters
    * @returns Rendered string or Error
    */
-  [[nodiscard]] static Result<std::string> render_block(
+  [[nodiscard]] static Result<std::string> RenderBlock(
       const Block& block, const RenderContext& context = RenderContext{});
 
   /**
    * Apply structural style to rendered fragments
    */
-  [[nodiscard]] static std::string apply_structural_style(
+  [[nodiscard]] static std::string ApplyStructuralStyle(
       const std::vector<std::string>& fragmentTexts,
       const StructuralStyle& style);
 
@@ -117,21 +117,21 @@ class Renderer {
   /**
    * Render a single fragment
    */
-  [[nodiscard]] Result<std::string> render_fragment(
+  [[nodiscard]] Result<std::string> RenderFragment(
       const Fragment& fragment, const RenderContext& context,
       std::vector<std::pair<BlockId, Version>>& blocksUsed) const;
 
   /**
    * Resolve and expand a BlockRef
    */
-  [[nodiscard]] Result<std::string> expand_block_ref(
+  [[nodiscard]] Result<std::string> ExpandBlockRef(
       const BlockRef& blockRef, const RenderContext& context,
       std::vector<std::pair<BlockId, Version>>& blocksUsed) const;
 
   /**
    * Get structural style from composition or default
    */
-  [[nodiscard]] static StructuralStyle get_effective_style(
+  [[nodiscard]] static StructuralStyle GetEffectiveStyle(
       const Composition& composition);
 };
 

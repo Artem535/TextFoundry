@@ -28,19 +28,19 @@ class Template {
 
   explicit Template(std::string content) : content_(std::move(content)) {}
 
-  [[nodiscard]] const std::string& content() const noexcept { return content_; }
-  void setContent(std::string content) { content_ = std::move(content); }
+  [[nodiscard]] const std::string& Сontent() const noexcept { return content_; }
+  void SetContent(std::string content) { content_ = std::move(content); }
 
   /**
    * Extract parameter names from template placeholders {{paramName}}
    */
-  [[nodiscard]] std::vector<std::string> extract_param_names() const;
+  [[nodiscard]] std::vector<std::string> ExtractParamNames() const;
 
   /**
    * Expand template with provided parameters
    * @returns expanded string or Error if parameters missing
    */
-  [[nodiscard]] Result<std::string> expand(const Params& params) const;
+  [[nodiscard]] Result<std::string> Expand(const Params& params) const;
 
  private:
   std::string content_;
@@ -59,7 +59,7 @@ class Block {
   explicit Block(BlockId id) : id_(std::move(id)) {}
 
   // Getters
-  [[nodiscard]] const BlockId& id() const noexcept;
+  [[nodiscard]] const BlockId& Id() const noexcept;
 
   [[nodiscard]] BlockType type() const noexcept;
 
@@ -80,25 +80,25 @@ class Block {
   [[nodiscard]] const std::string& description() const noexcept;
 
   // Setters (allowed only for Draft state)
-  void set_id(BlockId id);
+  void SetId(BlockId id);
 
-  void set_type(BlockType type);
+  void SetType(BlockType type);
 
-  void set_state(BlockState state);
+  void SetState(BlockState state);
 
-  void set_template(Template templ);
+  void SetTemplate(Template templ);
 
-  void set_defaults(Params defaults);
+  void SetDefaults(Params defaults);
 
-  void set_param_schema(std::vector<ParamSchema> schema);
+  void SetParamSchema(std::vector<ParamSchema> schema);
 
-  void set_tags(std::unordered_set<std::string> tags);
+  void SetTags(std::unordered_set<std::string> tags);
 
-  void set_language(std::string lang);
+  void SetLanguage(std::string lang);
 
-  void set_description(std::string desc);
+  void SetDescription(std::string desc);
 
-  void set_version(const Version& v);
+  void SetVersion(const Version& v);
 
   /**
    * Resolve parameter value using hierarchy:
@@ -106,14 +106,14 @@ class Block {
    * 2. Composition Local Override
    * 3. Runtime Context (highest priority)
    */
-  [[nodiscard]] Result<ParamValue> resolve_param(
+  [[nodiscard]] Result<ParamValue> ResolveParam(
       const std::string& param_name, const Params& local_override,
       const Params& runtime_context) const;
 
   /**
    * Validate that all required parameters can be resolved
    */
-  [[nodiscard]] Error validate_params(const Params& local_override,
+  [[nodiscard]] Error ValidateParams(const Params& local_override,
                                       const Params& runtime_context) const;
 
   /**
@@ -131,7 +131,7 @@ class Block {
   /**
    * Check if parameter has default value or is provided in overrides
    */
-  [[nodiscard]] bool can_resolve_param(const std::string& param_name,
+  [[nodiscard]] bool CanResolveParam(const std::string& param_name,
                                        const Params& local_override,
                                        const Params& runtime_context) const;
 
@@ -191,21 +191,21 @@ class BlockDraftBuilder {
  public:
   explicit BlockDraftBuilder(BlockId id);
 
-  BlockDraftBuilder& with_id(BlockId id);
+  BlockDraftBuilder& WithId(BlockId id);
 
-  BlockDraftBuilder& with_type(const BlockType& type);
+  BlockDraftBuilder& WithType(const BlockType& type);
 
-  BlockDraftBuilder& with_template(Template templ);
+  BlockDraftBuilder& WithTemplate(Template templ);
 
-  BlockDraftBuilder& with_default(const std::string& name, ParamValue value);
+  BlockDraftBuilder& WithDefault(const std::string& name, ParamValue value);
 
-  BlockDraftBuilder& with_defaults(Params defaults);
+  BlockDraftBuilder& WithDefaults(Params defaults);
 
-  BlockDraftBuilder& with_tag(const std::string& tag);
+  BlockDraftBuilder& WithTag(const std::string& tag);
 
-  BlockDraftBuilder& with_language(std::string lang);
+  BlockDraftBuilder& WithLanguage(std::string lang);
 
-  BlockDraftBuilder& with_description(std::string desc);
+  BlockDraftBuilder& WithDescription(std::string desc);
 
   [[nodiscard]] BlockDraft build();
 

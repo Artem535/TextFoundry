@@ -68,12 +68,12 @@ class Tui {
   // Each returns a Component (interactive UI element)
 
   // Main layout with tabs
-  ftxui::Component main_layout(auto& screen);
+  ftxui::Component MainLayout(auto& screen);
 
   // Individual tabs
-  ftxui::Component blocks_tab();        // List + details
-  ftxui::Component compositions_tab();  // List of compositions
-  ftxui::Component render_tab();        // Input fields + output
-  ftxui::Component settings_tab();      // Config options
+  ftxui::Component BlocksTab();        // List + details
+  ftxui::Component CompositionsTab();  // List of compositions
+  ftxui::Component RenderTab();        // Input fields + output
+  ftxui::Component SettingsTab();      // Config options
 };
 }  // namespace tf

@@ -66,7 +66,7 @@ class BlockRepository final : public IBlockRepository {
    * Finds the maximum version for the given block ID and loads it.
    * Convenience method that calls getLatestVersion() followed by load().
    */
-  [[nodiscard]] Result<Block> load_latest(const BlockId& id) override;
+  [[nodiscard]] Result<Block> LoadLatest(const BlockId& id) override;
 
   /**
    * @brief Lists all block IDs, optionally filtered by type
@@ -87,7 +87,7 @@ class BlockRepository final : public IBlockRepository {
    * Scans all versions of the block and returns the maximum
    * version number (comparing major first, then minor).
    */
-  [[nodiscard]] Result<Version> get_latest_version(const BlockId& id) override;
+  [[nodiscard]] Result<Version> GetLatestVersion(const BlockId& id) override;
 
   /**
    * @brief Marks a specific block version as deprecated
@@ -163,7 +163,7 @@ class CompositionRepository final : public ICompositionRepository {
    * Finds the maximum version for the given composition ID and loads it.
    * Convenience method that calls getLatestVersion() followed by load().
    */
-  [[nodiscard]] Result<Composition> load_latest(
+  [[nodiscard]] Result<Composition> LoadLatest(
       const CompositionId& id) override;
 
   /**
@@ -183,7 +183,7 @@ class CompositionRepository final : public ICompositionRepository {
    * Scans all versions of the composition and returns the maximum
    * version number (comparing major first, then minor).
    */
-  [[nodiscard]] Result<Version> get_latest_version(
+  [[nodiscard]] Result<Version> GetLatestVersion(
       const CompositionId& id) override;
 
   /**

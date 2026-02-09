@@ -65,22 +65,22 @@ struct Error {
   bool operator==(const Error& error) const = default;
 
   // Factory methods for common errors
-  [[nodiscard]] static Error missing_param(const std::string_view& paramName) {
+  [[nodiscard]] static Error MissingParam(const std::string_view& paramName) {
     return Error{ErrorCode::MissingParam,
                  std::format("Missing required parameter: {}", paramName)};
   }
 
-  [[nodiscard]] static Error version_required() {
+  [[nodiscard]] static Error VersionRequired() {
     return Error{
         ErrorCode::VersionRequired,
-        "BlockRef must specify version (use_latest only allowed in Draft)"};
+        "BlockRef must specify version (UseLatest only allowed in Draft)"};
   }
 
-  [[nodiscard]] static Error block_not_found(const std::string& blockId) {
+  [[nodiscard]] static Error BlockNotFound(const std::string& blockId) {
     return Error{ErrorCode::BlockNotFound, "Block not found: " + blockId};
   }
 
-  [[nodiscard]] static Error composition_not_found(const std::string& compId) {
+  [[nodiscard]] static Error CompositionNotFound(const std::string& compId) {
     return Error{ErrorCode::CompositionNotFound,
                  "Composition not found: " + compId};
   }
@@ -98,11 +98,11 @@ class Result {
   explicit Result(T value) : data_(std::move(value)) {}
   explicit Result(Error error) : data_(std::move(error)) {}
 
-  [[nodiscard]] bool has_value() const noexcept {
+  [[nodiscard]] bool HasValue() const noexcept {
     return std::holds_alternative<T>(data_);
   }
 
-  [[nodiscard]] bool has_error() const noexcept {
+  [[nodiscard]] bool HasError() const noexcept {
     return std::holds_alternative<Error>(data_);
   }
 

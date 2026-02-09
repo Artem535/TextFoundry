@@ -47,16 +47,16 @@ class EngineTestFixture {
   Block createAndPublishBlock(const BlockId& id, const std::string& templateStr,
                               const Params& defaults = {}) {
     BlockDraft draft = BlockDraftBuilder(id)
-                           .with_template(Template(templateStr))
-                           .with_defaults(defaults)
+                           .WithTemplate(Template(templateStr))
+                           .WithDefaults(defaults)
                            .build();
     auto pubResult =
-        engine.publish_block(std::move(draft), Engine::VersionBump::Minor);
-    REQUIRE(pubResult.has_value());
+        engine.PublishBlock(std::move(draft), Engine::VersionBump::Minor);
+    REQUIRE(pubResult.HasValue());
     auto pub = pubResult.value();
     REQUIRE(pub.id() == id);
-    auto blockResult = engine.load_block(id, pub.version());
-    REQUIRE(blockResult.has_value());
+    auto blockResult = engine.LoadBlock(id, pub.version());
+    REQUIRE(blockResult.HasValue());
     Block block = blockResult.value();
     REQUIRE(block.state() == BlockState::Published);
     return block;
@@ -68,16 +68,16 @@ class EngineTestFixture {
       const std::vector<std::pair<std::string, Version>>& blockRefs) {
     CompositionDraftBuilder builder(id);
     for (const auto& [blockId, ver] : blockRefs) {
-      builder.add_block_ref(blockId, ver.major, ver.minor);
+      builder.AddBlockRef(blockId, ver.major, ver.minor);
     }
     CompositionDraft draft = builder.build();
-    auto pubResult = engine.publish_composition(std::move(draft),
+    auto pubResult = engine.PublishComposition(std::move(draft),
                                                 Engine::VersionBump::Minor);
-    REQUIRE(pubResult.has_value());
+    REQUIRE(pubResult.HasValue());
     auto pub = pubResult.value();
     REQUIRE(pub.id() == id);
-    auto compResult = engine.load_composition(id, pub.version());
-    REQUIRE(compResult.has_value());
+    auto compResult = engine.LoadComposition(id, pub.version());
+    REQUIRE(compResult.HasValue());
     Composition comp = compResult.value();
     REQUIRE(comp.state() == BlockState::Published);
     return comp;
@@ -109,7 +109,7 @@ TEST_SUITE("Version") {
 
   TEST_CASE("version toString") {
     Version v{2, 5};
-    CHECK(v.to_string() == "2.5");
+    CHECK(v.ToString() == "2.5");
   }
 }
 
@@ -123,14 +123,14 @@ TEST_SUITE("Error") {
   }
 
   TEST_CASE("missing param error") {
-    auto err = Error::missing_param("name");
+    auto err = Error::MissingParam("name");
     CHECK(err.is_error());
     CHECK(err.code == ErrorCode::MissingParam);
     CHECK(err.message.find("name") != std::string::npos);
   }
 
   TEST_CASE("version required error") {
-    auto err = Error::version_required();
+    auto err = Error::VersionRequired();
     CHECK(err.is_error());
     CHECK(err.code == ErrorCode::VersionRequired);
   }
@@ -141,16 +141,16 @@ TEST_SUITE("Error") {
 TEST_SUITE("Result") {
   TEST_CASE("Result with value") {
     Result<int> r(42);
-    CHECK(r.has_value());
-    CHECK_FALSE(r.has_error());
+    CHECK(r.HasValue());
+    CHECK_FALSE(r.HasError());
     CHECK(*r == 42);
     CHECK(r.value() == 42);
   }
 
   TEST_CASE("Result with error") {
-    Result<int> r(Error::missing_param("test"));
-    CHECK_FALSE(r.has_value());
-    CHECK(r.has_error());
+    Result<int> r(Error::MissingParam("test"));
+    CHECK_FALSE(r.HasValue());
+    CHECK(r.HasError());
     CHECK(r.error().code == ErrorCode::MissingParam);
   }
 }
@@ -184,7 +184,7 @@ TEST_SUITE("BlockType") {
 TEST_SUITE("Template") {
   TEST_CASE("extract param names") {
     Template t("Hello, {{name}}! Your score is {{score}}.");
-    auto params = t.extract_param_names();
+    auto params = t.ExtractParamNames();
     CHECK(params.size() == 2);
     CHECK(params[0] == "name");
     CHECK(params[1] == "score");
@@ -193,24 +193,24 @@ TEST_SUITE("Template") {
   TEST_CASE("expand template with all params") {
     Template t("Hello, {{name}}!");
     Params p{{"name", "World"}};
-    auto result = t.expand(p);
-    CHECK(result.has_value());
+    auto result = t.Expand(p);
+    CHECK(result.HasValue());
     CHECK(result.value() == "Hello, World!");
   }
 
   TEST_CASE("expand template with missing param returns error") {
     Template t("Hello, {{name}}!");
     Params p{};
-    auto result = t.expand(p);
-    CHECK(result.has_error());
+    auto result = t.Expand(p);
+    CHECK(result.HasError());
     CHECK(result.error().code == ErrorCode::MissingParam);
   }
 
   TEST_CASE("expand template with no params") {
     Template t("Hello, World!");
     Params p{};
-    auto result = t.expand(p);
-    CHECK(result.has_value());
+    auto result = t.Expand(p);
+    CHECK(result.HasValue());
     CHECK(result.value() == "Hello, World!");
   }
 }
@@ -220,54 +220,54 @@ TEST_SUITE("Template") {
 TEST_SUITE("Block") {
   TEST_CASE("create block with id") {
     Block b("greeting.hello");
-    CHECK(b.id() == "greeting.hello");
+    CHECK(b.Id() == "greeting.hello");
     CHECK(b.state() == BlockState::Draft);
     CHECK(b.type() == BlockType::Domain);
   }
 
   TEST_CASE("block defaults and resolution") {
     Block b("test.block");
-    b.set_defaults({{"name", "default_user"}});
+    b.SetDefaults({{"name", "default_user"}});
 
     Params local{{"name", "local_user"}};
     Params runtime{{"name", "runtime_user"}};
 
     // Runtime has highest priority
-    auto r1 = b.resolve_param("name", local, runtime);
-    CHECK(r1.has_value());
+    auto r1 = b.ResolveParam("name", local, runtime);
+    CHECK(r1.HasValue());
     CHECK(r1.value() == "runtime_user");
 
     // Local has priority over defaults
     Params emptyRuntime;
-    auto r2 = b.resolve_param("name", local, emptyRuntime);
-    CHECK(r2.has_value());
+    auto r2 = b.ResolveParam("name", local, emptyRuntime);
+    CHECK(r2.HasValue());
     CHECK(r2.value() == "local_user");
 
     // Defaults used when no overrides
     Params emptyLocal;
-    auto r3 = b.resolve_param("name", emptyLocal, emptyRuntime);
-    CHECK(r3.has_value());
+    auto r3 = b.ResolveParam("name", emptyLocal, emptyRuntime);
+    CHECK(r3.HasValue());
     CHECK(r3.value() == "default_user");
   }
 
   TEST_CASE("block validate params") {
     Block b("test.block");
-    b.set_template(Template("Hello, {{name}}!"));
+    b.SetTemplate(Template("Hello, {{name}}!"));
 
     // Missing param
-    auto err = b.validate_params({}, {});
+    auto err = b.ValidateParams({}, {});
     CHECK(err.is_error());
     CHECK(err.code == ErrorCode::MissingParam);
 
     // With default
-    b.set_defaults({{"name", "user"}});
-    err = b.validate_params({}, {});
+    b.SetDefaults({{"name", "user"}});
+    err = b.ValidateParams({}, {});
     CHECK(err.is_success());
   }
 
   TEST_CASE("block publish") {
     Block b("test.block");
-    b.set_template(Template("Hello!"));
+    b.SetTemplate(Template("Hello!"));
 
     CHECK(b.state() == BlockState::Draft);
 
@@ -285,7 +285,7 @@ TEST_SUITE("Block") {
 
   TEST_CASE("cannot publish already published block") {
     Block b("test.block");
-    b.set_template(Template("Hello!"));
+    b.SetTemplate(Template("Hello!"));
     auto err = b.publish(Version{1, 0});
     CHECK(err.is_success());
 
@@ -295,7 +295,7 @@ TEST_SUITE("Block") {
 
   TEST_CASE("block deprecate") {
     Block b("test.block");
-    b.set_template(Template("Hello!"));
+    b.SetTemplate(Template("Hello!"));
     auto err = b.publish(Version{1, 0});
     CHECK(err.is_success());
 
@@ -309,27 +309,27 @@ TEST_SUITE("Block") {
 TEST_SUITE("BlockRef") {
   TEST_CASE("BlockRef with version") {
     BlockRef ref("block.id", Version{1, 5});
-    CHECK(ref.block_id() == "block.id");
+    CHECK(ref.GetBlockId() == "block.id");
     CHECK(ref.version().has_value());
     CHECK(ref.version().value() == Version{1, 5});
-    CHECK_FALSE(ref.use_latest());
+    CHECK_FALSE(ref.UseLatest());
   }
 
-  TEST_CASE("BlockRef with use_latest") {
+  TEST_CASE("BlockRef with UseLatest") {
     BlockRef ref("block.id");
-    CHECK(ref.block_id() == "block.id");
+    CHECK(ref.GetBlockId() == "block.id");
     CHECK_FALSE(ref.version().has_value());
-    CHECK(ref.use_latest());
+    CHECK(ref.UseLatest());
   }
 
-  TEST_CASE("BlockRef validate in draft context allows use_latest") {
-    BlockRef ref("block.id");       // use_latest = true
+  TEST_CASE("BlockRef validate in draft context allows UseLatest") {
+    BlockRef ref("block.id");       // UseLatest = true
     auto err = ref.validate(true);  // isDraftContext = true
     CHECK(err.is_success());
   }
 
-  TEST_CASE("BlockRef validate in non-draft context rejects use_latest") {
-    BlockRef ref("block.id");        // use_latest = true
+  TEST_CASE("BlockRef validate in non-draft context rejects UseLatest") {
+    BlockRef ref("block.id");        // UseLatest = true
     auto err = ref.validate(false);  // isDraftContext = false
     CHECK(err.is_error());
     CHECK(err.code == ErrorCode::VersionRequired);
@@ -343,15 +343,15 @@ TEST_SUITE("BlockRef") {
 
   TEST_CASE("BlockRef resolve params") {
     Block block("test.block");
-    block.set_template(Template("{{greeting}}, {{name}}!"));
-    block.set_defaults({{"greeting", "Hello"}});
+    block.SetTemplate(Template("{{greeting}}, {{name}}!"));
+    block.SetDefaults({{"greeting", "Hello"}});
 
     BlockRef ref("test.block", Version{1, 0}, {{"name", "World"}});
 
     Params runtime{{"greeting", "Hi"}};  // Runtime overrides block defaults
-    auto result = ref.resolve_params(block, runtime);
+    auto result = ref.ResolveParams(block, runtime);
 
-    CHECK(result.has_value());
+    CHECK(result.HasValue());
     CHECK(result.value()["greeting"] == "Hi");  // Runtime wins
     CHECK(result.value()["name"] == "World");   // Local override used
   }
@@ -362,32 +362,32 @@ TEST_SUITE("BlockRef") {
 TEST_SUITE("Fragment") {
   TEST_CASE("Fragment BlockRef type") {
     BlockRef ref("block.id", Version{1, 0});
-    Fragment f(Fragment::make_block_ref(std::move(ref)));
+    Fragment f(Fragment::MakeBlockRef(std::move(ref)));
 
-    CHECK(f.is_block_ref());
-    CHECK_FALSE(f.is_static_text());
-    CHECK_FALSE(f.is_separator());
+    CHECK(f.IsBlockRef());
+    CHECK_FALSE(f.IsStaticText());
+    CHECK_FALSE(f.IsSeparator());
     CHECK(f.type() == FragmentType::BlockRef);
   }
 
   TEST_CASE("Fragment StaticText type") {
-    Fragment f = Fragment::make_static_text("Hello, World!");
+    Fragment f = Fragment::MakeStaticText("Hello, World!");
 
-    CHECK_FALSE(f.is_block_ref());
-    CHECK(f.is_static_text());
-    CHECK_FALSE(f.is_separator());
+    CHECK_FALSE(f.IsBlockRef());
+    CHECK(f.IsStaticText());
+    CHECK_FALSE(f.IsSeparator());
     CHECK(f.type() == FragmentType::StaticText);
-    CHECK(f.as_static_text().text() == "Hello, World!");
+    CHECK(f.AsStaticText().text() == "Hello, World!");
   }
 
   TEST_CASE("Fragment Separator type") {
-    Fragment f = Fragment::make_separator(SeparatorType::Newline);
+    Fragment f = Fragment::MakeSeparator(SeparatorType::Newline);
 
-    CHECK_FALSE(f.is_block_ref());
-    CHECK_FALSE(f.is_static_text());
-    CHECK(f.is_separator());
+    CHECK_FALSE(f.IsBlockRef());
+    CHECK_FALSE(f.IsStaticText());
+    CHECK(f.IsSeparator());
     CHECK(f.type() == FragmentType::Separator);
-    CHECK(f.as_separator().toString() == "\n");
+    CHECK(f.AsSeparator().toString() == "\n");
   }
 
   TEST_CASE("Separator toString variants") {
@@ -397,8 +397,8 @@ TEST_SUITE("Fragment") {
   }
 
   TEST_CASE("Fragment validate delegates to BlockRef") {
-    BlockRef ref("block.id");  // use_latest = true
-    Fragment f = Fragment::make_block_ref(ref);
+    BlockRef ref("block.id");  // UseLatest = true
+    Fragment f = Fragment::MakeBlockRef(ref);
 
     auto err = f.validate(true);  // Draft context - OK
     CHECK(err.is_success());
@@ -421,37 +421,37 @@ TEST_SUITE("Composition") {
   TEST_CASE("add fragments to composition") {
     Composition c("test.composition");
 
-    c.add_static_text("Hello");
-    c.add_separator(SeparatorType::Newline);
-    c.add_block_ref("block.id", Version{1, 0});
+    c.AddStaticText("Hello");
+    c.AddSeparator(SeparatorType::Newline);
+    c.AddBlockRef("block.id", Version{1, 0});
 
     CHECK(c.fragmentCount() == 3);
-    CHECK(c.fragment(0).is_static_text());
-    CHECK(c.fragment(1).is_separator());
-    CHECK(c.fragment(2).is_block_ref());
+    CHECK(c.fragment(0).IsStaticText());
+    CHECK(c.fragment(1).IsSeparator());
+    CHECK(c.fragment(2).IsBlockRef());
   }
 
   TEST_CASE("insert and remove fragments") {
     Composition c("test.composition");
-    c.add_static_text("First");
-    c.add_static_text("Third");
+    c.AddStaticText("First");
+    c.AddStaticText("Third");
 
-    c.insert_fragment(1, Fragment::make_static_text("Second"));
+    c.InsertFragment(1, Fragment::MakeStaticText("Second"));
     CHECK(c.fragmentCount() == 3);
-    CHECK(c.fragment(1).as_static_text().text() == "Second");
+    CHECK(c.fragment(1).AsStaticText().text() == "Second");
 
-    c.remove_fragment(1);
+    c.RemoveFragment(1);
     CHECK(c.fragmentCount() == 2);
-    CHECK(c.fragment(1).as_static_text().text() == "Third");
+    CHECK(c.fragment(1).AsStaticText().text() == "Third");
   }
 
   TEST_CASE("clear fragments") {
     Composition c("test.composition");
-    c.add_static_text("Text");
-    c.add_block_ref("block.id", Version{1, 0});
+    c.AddStaticText("Text");
+    c.AddBlockRef("block.id", Version{1, 0});
 
     CHECK(c.fragmentCount() == 2);
-    c.clear_fragments();
+    c.ClearFragments();
     CHECK(c.fragmentCount() == 0);
   }
 
@@ -463,23 +463,23 @@ TEST_SUITE("Composition") {
 
   TEST_CASE("composition validate with id succeeds") {
     Composition c("test.composition");
-    c.add_static_text("Text");
+    c.AddStaticText("Text");
     auto err = c.validate();
     CHECK(err.is_success());
   }
 
   TEST_CASE("composition publish validates BlockRef versions") {
     Composition c("test.composition");
-    c.add_block_ref_latest("block.id");  // use_latest = true
+    c.AddBlockRefLatest("block.id");  // UseLatest = true
 
     auto err = c.publish(Version{1, 0});
-    CHECK(err.is_error());  // Cannot publish with use_latest
+    CHECK(err.is_error());  // Cannot publish with UseLatest
     CHECK(err.code == ErrorCode::VersionRequired);
   }
 
   TEST_CASE("composition publish with explicit versions succeeds") {
     Composition c("test.composition");
-    c.add_block_ref("block.id", Version{1, 0});
+    c.AddBlockRef("block.id", Version{1, 0});
 
     auto err = c.publish(Version{1, 0});
     CHECK(err.is_success());
@@ -505,8 +505,8 @@ TEST_SUITE("Composition") {
 
   TEST_CASE("RenderContext builder") {
     auto ctx = RenderContext{}
-                   .with_param("name", "value")
-                   .with_language("en")
+                   .WithParam("name", "value")
+                   .WithLanguage("en")
                    .with_strict_mode(true);
 
     CHECK(ctx.params["name"] == "value");
@@ -521,21 +521,21 @@ TEST_SUITE("BlockDraftBuilder") {
   TEST_CASE("build block with builder") {
     EngineTestFixture fixture;
     BlockDraft draft = BlockDraftBuilder("greeting.hello")
-                           .with_type(BlockType::Role)
-                           .with_template(Template("Hello, {{name}}!"))
-                           .with_default("name", "World")
-                           .with_tag("simple")
-                           .with_language("en")
-                           .with_description("A simple greeting")
+                           .WithType(BlockType::Role)
+                           .WithTemplate(Template("Hello, {{name}}!"))
+                           .WithDefault("name", "World")
+                           .WithTag("simple")
+                           .WithLanguage("en")
+                           .WithDescription("A simple greeting")
                            .build();
     auto pubBlock =
         fixture.engine
-            .publish_block(std::move(draft), Engine::VersionBump::Minor)
+            .PublishBlock(std::move(draft), Engine::VersionBump::Minor)
             .value();
     auto block =
-        fixture.engine.load_block("greeting.hello", pubBlock.version()).value();
+        fixture.engine.LoadBlock("greeting.hello", pubBlock.version()).value();
 
-    CHECK(block.id() == "greeting.hello");
+    CHECK(block.Id() == "greeting.hello");
     CHECK(block.type() == BlockType::Role);
     CHECK(block.defaults().at("name") == "World");
     CHECK(block.tags().contains("simple"));
@@ -552,32 +552,32 @@ TEST_SUITE("CompositionDraftBuilder") {
 
     // Publish prerequisite block first
     BlockDraft helloDraft = BlockDraftBuilder("greeting.hello")
-                                .with_template(Template("Hello, {{name}}!"))
+                                .WithTemplate(Template("Hello, {{name}}!"))
                                 .build();
     auto helloPub =
         fixture.engine
-            .publish_block(std::move(helloDraft), Engine::VersionBump::Minor)
+            .PublishBlock(std::move(helloDraft), Engine::VersionBump::Minor)
             .value();
 
     auto builder =
         CompositionDraftBuilder("welcome.message")
-            .with_project_key("myproject")
-            .with_description("Welcome message")
-            .add_static_text("# Welcome\n\n")
-            .add_block_ref("greeting.hello", 1, 0, {{"name", "User"}})
-            .add_separator(SeparatorType::Paragraph)
-            .add_static_text("Enjoy your stay!");
+            .WithProjectKey("myproject")
+            .WithDescription("Welcome message")
+            .AddStaticText("# Welcome\n\n")
+            .AddBlockRef("greeting.hello", 1, 0, {{"name", "User"}})
+            .AddSeparator(SeparatorType::Paragraph)
+            .AddStaticText("Enjoy your stay!");
     auto draft = builder.build();
     auto pubComp =
         fixture.engine
-            .publish_composition(std::move(draft), Engine::VersionBump::Minor)
+            .PublishComposition(std::move(draft), Engine::VersionBump::Minor)
             .value();
     auto comp =
-        fixture.engine.load_composition("welcome.message", pubComp.version())
+        fixture.engine.LoadComposition("welcome.message", pubComp.version())
             .value();
 
     CHECK(comp.id() == "welcome.message");
-    CHECK(comp.project_key() == "myproject");
+    CHECK(comp.ProjectKey() == "myproject");
     CHECK(comp.description() == "Welcome message");
     CHECK(comp.fragmentCount() == 4);
   }
@@ -591,9 +591,9 @@ TEST_CASE_FIXTURE(EngineTestFixture, "render single block through engine") {
                         {{"name", "World"}});
 
   // Render through engine
-  auto result = engine.render_block("greeting.hello", Version{1, 0});
+  auto result = engine.RenderBlock("greeting.hello", Version{1, 0});
 
-  CHECK(result.has_value());
+  CHECK(result.HasValue());
   CHECK(result.value() == "Hello, World!");
 }
 
@@ -602,34 +602,34 @@ TEST_CASE_FIXTURE(EngineTestFixture,
   createAndPublishBlock("greeting.hello", "Hello, {{name}}!",
                         {{"name", "World"}});
 
-  auto ctx = RenderContext{}.with_param("name", "Alice");
-  auto result = engine.render_block("greeting.hello", Version{1, 0}, ctx);
+  auto ctx = RenderContext{}.WithParam("name", "Alice");
+  auto result = engine.RenderBlock("greeting.hello", Version{1, 0}, ctx);
 
-  CHECK(result.has_value());
+  CHECK(result.HasValue());
   CHECK(result.value() == "Hello, Alice!");
 }
 
 TEST_CASE_FIXTURE(EngineTestFixture, "render block with missing param fails") {
   createAndPublishBlock("greeting.hello", "Hello, {{name}}!");  // No defaults
 
-  auto result = engine.render_block("greeting.hello", Version{1, 0});
+  auto result = engine.RenderBlock("greeting.hello", Version{1, 0});
 
-  CHECK(result.has_error());
+  CHECK(result.HasError());
   CHECK(result.error().code == ErrorCode::MissingParam);
 }
 
 TEST_CASE_FIXTURE(EngineTestFixture,
                   "render composition with static text only") {
   CompositionDraftBuilder builder("test.comp");
-  builder.add_static_text("Hello, World!");
+  builder.AddStaticText("Hello, World!");
   auto draft = builder.build();
   auto pubResult =
-      engine.publish_composition(std::move(draft), Engine::VersionBump::Minor);
-  REQUIRE(pubResult.has_value());
+      engine.PublishComposition(std::move(draft), Engine::VersionBump::Minor);
+  REQUIRE(pubResult.HasValue());
 
   auto result = engine.render("test.comp");
 
-  CHECK(result.has_value());
+  CHECK(result.HasValue());
   CHECK(result.value().text == "Hello, World!");
   CHECK(result.value().compositionId == "test.comp");
 }
@@ -638,7 +638,7 @@ TEST_CASE_FIXTURE(EngineTestFixture, "render unpublished composition fails") {
   // No composition published with this ID
   auto result = engine.render("test.comp");
 
-  CHECK(result.has_error());
+  CHECK(result.HasError());
   // Expect storage not found error, since no draft persistence
   // CHECK(result.error().code == ErrorCode::PublishedRequired); // Adjust based
   // on actual error
@@ -646,15 +646,15 @@ TEST_CASE_FIXTURE(EngineTestFixture, "render unpublished composition fails") {
 
 TEST_CASE_FIXTURE(EngineTestFixture, "render composition with separator") {
   CompositionDraftBuilder builder("test.comp");
-  builder.add_static_text("Line 1");
-  builder.add_separator(SeparatorType::Newline);
-  builder.add_static_text("Line 2");
+  builder.AddStaticText("Line 1");
+  builder.AddSeparator(SeparatorType::Newline);
+  builder.AddStaticText("Line 2");
   auto draft = builder.build();
-  engine.publish_composition(std::move(draft), Engine::VersionBump::Minor);
+  engine.PublishComposition(std::move(draft), Engine::VersionBump::Minor);
 
   auto result = engine.render("test.comp");
 
-  CHECK(result.has_value());
+  CHECK(result.HasValue());
   CHECK(result.value().text == "Line 1\nLine 2");
 }
 
@@ -665,13 +665,13 @@ TEST_CASE_FIXTURE(EngineTestFixture, "render composition with BlockRef") {
 
   // Create and publish composition with BlockRef
   CompositionDraftBuilder builder("test.comp");
-  builder.add_block_ref("greeting.hello", 1, 0);
+  builder.AddBlockRef("greeting.hello", 1, 0);
   auto draft = builder.build();
-  engine.publish_composition(std::move(draft), Engine::VersionBump::Minor);
+  engine.PublishComposition(std::move(draft), Engine::VersionBump::Minor);
 
   auto result = engine.render("test.comp");
 
-  CHECK(result.has_value());
+  CHECK(result.HasValue());
   CHECK(result.value().text == "Hello, World!");
   CHECK(result.value().blocksUsed.size() == 1);
   CHECK(result.value().blocksUsed[0].first == "greeting.hello");
@@ -684,14 +684,14 @@ TEST_CASE_FIXTURE(EngineTestFixture,
                         {{"name", "World"}});
 
   CompositionDraftBuilder builder("test.comp");
-  builder.add_block_ref("greeting.hello", 1, 0);
+  builder.AddBlockRef("greeting.hello", 1, 0);
   auto draft = builder.build();
-  engine.publish_composition(std::move(draft), Engine::VersionBump::Minor);
+  engine.PublishComposition(std::move(draft), Engine::VersionBump::Minor);
 
-  auto ctx = RenderContext{}.with_param("name", "Alice");
+  auto ctx = RenderContext{}.WithParam("name", "Alice");
   auto result = engine.render("test.comp", ctx);
 
-  CHECK(result.has_value());
+  CHECK(result.HasValue());
   CHECK(result.value().text == "Hello, Alice!");
 }
 
@@ -703,15 +703,15 @@ TEST_CASE_FIXTURE(EngineTestFixture,
                         {{"name", "Friend"}});
 
   CompositionDraftBuilder builder("test.comp");
-  builder.add_block_ref("greeting.hello", 1, 0, {{"name", "Alice"}});
-  builder.add_separator(SeparatorType::Paragraph);
-  builder.add_block_ref("farewell.goodbye", 1, 0, {{"name", "Alice"}});
+  builder.AddBlockRef("greeting.hello", 1, 0, {{"name", "Alice"}});
+  builder.AddSeparator(SeparatorType::Paragraph);
+  builder.AddBlockRef("farewell.goodbye", 1, 0, {{"name", "Alice"}});
   auto draft = builder.build();
-  engine.publish_composition(std::move(draft), Version{1, 0});
+  engine.PublishComposition(std::move(draft), Version{1, 0});
 
   auto result = engine.render("test.comp", Version{1, 0});
 
-  CHECK(result.has_value());
+  CHECK(result.HasValue());
   CHECK(result.value().text == "Hello, Alice!\n\nGoodbye, Alice!");
   CHECK(result.value().blocksUsed.size() == 2);
 }
@@ -719,25 +719,25 @@ TEST_CASE_FIXTURE(EngineTestFixture,
 TEST_CASE_FIXTURE(EngineTestFixture, "render with missing block fails") {
   // Create composition referencing non-existent block
   CompositionDraftBuilder builder("test.comp");
-  builder.add_block_ref("missing.block", 1, 0);
+  builder.AddBlockRef("missing.block", 1, 0);
   auto draft = builder.build();
-  engine.publish_composition(std::move(draft), Version{1, 0});
+  engine.PublishComposition(std::move(draft), Version{1, 0});
 
   auto result = engine.render("test.comp", Version{1, 0});
 
-  CHECK(result.has_error());
+  CHECK(result.HasError());
   CHECK(result.error().code == ErrorCode::BlockNotFound);
 }
 
 TEST_CASE_FIXTURE(EngineTestFixture, "render result contains metadata") {
   CompositionDraftBuilder builder("my.composition");
-  builder.add_static_text("Text");
+  builder.AddStaticText("Text");
   auto draft = builder.build();
-  engine.publish_composition(std::move(draft), Version{2, 5});
+  engine.PublishComposition(std::move(draft), Version{2, 5});
 
   auto result = engine.render("my.composition", Version{2, 5});
 
-  CHECK(result.has_value());
+  CHECK(result.HasValue());
   CHECK(result.value().compositionId == "my.composition");
   CHECK(result.value().compositionVersion == Version{2, 5});
 }
@@ -746,33 +746,33 @@ TEST_CASE_FIXTURE(EngineTestFixture, "render result contains metadata") {
 
 TEST_CASE_FIXTURE(EngineTestFixture, "create and save block") {
   BlockDraft draft = BlockDraftBuilder("test.block")
-                         .with_template(Template("Hello, {{name}}!"))
-                         .with_defaults({{"name", "World"}})
+                         .WithTemplate(Template("Hello, {{name}}!"))
+                         .WithDefaults({{"name", "World"}})
                          .build();
   // Drafts are not saved separately; publish or use directly
 
   // Load after publish
-  auto pub = engine.publish_block(std::move(draft), Version{1, 0}).value();
-  auto result = engine.load_block("test.block", pub.version());
-  CHECK(result.has_value());
-  CHECK(result.value().id() == "test.block");
-  CHECK(result.value().templ().extract_param_names().size() == 1);
+  auto pub = engine.PublishBlock(std::move(draft), Version{1, 0}).value();
+  auto result = engine.LoadBlock("test.block", pub.version());
+  CHECK(result.HasValue());
+  CHECK(result.value().Id() == "test.block");
+  CHECK(result.value().templ().ExtractParamNames().size() == 1);
 }
 
 TEST_CASE_FIXTURE(EngineTestFixture, "publish block workflow") {
   BlockDraft draft =
-      BlockDraftBuilder("test.block").with_template(Template("Hello!")).build();
-  auto result = engine.publish_block(std::move(draft), Version{1, 0});
-  CHECK(result.has_value());
+      BlockDraftBuilder("test.block").WithTemplate(Template("Hello!")).build();
+  auto result = engine.PublishBlock(std::move(draft), Version{1, 0});
+  CHECK(result.HasValue());
 
   // Check published block
-  auto block = engine.load_block("test.block", Version{1, 0}).value();
+  auto block = engine.LoadBlock("test.block", Version{1, 0}).value();
   CHECK(block.state() == BlockState::Published);
   CHECK(block.version() == Version{1, 0});
 
   // Check latest version
-  auto verResult = engine.get_latest_block_version("test.block");
-  CHECK(verResult.has_value());
+  auto verResult = engine.GetLatestBlockVersion("test.block");
+  CHECK(verResult.HasValue());
   CHECK(verResult.value() == Version{1, 0});
 }
 
@@ -780,20 +780,20 @@ TEST_CASE_FIXTURE(EngineTestFixture, "list blocks") {
   createAndPublishBlock("block1", "Text 1", {});
   createAndPublishBlock("block2", "Text 2", {});
 
-  auto blocks = engine.list_blocks();
+  auto blocks = engine.ListBlocks();
   CHECK(blocks.size() == 2);
 }
 
 TEST_CASE_FIXTURE(EngineTestFixture, "create and save composition") {
   CompositionDraftBuilder builder("test.comp");
-  builder.add_static_text("Hello");
+  builder.AddStaticText("Hello");
   auto draft = builder.build();
   // Drafts not saved; test publish instead
 
   auto pub =
-      engine.publish_composition(std::move(draft), Version{1, 0}).value();
-  auto result = engine.load_composition("test.comp", pub.version());
-  CHECK(result.has_value());
+      engine.PublishComposition(std::move(draft), Version{1, 0}).value();
+  auto result = engine.LoadComposition("test.comp", pub.version());
+  CHECK(result.HasValue());
   CHECK(result.value().id() == "test.comp");
   CHECK(result.value().fragmentCount() == 1);
 }
@@ -804,25 +804,25 @@ TEST_CASE_FIXTURE(EngineTestFixture, "publish composition workflow") {
 
   // Then create and publish composition referencing it
   CompositionDraftBuilder builder("test.comp");
-  builder.add_block_ref("test.block", 1, 0);
+  builder.AddBlockRef("test.block", 1, 0);
   auto draft = builder.build();
-  auto result = engine.publish_composition(std::move(draft), Version{1, 0});
-  CHECK(result.has_value());
+  auto result = engine.PublishComposition(std::move(draft), Version{1, 0});
+  CHECK(result.HasValue());
 
   // List compositions
-  auto comps = engine.list_compositions();
+  auto comps = engine.ListCompositions();
   CHECK(comps.size() == 1);
   CHECK(comps[0] == "test.comp");
 }
 
 TEST_CASE_FIXTURE(EngineTestFixture, "validate block through engine") {
   BlockDraft draft = BlockDraftBuilder("test.block")
-                         .with_template(Template("Hello, {{name}}!"))
-                         .with_defaults({{"name", "World"}})
+                         .WithTemplate(Template("Hello, {{name}}!"))
+                         .WithDefaults({{"name", "World"}})
                          .build();
-  auto pub = engine.publish_block(std::move(draft), Version{1, 0}).value();
+  auto pub = engine.PublishBlock(std::move(draft), Version{1, 0}).value();
 
-  auto err = engine.validate_block("test.block");
+  auto err = engine.ValidateBlock("test.block");
   CHECK(err.is_success());
 }
 
@@ -830,11 +830,11 @@ TEST_CASE_FIXTURE(EngineTestFixture, "validate composition through engine") {
   createAndPublishBlock("test.block", "Hello!", {});
 
   CompositionDraftBuilder builder("test.comp");
-  builder.add_block_ref("test.block", 1, 0);
+  builder.AddBlockRef("test.block", 1, 0);
   auto draft = builder.build();
-  auto pubResult = engine.publish_composition(std::move(draft), Version{1, 0});
-  REQUIRE(pubResult.has_value());  // publish to validate
+  auto pubResult = engine.PublishComposition(std::move(draft), Version{1, 0});
+  REQUIRE(pubResult.HasValue());  // publish to validate
 
-  auto err = engine.validate_composition("test.comp");
+  auto err = engine.ValidateComposition("test.comp");
   CHECK(err.is_success());
 }

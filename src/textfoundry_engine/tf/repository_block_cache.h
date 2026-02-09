@@ -42,14 +42,14 @@ class RepositoryBlockCache final : public IBlockCache {
    * Get block by ID and version (with caching)
    * @returns Block pointer or nullptr if not found in repository
    */
-  [[nodiscard]] const Block* get_block(const BlockId& id,
+  [[nodiscard]] const Block* GetBlock(const BlockId& id,
                                        Version version) const override;
 
   /**
    * Get latest published version of a block (with caching)
    * @returns Block pointer or nullptr if not found
    */
-  [[nodiscard]] const Block* get_latest_block(const BlockId& id) const override;
+  [[nodiscard]] const Block* GetLatestBlock(const BlockId& id) const override;
 
   /**
    * Clear all cached blocks

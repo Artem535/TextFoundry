@@ -17,11 +17,11 @@ bool RenderResult::isEmpty() const noexcept { return text.empty(); }
 Renderer::Renderer(std::unique_ptr<IBlockCache> cache)
     : blockCache_(std::move(cache)) {}
 
-void Renderer::set_block_cache(std::unique_ptr<IBlockCache> cache) {
+void Renderer::SetBlockCache(std::unique_ptr<IBlockCache> cache) {
   blockCache_ = std::move(cache);
 }
 
-void Renderer::clear_cache() {
+void Renderer::ClearCache() {
   if (blockCache_) {
     blockCache_->clear();
   }
@@ -49,8 +49,8 @@ Result<RenderResult> Renderer::render(const Composition& composition,
 
   TF_LOG_TRACE("Rendering {} fragments", composition.fragments().size());
   for (const auto& fragment : composition.fragments()) {
-    auto result = render_fragment(fragment, context, blocksUsed);
-    if (result.has_error()) {
+    auto result = RenderFragment(fragment, context, blocksUsed);
+    if (result.HasError()) {
       TF_LOG_ERROR("Failed to render fragment: {}", result.error().message);
       return Result<RenderResult>(result.error());
     }
@@ -58,8 +58,8 @@ Result<RenderResult> Renderer::render(const Composition& composition,
   }
 
   // Apply structural style
-  auto style = get_effective_style(composition);
-  std::string finalText = apply_structural_style(fragmentTexts, style);
+  auto style = GetEffectiveStyle(composition);
+  std::string finalText = ApplyStructuralStyle(fragmentTexts, style);
 
   RenderResult result;
   result.text = std::move(finalText);
@@ -73,7 +73,7 @@ Result<RenderResult> Renderer::render(const Composition& composition,
   return Result<RenderResult>(result);
 }
 
-Result<std::string> Renderer::render_block(const Block& block,
+Result<std::string> Renderer::RenderBlock(const Block& block,
                                            const RenderContext& context) {
   // Merge defaults with context params (context has priority)
   Params merged = block.defaults();
@@ -81,10 +81,10 @@ Result<std::string> Renderer::render_block(const Block& block,
     merged[key] = value;
   }
 
-  return block.templ().expand(merged);
+  return block.templ().Expand(merged);
 }
 
-std::string Renderer::apply_structural_style(
+std::string Renderer::ApplyStructuralStyle(
     const std::vector<std::string>& fragmentTexts,
     const StructuralStyle& style) {
   std::ostringstream result;
@@ -125,24 +125,24 @@ std::string Renderer::apply_structural_style(
   return result.str();
 }
 
-Result<std::string> Renderer::render_fragment(
+Result<std::string> Renderer::RenderFragment(
     const Fragment& fragment, const RenderContext& context,
     std::vector<std::pair<BlockId, Version>>& blocksUsed) const {
   switch (fragment.type()) {
     case FragmentType::BlockRef:
-      return expand_block_ref(fragment.as_block_ref(), context, blocksUsed);
+      return ExpandBlockRef(fragment.AsBlockRef(), context, blocksUsed);
 
     case FragmentType::StaticText:
-      return Result<std::string>(fragment.as_static_text().text());
+      return Result<std::string>(fragment.AsStaticText().text());
 
     case FragmentType::Separator:
-      return Result<std::string>(fragment.as_separator().toString());
+      return Result<std::string>(fragment.AsSeparator().toString());
   }
   return Result<std::string>(
       Error{ErrorCode::InvalidParamType, "Unknown fragment type"});
 }
 
-Result<std::string> Renderer::expand_block_ref(
+Result<std::string> Renderer::ExpandBlockRef(
     const BlockRef& blockRef, const RenderContext& context,
     std::vector<std::pair<BlockId, Version>>& blocksUsed) const {
   if (!blockCache_) {
@@ -153,36 +153,36 @@ Result<std::string> Renderer::expand_block_ref(
   const Block* block = nullptr;
   Version usedVersion;
 
-  if (blockRef.use_latest()) {
-    block = blockCache_->get_latest_block(blockRef.block_id());
+  if (blockRef.UseLatest()) {
+    block = blockCache_->GetLatestBlock(blockRef.GetBlockId());
     if (block) {
       usedVersion = block->version();
     }
   } else {
     usedVersion = blockRef.version().value_or(Version{0, 0});
-    block = blockCache_->get_block(blockRef.block_id(), usedVersion);
+    block = blockCache_->GetBlock(blockRef.GetBlockId(), usedVersion);
   }
 
   if (!block) {
-    return Result<std::string>(Error::block_not_found(blockRef.block_id()));
+    return Result<std::string>(Error::BlockNotFound(blockRef.GetBlockId()));
   }
 
   // Track block usage
-  blocksUsed.emplace_back(blockRef.block_id(), usedVersion);
+  blocksUsed.emplace_back(blockRef.GetBlockId(), usedVersion);
 
   // Resolve parameters
-  auto paramsResult = blockRef.resolve_params(*block, context.params);
-  if (paramsResult.has_error()) {
+  auto paramsResult = blockRef.ResolveParams(*block, context.params);
+  if (paramsResult.HasError()) {
     return Result<std::string>(paramsResult.error());
   }
 
   // Expand template
-  return block->templ().expand(paramsResult.value());
+  return block->templ().Expand(paramsResult.value());
 }
 
-StructuralStyle Renderer::get_effective_style(const Composition& composition) {
-  if (composition.style_profile().has_value()) {
-    return composition.style_profile()->structural;
+StructuralStyle Renderer::GetEffectiveStyle(const Composition& composition) {
+  if (composition.GetStyleProfile().has_value()) {
+    return composition.GetStyleProfile()->structural;
   }
   return {};
 }
