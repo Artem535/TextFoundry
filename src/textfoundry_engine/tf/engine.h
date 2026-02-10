@@ -109,7 +109,14 @@ class Engine {
       BlockDraft draft, VersionBump bump = VersionBump::Minor);
 
   [[nodiscard]] Result<PublishedBlock> PublishBlock(BlockDraft draft,
-                                                     Version explicit_version);
+                                                    Version explicit_version);
+
+  /**
+   * Publish a new version of an existing block (edit workflow).
+   * Returns BlockNotFound when the target block does not exist yet.
+   */
+  [[nodiscard]] Result<PublishedBlock> UpdateBlock(
+      BlockDraft draft, VersionBump bump = VersionBump::Minor);
 
   // ==================== Composition Operations ====================
 
@@ -131,7 +138,7 @@ class Engine {
    * Deprecate a published composition
    */
   [[nodiscard]] Error DeprecateComposition(const CompositionId& id,
-                                            Version version);
+                                           Version version);
 
   /**
    * List all compositions
@@ -221,7 +228,7 @@ class Engine {
   std::unique_ptr<Renderer> renderer_;
 
   Result<PublishedComposition> PublishCompositionInternal(Composition comp,
-                                                            Version version);
+                                                          Version version);
 
   Result<PublishedBlock> PublishBlockInternal(Block block, Version version);
 
@@ -259,8 +266,7 @@ class IBlockRepository {
   [[nodiscard]] virtual std::vector<BlockId> list(
       std::optional<BlockType> typeFilter = std::nullopt) = 0;
 
-  [[nodiscard]] virtual Result<Version> GetLatestVersion(
-      const BlockId& id) = 0;
+  [[nodiscard]] virtual Result<Version> GetLatestVersion(const BlockId& id) = 0;
 
   [[nodiscard]] virtual Error deprecate(const BlockId& id, Version version) = 0;
 };

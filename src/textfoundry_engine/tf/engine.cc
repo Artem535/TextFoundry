@@ -52,7 +52,7 @@ void Engine::SetNormalizer(std::shared_ptr<INormalizer> normalizer) {
 // ==================== Block Operations ====================
 
 Result<Block> Engine::LoadBlock(const BlockId& id,
-                                 std::optional<Version> version) const {
+                                std::optional<Version> version) const {
   if (!blockRepo_) {
     TF_LOG_ERROR("Cannot load block: no block repository configured");
     return Result<Block>(
@@ -127,7 +127,7 @@ Result<Version> Engine::GetNextVersion(const BlockId& id, VersionBump bump) {
 }
 
 Result<PublishedBlock> Engine::PublishBlock(BlockDraft draft,
-                                             VersionBump bump) {
+                                            VersionBump bump) {
   Block& block = draft.internal_;
 
   if (block.state() != BlockState::Draft) {
@@ -144,7 +144,7 @@ Result<PublishedBlock> Engine::PublishBlock(BlockDraft draft,
 }
 
 Result<PublishedBlock> Engine::PublishBlock(BlockDraft draft,
-                                             Version explicit_version) {
+                                            Version explicit_version) {
   Block& block = draft.internal_;
 
   if (block.state() != BlockState::Draft) {
@@ -163,8 +163,30 @@ Result<PublishedBlock> Engine::PublishBlock(BlockDraft draft,
   return PublishBlockInternal(std::move(block), explicit_version);
 }
 
+Result<PublishedBlock> Engine::UpdateBlock(BlockDraft draft, VersionBump bump) {
+  if (!blockRepo_) {
+    TF_LOG_ERROR("Cannot update block: no block repository configured");
+    return Result<PublishedBlock>(
+        Error{ErrorCode::StorageError, "No block repository configured"});
+  }
+
+  Block& block = draft.internal_;
+  if (block.state() != BlockState::Draft) {
+    return Result<PublishedBlock>(Error{ErrorCode::InvalidStateTransition,
+                                        "Only Draft blocks can be published"});
+  }
+
+  auto existing = blockRepo_->LoadLatest(block.Id());
+  if (existing.HasError()) {
+    TF_LOG_WARN("Cannot update non-existing block [id={}]", block.Id());
+    return Result<PublishedBlock>(Error::BlockNotFound(block.Id()));
+  }
+
+  return PublishBlock(std::move(draft), bump);
+}
+
 Result<PublishedBlock> Engine::PublishBlockInternal(Block block,
-                                                      Version version) {
+                                                    Version version) {
   auto err = block.publish(version);
   if (err.is_error()) {
     return Result<PublishedBlock>(err);
@@ -180,8 +202,7 @@ Result<PublishedBlock> Engine::PublishBlockInternal(Block block,
   return Result<PublishedBlock>(PublishedBlock(block.Id(), version));
 }
 
-Result<Version> Engine::GetLatestCompositionVersion(
-    const CompositionId& id) {
+Result<Version> Engine::GetLatestCompositionVersion(const CompositionId& id) {
   if (!compRepo_) {
     TF_LOG_ERROR(
         "Cannot get latest composition version: no composition repository "
@@ -196,7 +217,7 @@ Result<Version> Engine::GetLatestCompositionVersion(
 }
 
 Result<PublishedComposition> Engine::PublishComposition(CompositionDraft draft,
-                                                         VersionBump bump) {
+                                                        VersionBump bump) {
   Composition& comp = draft.internal_;
 
   if (comp.state() != BlockState::Draft) {
@@ -290,7 +311,7 @@ Error Engine::SaveComposition(const Composition& composition) {
 }
 
 Result<Composition> Engine::LoadComposition(const CompositionId& id,
-                                             std::optional<Version> version) {
+                                            std::optional<Version> version) {
   if (!compRepo_) {
     TF_LOG_ERROR(
         "Cannot load composition: no composition repository configured");
@@ -376,7 +397,7 @@ Result<RenderResult> Engine::render(const CompositionId& compositionId,
 }
 
 Result<std::string> Engine::RenderBlock(const BlockId& blockId,
-                                         const RenderContext& context) {
+                                        const RenderContext& context) {
   TF_LOG_INFO("Rendering block [id={}]", blockId);
 
   // Clear cache before rendering to ensure fresh data and prevent memory growth
@@ -391,9 +412,8 @@ Result<std::string> Engine::RenderBlock(const BlockId& blockId,
   return renderer_->RenderBlock(blockResult.value(), context);
 }
 
-Result<std::string> Engine::RenderBlock(const BlockId& blockId,
-                                         Version version,
-                                         const RenderContext& context) {
+Result<std::string> Engine::RenderBlock(const BlockId& blockId, Version version,
+                                        const RenderContext& context) {
   TF_LOG_INFO("Rendering block [id={}, version={}.{}]", blockId, version.major,
               version.minor);
 

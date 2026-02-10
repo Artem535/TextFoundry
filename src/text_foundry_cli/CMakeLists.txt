@@ -9,6 +9,8 @@ add_executable(tf
         application.cc
         application.h
         applicationsettings.h
+        block_creation_controller.cc
+        block_creation_controller.h
         tui.cc
         tui.h
 )
