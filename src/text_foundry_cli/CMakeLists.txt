@@ -13,6 +13,11 @@ add_executable(tf
         block_creation_controller.h
         tui.cc
         tui.h
+        tabs/blocks_tab.cc
+        tabs/blocks_modal_view.cc
+        tabs/compositions_tab.cc
+        tabs/render_tab.cc
+        tabs/settings_tab.cc
 )
 
 target_include_directories(tf BEFORE PRIVATE
