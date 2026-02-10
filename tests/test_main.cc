@@ -17,8 +17,8 @@ struct LoggerSetup {
 } loggerSetup;
 
 #include "../src/textfoundry_engine/tf/block.h"
-#include "../src/textfoundry_engine/tf/blockref.h"
-#include "../src/textfoundry_engine/tf/blocktype.hpp"
+#include "../src/textfoundry_engine/tf/block_ref.h"
+#include "../src/textfoundry_engine/tf/block_type.hpp"
 #include "../src/textfoundry_engine/tf/composition.h"
 #include "../src/textfoundry_engine/tf/engine.h"
 #include "../src/textfoundry_engine/tf/error.h"

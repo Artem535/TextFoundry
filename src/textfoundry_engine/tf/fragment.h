@@ -9,8 +9,8 @@
 #include <variant>
 #include <vector>
 
-#include "blockref.h"
-#include "blocktype.hpp"
+#include "block_ref.h"
+#include "block_type.hpp"
 #include "error.h"
 
 namespace tf {

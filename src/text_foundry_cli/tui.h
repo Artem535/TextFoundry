@@ -98,12 +98,12 @@ class Tui {
    * @brief Build Compositions tab component.
    * @return Compositions tab component.
    */
-  ftxui::Component CompositionsTab();
+  static ftxui::Component CompositionsTab();
   /**
    * @brief Build Render tab component.
    * @return Render tab component.
    */
-  ftxui::Component RenderTab();
+  static ftxui::Component RenderTab();
   /**
    * @brief Build Settings tab component.
    * @return Settings tab component.

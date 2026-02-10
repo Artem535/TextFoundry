@@ -11,7 +11,7 @@
 #include <unordered_set>
 #include <vector>
 
-#include "blocktype.hpp"
+#include "block_type.hpp"
 #include "error.h"
 #include "types.h"
 #include "version.h"

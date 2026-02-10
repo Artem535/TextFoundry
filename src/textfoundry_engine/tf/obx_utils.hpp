@@ -11,8 +11,8 @@
 #include <vector>
 
 #include "block.h"
-#include "blockref.h"
-#include "blocktype.hpp"
+#include "block_ref.h"
+#include "block_type.hpp"
 #include "composition.h"
 #include "database_scheme.obx.hpp"
 #include "fragment.h"

@@ -10,7 +10,7 @@
 #include <string>
 #include <vector>
 
-#include "applicationsettings.h"
+#include "application_settings.h"
 #include "tf/engine.h"
 #include "tf/types.h"
 #include "tui.h"

@@ -21,21 +21,21 @@ add_library(textfoundry_core STATIC
         tf/engine.h
         tf/block.cc
         tf/block.h
-        tf/blockref.cc
-        tf/blockref.h
+        tf/block_ref.cc
+        tf/block_ref.h
         tf/fragment.cc
         tf/fragment.h
         tf/composition.cc
         tf/composition.h
         tf/renderer.cc
         tf/renderer.h
-        tf/blocktype.hpp
+        tf/block_type.hpp
         tf/version.h
         tf/error.h
         tf/logger.h
         tf/logger.cc
-        tf/objectboxrepository.cc
-        tf/objectboxrepository.h
+        tf/objectbox_repository.cc
+        tf/objectbox_repository.h
         tf/repository_block_cache.cpp
         tf/types.h
         tf/objectbox-model.h

@@ -10,7 +10,7 @@
 #include <vector>
 
 #include "block.h"
-#include "blocktype.hpp"
+#include "block_type.hpp"
 #include "error.h"
 #include "fragment.h"
 #include "version.h"

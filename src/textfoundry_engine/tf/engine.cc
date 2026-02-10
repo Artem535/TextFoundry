@@ -8,7 +8,7 @@
 
 #include "logger.h"
 #include "objectbox-model.h"
-#include "objectboxrepository.h"
+#include "objectbox_repository.h"
 #include "repository_block_cache.h"
 
 namespace tf {

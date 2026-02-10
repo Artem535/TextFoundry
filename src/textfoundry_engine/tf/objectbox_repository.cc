@@ -3,7 +3,7 @@
 //
 
 #define OBX_CPP_FILE
-#include "objectboxrepository.h"
+#include "objectbox_repository.h"
 
 #include <ranges>
 #include <unordered_set>
