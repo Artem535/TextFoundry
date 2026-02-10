@@ -89,6 +89,7 @@ int BlockTypeToIndex(const BlockType type) {
 }
 
 std::string ParamsToRaw(const Params& params) {
+  // Keep deterministic order for stable UX in the edit form.
   std::vector<std::pair<std::string, std::string>> ordered;
   ordered.reserve(params.size());
   for (const auto& [key, value] : params) {
@@ -109,6 +110,7 @@ std::string ParamsToRaw(const Params& params) {
 }
 
 std::string TagsToRaw(const std::unordered_set<std::string>& tags) {
+  // Keep deterministic order for stable UX in the edit form.
   std::vector<std::string> ordered(tags.begin(), tags.end());
   std::sort(ordered.begin(), ordered.end());
 
@@ -143,7 +145,8 @@ void BlockCreationController::BeginEdit(const Block& block) {
   mode_ = Mode::kEdit;
   editing_block_id_ = block.Id();
   block_id_ = block.Id();
-  block_template_ = block.templ().Сontent();
+  block_template_ = block.templ().Content();
+  // Convert structured values back to editable text fields.
   block_defaults_ = ParamsToRaw(block.defaults());
   block_tags_ = TagsToRaw(block.tags());
   block_description_ = block.description();
@@ -162,6 +165,8 @@ void BlockCreationController::Reset(const std::string& status) {
   block_language_ = "en";
   block_type_index_ = 3;
   status_ = status;
+  // Block ID must stay stable while editing; changing ID means creating a new
+  // block.
   if (mode_ == Mode::kEdit && !editing_block_id_.empty()) {
     block_id_ = editing_block_id_;
   }
@@ -213,6 +218,8 @@ std::optional<tf::BlockId> BlockCreationController::Create() {
     }
 
     auto draft = builder.build();
+    // Edit always creates the next version of existing ID, create publishes new
+    // ID.
     auto result =
         mode_ == Mode::kEdit
             ? engine_.UpdateBlock(std::move(draft), Engine::VersionBump::Minor)

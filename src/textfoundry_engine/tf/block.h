@@ -28,7 +28,7 @@ class Template {
 
   explicit Template(std::string content) : content_(std::move(content)) {}
 
-  [[nodiscard]] const std::string& Сontent() const noexcept { return content_; }
+  [[nodiscard]] const std::string& Content() const noexcept { return content_; }
   void SetContent(std::string content) { content_ = std::move(content); }
 
   /**
@@ -114,7 +114,7 @@ class Block {
    * Validate that all required parameters can be resolved
    */
   [[nodiscard]] Error ValidateParams(const Params& local_override,
-                                      const Params& runtime_context) const;
+                                     const Params& runtime_context) const;
 
   /**
    * Publish this block - creates immutable version
@@ -132,8 +132,8 @@ class Block {
    * Check if parameter has default value or is provided in overrides
    */
   [[nodiscard]] bool CanResolveParam(const std::string& param_name,
-                                       const Params& local_override,
-                                       const Params& runtime_context) const;
+                                     const Params& local_override,
+                                     const Params& runtime_context) const;
 
  private:
   // Identity

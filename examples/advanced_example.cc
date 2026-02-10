@@ -175,33 +175,31 @@ Be constructive and precise.)"))
     Version guidelines_version = guidelines_pub.value().version();
 
     // 9. Examples bad code
-    auto bad_ex_draft =
-        BlockDraftBuilder("examples.bad")
-            .WithType(BlockType::Domain)
-            .WithTemplate(Template(R"(## Bad Example
+    auto bad_ex_draft = BlockDraftBuilder("examples.bad")
+                            .WithType(BlockType::Domain)
+                            .WithTemplate(Template(R"(## Bad Example
 ```cpp
 {{code}}
 ```
 **Issues:** {{issues}})"))
-            .WithDefault("issues", "memory leak, no validation")
-            .WithDescription("Bad code example")
-            .build();
+                            .WithDefault("issues", "memory leak, no validation")
+                            .WithDescription("Bad code example")
+                            .build();
     auto bad_ex_pub =
         engine.PublishBlock(std::move(bad_ex_draft), Version{1, 0});
     Version bad_ex_version = bad_ex_pub.value().version();
 
     // 10. Examples good code
-    auto good_ex_draft =
-        BlockDraftBuilder("examples.good")
-            .WithType(BlockType::Domain)
-            .WithTemplate(Template(R"(## Good Example
+    auto good_ex_draft = BlockDraftBuilder("examples.good")
+                             .WithType(BlockType::Domain)
+                             .WithTemplate(Template(R"(## Good Example
 ```cpp
 {{code}}
 ```
 **Why good:** {{why_good}})"))
-            .WithDefault("why_good", "RAII, validation, tests")
-            .WithDescription("Good code example")
-            .build();
+                             .WithDefault("why_good", "RAII, validation, tests")
+                             .WithDescription("Good code example")
+                             .build();
     auto good_ex_pub =
         engine.PublishBlock(std::move(good_ex_draft), Version{1, 0});
     Version good_ex_version = good_ex_pub.value().version();
@@ -272,8 +270,8 @@ Review the provided C++ code for a templating engine.)")
 
             // System role
             .AddBlockRef(BlockRef("role.system", system_version,
-                                    {{"role_type", "world-class"},
-                                     {"domain", "C++ software architecture"}}))
+                                  {{"role_type", "world-class"},
+                                   {"domain", "C++ software architecture"}}))
             .AddSeparator(SeparatorType::Newline)
 
             // Reviewer role
@@ -302,13 +300,13 @@ Review the provided C++ code for a templating engine.)")
                  {"format", "structured JSON"}}))
             .AddBlockRef(BlockRef("constraint.json", json_version))
             .AddBlockRef(BlockRef("constraint.security", security_version,
-                                    {{"custom_checks",
-                                      "buffer overflows, race conditions, "
-                                      "injection in templates"}}))
+                                  {{"custom_checks",
+                                    "buffer overflows, race conditions, "
+                                    "injection in templates"}}))
             .AddBlockRef(BlockRef("constraint.performance", perf_version,
-                                    {{"time_complexity", "O(n)"},
-                                     {"space_complexity", "O(1)"},
-                                     {"bottlenecks", "recursive rendering"}}))
+                                  {{"time_complexity", "O(n)"},
+                                   {"space_complexity", "O(1)"},
+                                   {"bottlenecks", "recursive rendering"}}))
             .AddSeparator(SeparatorType::Paragraph)
 
             // Static code to review
@@ -344,7 +342,7 @@ std::string render(const Composition& comp, const RenderContext& ctx) {
 
             // Footer
             .AddBlockRef(BlockRef("meta.footer", footer_version,
-                                    {{"block_count", "12"}}));
+                                  {{"block_count", "12"}}));
 
     auto comp_draft = comp_builder.build();
     auto comp_pub =
@@ -365,7 +363,7 @@ std::string render(const Composition& comp, const RenderContext& ctx) {
         .with_strict_mode(true);
 
     auto result =
-        engine.render("advanced.code_review_prompt", comp_version, ctx);
+        engine.Render("advanced.code_review_prompt", comp_version, ctx);
     print_render_result(result);
 
     // List all

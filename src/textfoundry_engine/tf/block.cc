@@ -57,8 +57,8 @@ const Version& Block::version() const noexcept { return version_; }
 
 // Block implementation
 Result<ParamValue> Block::ResolveParam(const std::string& param_name,
-                                        const Params& local_override,
-                                        const Params& runtime_context) const {
+                                       const Params& local_override,
+                                       const Params& runtime_context) const {
   // 1. Check runtime context (highest priority)
   if (const auto runtimeIt = runtime_context.find(param_name);
       runtimeIt != runtime_context.end()) {
@@ -82,7 +82,7 @@ Result<ParamValue> Block::ResolveParam(const std::string& param_name,
 }
 
 Error Block::ValidateParams(const Params& local_override,
-                             const Params& runtime_context) const {
+                            const Params& runtime_context) const {
   // Check all parameters in template have values
   const auto paramNames = template_.ExtractParamNames();
   for (const auto& paramName : paramNames) {
@@ -101,7 +101,7 @@ Error Block::publish(const Version& new_version) {
   if (id_.empty()) {
     return Error{ErrorCode::InvalidParamType, "Block must have an ID"};
   }
-  if (template_.Сontent().empty()) {
+  if (template_.Content().empty()) {
     return Error{ErrorCode::InvalidParamType, "Block must have a template"};
   }
 
@@ -154,13 +154,11 @@ void Block::SetTags(std::unordered_set<std::string> tags) {
 
 void Block::SetLanguage(std::string lang) { language_ = std::move(lang); }
 
-void Block::SetDescription(std::string desc) {
-  description_ = std::move(desc);
-}
+void Block::SetDescription(std::string desc) { description_ = std::move(desc); }
 
 bool Block::CanResolveParam(const std::string& param_name,
-                              const Params& local_override,
-                              const Params& runtime_context) const {
+                            const Params& local_override,
+                            const Params& runtime_context) const {
   // Check runtime context
   if (runtime_context.contains(param_name)) {
     return true;
@@ -201,7 +199,7 @@ BlockDraftBuilder& BlockDraftBuilder::WithTemplate(Template templ) {
 }
 
 BlockDraftBuilder& BlockDraftBuilder::WithDefault(const std::string& name,
-                                                   ParamValue value) {
+                                                  ParamValue value) {
   auto defaults = block_.defaults();
   defaults[name] = std::move(value);
   block_.SetDefaults(std::move(defaults));

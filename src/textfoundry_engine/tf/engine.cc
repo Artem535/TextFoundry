@@ -113,7 +113,7 @@ Result<Version> Engine::GetNextVersion(const BlockId& id, VersionBump bump) {
   auto current = blockRepo_->GetLatestVersion(id);
 
   Version next{1, 0};
-  if (current.HasValue()) {
+  if (!current.HasError()) {
     if (bump == VersionBump::Major) {
       next = Version{static_cast<uint16_t>(current.value().major + 1), 0};
     } else {
@@ -153,7 +153,7 @@ Result<PublishedBlock> Engine::PublishBlock(BlockDraft draft,
   }
 
   auto existing = blockRepo_->load(block.Id(), explicit_version);
-  if (existing.HasValue()) {
+  if (!existing.HasError()) {
     return Result<PublishedBlock>(
         Error{ErrorCode::DuplicateId,
               std::format("Version {}.{} already exists",
@@ -178,6 +178,7 @@ Result<PublishedBlock> Engine::UpdateBlock(BlockDraft draft, VersionBump bump) {
 
   auto existing = blockRepo_->LoadLatest(block.Id());
   if (existing.HasError()) {
+    // Edit workflow is allowed only for already published block IDs.
     TF_LOG_WARN("Cannot update non-existing block [id={}]", block.Id());
     return Result<PublishedBlock>(Error::BlockNotFound(block.Id()));
   }
@@ -237,7 +238,7 @@ Result<PublishedComposition> Engine::PublishComposition(CompositionDraft draft,
 
   Version next_version{1, 0};
   auto latest = compRepo_->GetLatestVersion(comp.id());
-  if (latest.HasValue()) {
+  if (!latest.HasError()) {
     if (bump == VersionBump::Major) {
       next_version =
           Version{static_cast<uint16_t>(latest.value().major + 1), 0};
@@ -261,7 +262,7 @@ Result<PublishedComposition> Engine::PublishComposition(
   }
 
   if (auto existing = compRepo_->load(comp.id(), explicit_version);
-      existing.HasValue()) {
+      !existing.HasError()) {
     return Result<PublishedComposition>(
         Error{ErrorCode::DuplicateId, "Composition version already exists"});
   }
@@ -361,7 +362,7 @@ std::vector<CompositionId> Engine::ListCompositions() const {
 
 // ==================== Rendering Operations ====================
 
-Result<RenderResult> Engine::render(const CompositionId& compositionId,
+Result<RenderResult> Engine::Render(const CompositionId& compositionId,
                                     const RenderContext& context) {
   TF_LOG_INFO("Rendering composition [id={}]", compositionId);
 
@@ -374,10 +375,10 @@ Result<RenderResult> Engine::render(const CompositionId& compositionId,
                  compResult.error().message);
     return Result<RenderResult>(compResult.error());
   }
-  return renderer_->render(compResult.value(), context);
+  return renderer_->Render(compResult.value(), context);
 }
 
-Result<RenderResult> Engine::render(const CompositionId& compositionId,
+Result<RenderResult> Engine::Render(const CompositionId& compositionId,
                                     Version version,
                                     const RenderContext& context) {
   TF_LOG_INFO("Rendering composition [id={}, version={}.{}]", compositionId,
@@ -393,7 +394,7 @@ Result<RenderResult> Engine::render(const CompositionId& compositionId,
                  compResult.error().message);
     return Result<RenderResult>(compResult.error());
   }
-  return renderer_->render(compResult.value(), context);
+  return renderer_->Render(compResult.value(), context);
 }
 
 Result<std::string> Engine::RenderBlock(const BlockId& blockId,
@@ -431,7 +432,7 @@ Result<std::string> Engine::RenderBlock(const BlockId& blockId, Version version,
 
 // ==================== Normalization ====================
 
-Result<std::string> Engine::normalize(const std::string& text,
+Result<std::string> Engine::Normalize(const std::string& text,
                                       const SemanticStyle& style) const {
   TF_LOG_DEBUG("Normalizing text (length={})", text.length());
   if (!normalizer_) {
@@ -439,10 +440,10 @@ Result<std::string> Engine::normalize(const std::string& text,
     return Result<std::string>(
         Error{ErrorCode::StorageError, "No normalizer configured"});
   }
-  return normalizer_->normalize(text, style);
+  return normalizer_->Normalize(text, style);
 }
 
-bool Engine::hasNormalizer() const noexcept { return normalizer_ != nullptr; }
+bool Engine::HasNormalizer() const noexcept { return normalizer_ != nullptr; }
 
 // ==================== Validation ====================
 

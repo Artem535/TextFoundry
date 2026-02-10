@@ -41,7 +41,7 @@ class IBlockCache {
    * @returns Block or nullptr if not found
    */
   [[nodiscard]] virtual const Block* GetBlock(const BlockId& id,
-                                               Version version) const = 0;
+                                              Version version) const = 0;
 
   /**
    * Get latest published version of a block
@@ -90,7 +90,7 @@ class Renderer {
    * @param context Runtime parameters
    * @returns RenderResult or Error
    */
-  [[nodiscard]] Result<RenderResult> render(
+  [[nodiscard]] Result<RenderResult> Render(
       const Composition& composition,
       const RenderContext& context = RenderContext{}) const;
 

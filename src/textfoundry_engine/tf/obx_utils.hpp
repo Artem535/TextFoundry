@@ -180,16 +180,12 @@ inline Version ObxVersionToVersion(uint16_t major, uint16_t minor) {
 /**
  * Extract major version component from Version
  */
-inline uint16_t VersionToMajor(const Version& version) {
-  return version.major;
-}
+inline uint16_t VersionToMajor(const Version& version) { return version.major; }
 
 /**
  * Extract minor version component from Version
  */
-inline uint16_t VersionToMinor(const Version& version) {
-  return version.minor;
-}
+inline uint16_t VersionToMinor(const Version& version) { return version.minor; }
 
 // ============================================================================
 // Block Conversion
@@ -242,7 +238,7 @@ inline ObxBlock BlockToObxBlock(const Block& block, const obx_id id = 0) {
   obxBlock.versionMinor = block.version().minor;
   obxBlock.type = BlockTypeToObxType(block.type());
   obxBlock.state = BlockStateToObxStateCode(block.state());
-  obxBlock.templateContent = block.templ().Сontent();
+  obxBlock.templateContent = block.templ().Content();
   obxBlock.defaultsJson = rfl::json::write(block.defaults());
   obxBlock.language = block.language();
   std::vector<std::string> tags_vec(block.tags().begin(), block.tags().end());
@@ -305,8 +301,7 @@ inline ObxComposition composition_to_obx_composition(const Composition& comp,
  * Convert ObxFragment to domain Fragment
  */
 inline Fragment ObxFragmentToFragment(const ObxFragment& obxFrag) {
-  FragmentType fragType =
-      ObxFragmentTypeToFragmentType(obxFrag.fragmentType);
+  FragmentType fragType = ObxFragmentTypeToFragmentType(obxFrag.fragmentType);
 
   switch (fragType) {
     case FragmentType::BlockRef: {
@@ -438,9 +433,7 @@ inline ObxLanguage code_to_obx_language(const std::string& code,
 /**
  * Convert ObxTag to tag name string
  */
-inline std::string ObxTagToTagName(const ObxTag& obxTag) {
-  return obxTag.name;
-}
+inline std::string ObxTagToTagName(const ObxTag& obxTag) { return obxTag.name; }
 
 /**
  * Create ObxTag for storage

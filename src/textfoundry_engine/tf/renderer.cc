@@ -27,7 +27,7 @@ void Renderer::ClearCache() {
   }
 }
 
-Result<RenderResult> Renderer::render(const Composition& composition,
+Result<RenderResult> Renderer::Render(const Composition& composition,
                                       const RenderContext& context) const {
   TF_LOG_DEBUG("Rendering composition [id={}, version={}.{}]", composition.id(),
                composition.version().major, composition.version().minor);
@@ -74,7 +74,7 @@ Result<RenderResult> Renderer::render(const Composition& composition,
 }
 
 Result<std::string> Renderer::RenderBlock(const Block& block,
-                                           const RenderContext& context) {
+                                          const RenderContext& context) {
   // Merge defaults with context params (context has priority)
   Params merged = block.defaults();
   for (const auto& [key, value] : context.params) {

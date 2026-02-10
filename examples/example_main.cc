@@ -86,8 +86,7 @@ int main() {
                            .WithDefault("plan", "basic")
                            .build();
 
-    auto limit_pub =
-        engine.PublishBlock(std::move(limit_draft), Version{1, 0});
+    auto limit_pub = engine.PublishBlock(std::move(limit_draft), Version{1, 0});
     Version limit_version = limit_pub.value().version();
     std::cout << std::format("   ✅ api.constraint опубликован v{}.{}\n",
                              limit_version.major, limit_version.minor);
@@ -132,7 +131,7 @@ int main() {
 
             // Ограничение с явной версией и локальными параметрами
             .AddBlockRef(BlockRef("api.constraint", limit_version,
-                                    {{"limit", "500"}, {"plan", "premium"}}))
+                                  {{"limit", "500"}, {"plan", "premium"}}))
             .AddSeparator(SeparatorType::Paragraph)
 
             // Пример кода (статический)
@@ -169,7 +168,7 @@ curl -X POST https://api.example.com/v1/users \
     std::cout << "\n🎨 Шаг 4. Рендеринг композиции...\n";
 
     // Базовый рендеринг
-    auto result1 = engine.render("docs.users.create", Version{1, 0});
+    auto result1 = engine.Render("docs.users.create", Version{1, 0});
     print_render_result(result1);
 
     // === 5. Демонстрация иерархии параметров ===
@@ -178,11 +177,11 @@ curl -X POST https://api.example.com/v1/users \
     // Runtime параметры имеют высший приоритет!
     RenderContext ctx;
     ctx.WithParam("author",
-                   "Старший разработчик")  // Переопределяет дефолт блока
+                  "Старший разработчик")  // Переопределяет дефолт блока
         .WithParam("plan", "enterprise")  // Переопределяет local params
         .WithParam("limit", "1000");      // Переопределяет local params
 
-    auto result2 = engine.render("docs.users.create", Version{1, 0}, ctx);
+    auto result2 = engine.Render("docs.users.create", Version{1, 0}, ctx);
     print_render_result(result2);
 
     // === 6. Обновление блока (новая версия) ===
@@ -207,10 +206,10 @@ curl -X POST https://api.example.com/v1/users \
         CompositionDraftBuilder("docs.users.create.v2")
             .WithProjectKey("api-docs")
             .AddBlockRef(BlockRef("doc.header", Version{2, 0},
-                                    {// Явно v2.0!
-                                     {"title", "POST /users (Обновлено)"},
-                                     {"version", "2.0"},
-                                     {"status", "beta"}}))
+                                  {// Явно v2.0!
+                                   {"title", "POST /users (Обновлено)"},
+                                   {"version", "2.0"},
+                                   {"status", "beta"}}))
             .AddSeparator(SeparatorType::Paragraph)
             .AddBlockRef(BlockRef(
                 "api.endpoint", endpoint_version,
@@ -221,7 +220,7 @@ curl -X POST https://api.example.com/v1/users \
 
     engine.PublishComposition(std::move(new_comp), Version{2, 0});
 
-    auto result3 = engine.render("docs.users.create.v2", Version{2, 0});
+    auto result3 = engine.Render("docs.users.create.v2", Version{2, 0});
     print_render_result(result3);
 
     // === 7. Демонстрация ошибки (отсутствующий параметр) ===
@@ -241,7 +240,7 @@ curl -X POST https://api.example.com/v1/users \
     engine.PublishComposition(std::move(bad_comp), Version{1, 0});
 
     // strict_mode=true в конфиге - ошибка при отсутствии параметра
-    auto bad_result = engine.render("bad.composition", Version{1, 0});
+    auto bad_result = engine.Render("bad.composition", Version{1, 0});
     if (bad_result.HasError()) {
       std::cout << std::format("   ⚠️ Ожидаемая ошибка: {}",
                                bad_result.error().message);

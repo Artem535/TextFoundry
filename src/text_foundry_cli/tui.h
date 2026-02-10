@@ -24,65 +24,110 @@ namespace tf {
 namespace fs = std::filesystem;
 
 /**
- * Simplified TUI using FTXUI
+ * @brief Terminal UI for TextFoundry built with FTXUI.
  *
- * Pattern: Each tab is a Component factory function
- * No complex inheritance, just functions returning Component
+ * The class owns UI state and composes the application from tab components.
+ * Blocks tab supports list/details view and modal create/edit workflow.
  */
 class Tui {
  public:
+  /**
+   * @brief Construct TUI bound to a TextFoundry engine instance.
+   * @param engine Engine used for block/composition operations.
+   */
   explicit Tui(Engine& engine);
 
-  // Main entry point
-  void run();
+  /**
+   * @brief Start interactive UI loop.
+   *
+   * Performs terminal capability checks, creates the root component tree,
+   * and enters FTXUI event loop.
+   */
+  void Run();
 
  private:
-  Engine& engine_;
+  Engine& engine_;  ///< Backend engine used by tabs and modal workflows.
 
-  // State
-  int selected_tab_ = 0;
-  bool show_welcome_ = true;
-  // Tab state (for data binding)
+  // ===== Global UI state =====
+  int selected_tab_ = 0;      ///< Active tab index in top-level toggle.
+  bool show_welcome_ = true;  ///< Whether startup welcome modal is visible.
+  /// Tab names bound to top-level tab toggle.
   std::vector<std::string> tab_names_ = {"Blocks", "Compositions", "Render",
                                          "Settings"};
 
   // ===== Blocks tab state =====
-  std::vector<std::string> block_ids_;
-  int selected_block_ = 0;
-  std::string details_text_ = "Select a block to see details";
-  BlockCreationController block_creator_;
-  bool show_create_block_modal_ = false;
+  std::vector<std::string> block_ids_;  ///< IDs shown in blocks list.
+  int selected_block_ = 0;              ///< Selected block index in list.
+  std::string details_text_ =
+      "Select a block to see details";     ///< Right panel.
+  BlockCreationController block_creator_;  ///< Create/edit form state/logic.
+  bool show_create_block_modal_ =
+      false;  ///< Create/edit block modal visibility.
 
   // ===== Compositions tab state =====
-  std::vector<std::string> comp_ids_;
-  int selected_comp_ = 0;
+  std::vector<std::string> comp_ids_;  ///< IDs shown in compositions list.
+  int selected_comp_ = 0;              ///< Selected composition index.
 
   // ===== Render tab state =====
-  std::string render_comp_id_;
-  std::string render_params_;
-  std::string render_output_ = "Enter composition ID and click Render";
+  std::string render_comp_id_;  ///< Composition ID input for render tab.
+  std::string render_params_;   ///< Raw runtime params input.
+  std::string render_output_ =
+      "Enter composition ID and click Render";  ///< Output.
 
   // ===== Settings tab state =====
-  std::string settings_project_ = "default";
+  std::string settings_project_ = "default";  ///< Active project key.
   std::string settings_path_ =
-      (fs::path(sago::getConfigHome()) / "TextFoundry").string();
-  bool settings_strict_ = false;
+      (fs::path(sago::getConfigHome()) / "TextFoundry")
+          .string();              ///< Storage path from platform config dir.
+  bool settings_strict_ = false;  ///< Strict render/validation mode toggle.
 
   // ===== Component factories =====
-  // Each returns a Component (interactive UI element)
-
-  // Main layout with tabs
+  /**
+   * @brief Build root layout with tabs and global event handling.
+   * @param screen Interactive screen used for loop control.
+   * @return Root FTXUI component.
+   */
   ftxui::Component MainLayout(auto& screen);
 
-  // Individual tabs
-  ftxui::Component BlocksTab();        // List + details
-  ftxui::Component CompositionsTab();  // List of compositions
-  ftxui::Component RenderTab();        // Input fields + output
-  ftxui::Component SettingsTab();      // Config options
+  /**
+   * @brief Build Blocks tab component.
+   * @return Blocks list/details pane with modal create/edit actions.
+   */
+  ftxui::Component BlocksTab();
+  /**
+   * @brief Build Compositions tab component.
+   * @return Compositions tab component.
+   */
+  ftxui::Component CompositionsTab();
+  /**
+   * @brief Build Render tab component.
+   * @return Render tab component.
+   */
+  ftxui::Component RenderTab();
+  /**
+   * @brief Build Settings tab component.
+   * @return Settings tab component.
+   */
+  ftxui::Component SettingsTab();
 
   // ===== Blocks helpers =====
+  /**
+   * @brief Reload block IDs from engine and clamp selected index.
+   */
   void RefreshBlocksList();
+  /**
+   * @brief Refresh details text for currently selected block.
+   */
   void UpdateSelectedBlockDetails();
+  /**
+   * @brief Select block by ID in current list if present.
+   * @param block_id Block ID to select.
+   */
   void SelectBlockById(const std::string& block_id);
+  /**
+   * @brief Apply common post-publish UI state update.
+   * @param block_id Published block ID.
+   */
+  void OnBlockPublished(const std::string& block_id);
 };
 }  // namespace tf

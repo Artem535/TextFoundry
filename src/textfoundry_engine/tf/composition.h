@@ -23,7 +23,7 @@ using CompositionId = std::string;
 
 /**
  * RenderContext - runtime parameters for rendering
- * Passed to render() method, highest priority in parameter resolution
+ * Passed to Render() method, highest priority in parameter resolution
  */
 struct RenderContext {
   Params params;                              ///< Runtime parameter overrides
@@ -61,7 +61,7 @@ struct StructuralStyle {
 
 /**
  * SemanticStyle - parameters requiring text rewriting (LLM)
- * NOT applied automatically - requires explicit normalize() call
+ * NOT applied automatically - requires explicit Normalize() call
  */
 struct SemanticStyle {
   std::optional<std::string> tone;            ///< e.g., "formal", "casual"
@@ -128,13 +128,12 @@ class Composition {
    * @param localParams Local parameter overrides
    */
   Fragment& AddBlockRef(const BlockId& blockId, Version version,
-                          Params localParams = {});
+                        Params localParams = {});
 
   /**
    * Add a BlockRef with UseLatest flag (Draft only)
    */
-  Fragment& AddBlockRefLatest(const BlockId& blockId,
-                                 Params localParams = {});
+  Fragment& AddBlockRefLatest(const BlockId& blockId, Params localParams = {});
 
   /**
    * Add static text fragment
@@ -251,10 +250,10 @@ class CompositionDraftBuilder {
   CompositionDraftBuilder& AddBlockRef(BlockRef ref);
 
   CompositionDraftBuilder& AddBlockRef(const BlockId& id, uint16_t major,
-                                         uint16_t minor, Params params = {});
+                                       uint16_t minor, Params params = {});
 
   CompositionDraftBuilder& AddBlockRef(const PublishedBlock& block,
-                                         Params params = {});
+                                       Params params = {});
 
   CompositionDraftBuilder& AddStaticText(std::string text);
 

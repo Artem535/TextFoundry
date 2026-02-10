@@ -32,7 +32,7 @@ struct EngineConfig {
 
 /**
  * Normalizer interface for semantic text transformation (LLM)
- * NOT applied automatically - requires explicit normalize() call
+ * NOT applied automatically - requires explicit Normalize() call
  */
 class INormalizer {
  public:
@@ -44,7 +44,7 @@ class INormalizer {
    * @param style Semantic style parameters
    * @returns Normalized text or Error
    */
-  [[nodiscard]] virtual Result<std::string> normalize(
+  [[nodiscard]] virtual Result<std::string> Normalize(
       const std::string& text, const SemanticStyle& style) const = 0;
 };
 
@@ -158,14 +158,14 @@ class Engine {
    * @param context Runtime parameters
    * @returns RenderResult or Error
    */
-  [[nodiscard]] Result<RenderResult> render(
+  [[nodiscard]] Result<RenderResult> Render(
       const CompositionId& compositionId,
       const RenderContext& context = RenderContext{});
 
   /**
    * Render a specific version of a composition
    */
-  [[nodiscard]] Result<RenderResult> render(
+  [[nodiscard]] Result<RenderResult> Render(
       const CompositionId& compositionId, Version version,
       const RenderContext& context = RenderContext{});
 
@@ -186,19 +186,19 @@ class Engine {
 
   /**
    * Normalize rendered text using configured Normalizer
-   * Requires explicit call - NOT applied automatically during render()
+   * Requires explicit call - NOT applied automatically during Render()
    *
    * @param text Text to normalize
    * @param style Semantic style parameters
    * @returns Normalized text or Error (if no Normalizer configured)
    */
-  [[nodiscard]] Result<std::string> normalize(const std::string& text,
+  [[nodiscard]] Result<std::string> Normalize(const std::string& text,
                                               const SemanticStyle& style) const;
 
   /**
    * Check if normalizer is configured
    */
-  [[nodiscard]] bool hasNormalizer() const noexcept;
+  [[nodiscard]] bool HasNormalizer() const noexcept;
 
   // ==================== Full Initialization ====================
 

@@ -58,7 +58,7 @@ void Application::PrintError(const std::string& message) {
 }
 
 void Application::OutputTextList(const std::vector<std::string>& items,
-                                   std::ostream& out) {
+                                 std::ostream& out) {
   for (const auto& item : items) {
     out << item << std::endl;
   }
@@ -103,7 +103,7 @@ void Application::HandleBlockCreate(
     }
 
     auto result = engine_.value().PublishBlock(std::move(draft),
-                                                tf::Engine::VersionBump::Minor);
+                                               tf::Engine::VersionBump::Minor);
     if (result.HasError()) {
       PrintError(result.error().message);
       throw CLI::RuntimeError(1);
@@ -119,7 +119,7 @@ void Application::HandleBlockCreate(
 }
 
 void Application::HandleBlockPublish(const std::string& BlockId,
-                                       const std::string& version_str) {
+                                     const std::string& version_str) {
   InitEngine();
 
   try {
@@ -180,7 +180,7 @@ void Application::HandleBlockList(
 }
 
 void Application::HandleBlockDeprecate(const std::string& BlockId,
-                                         const std::string& version_str) {
+                                       const std::string& version_str) {
   InitEngine();
 
   try {
@@ -230,7 +230,7 @@ void Application::HandleBlockInspect(
   std::cout << "Block: " << block.Id() << std::endl;
   std::cout << "  Version: " << block.version().ToString() << std::endl;
   std::cout << "  Type: " << static_cast<int>(block.type()) << std::endl;
-  std::cout << "  Template: " << block.templ().Сontent() << std::endl;
+  std::cout << "  Template: " << block.templ().Content() << std::endl;
   std::cout << "  Language: " << block.language() << std::endl;
   if (!block.defaults().empty()) {
     std::cout << "  Defaults:" << std::endl;
@@ -336,7 +336,7 @@ void Application::HandleCompList() {
 }
 
 void Application::HandleCompDeprecate(const std::string& comp_id,
-                                        const std::string& version_str) {
+                                      const std::string& version_str) {
   InitEngine();
 
   try {
@@ -348,8 +348,7 @@ void Application::HandleCompDeprecate(const std::string& comp_id,
       return;
     }
 
-    if (const auto err =
-            engine_.value().DeprecateComposition(comp_id, version);
+    if (const auto err = engine_.value().DeprecateComposition(comp_id, version);
         err.is_error()) {
       PrintError(err.message);
       throw CLI::RuntimeError(1);
@@ -413,9 +412,9 @@ void Application::HandleRender(
 
     if (version_str_opt) {
       tf::Version version = ParseVersion(*version_str_opt);
-      result = engine_.value().render(comp_id, version, ctx);
+      result = engine_.value().Render(comp_id, version, ctx);
     } else {
-      result = engine_.value().render(comp_id, ctx);
+      result = engine_.value().Render(comp_id, ctx);
     }
 
     if (result->HasError()) {
@@ -426,7 +425,7 @@ void Application::HandleRender(
     std::string text = result->value().text;
 
     if (normalize) {
-      if (!engine_.value().hasNormalizer()) {
+      if (!engine_.value().HasNormalizer()) {
         PrintError("Normalization requested but no Normalizer configured");
         throw CLI::RuntimeError(1);
       }
@@ -447,7 +446,7 @@ void Application::HandleRender(
 // ============================================================================
 
 void Application::HandleValidate(const std::string& entity_id,
-                                  const std::string& entity_type) {
+                                 const std::string& entity_type) {
   InitEngine();
 
   tf::Error err;
@@ -522,8 +521,8 @@ void Application::SetupBlockCommands(CLI::App& app) {
                    &block_tags_list, &block_type, &block_description,
                    &block_lang]() {
       HandleBlockCreate(BlockId, block_template, block_defaults_list,
-                          block_tags_list, block_type, block_description,
-                          block_lang);
+                        block_tags_list, block_type, block_description,
+                        block_lang);
     });
   }
 
@@ -612,10 +611,10 @@ void Application::SetupCompCommands(CLI::App& app) {
         ->take_all();
     cmd->add_option("--desc", description, "Composition description");
 
-    cmd->callback([this, &comp_id, &block_refs_list, &static_texts,
-                   &description]() {
-      HandleCompCreate(comp_id, block_refs_list, static_texts, description);
-    });
+    cmd->callback(
+        [this, &comp_id, &block_refs_list, &static_texts, &description]() {
+          HandleCompCreate(comp_id, block_refs_list, static_texts, description);
+        });
   }
 
   // ---- comp list ----
@@ -701,7 +700,7 @@ void Application::SetupTuiCommands(CLI::App& app) {
     tf::Logger::SetLevel(tf::LogLevel::Off);
     InitEngine();
     tui_.emplace(engine_.value());
-    tui_->run();
+    tui_->Run();
   });
 }
 
@@ -724,7 +723,7 @@ void Application::InitEngine() {
 // Main run method
 // ============================================================================
 
-int Application::run(int argc, char** argv) {
+int Application::Run(int argc, char** argv) {
   CLI::App app{
       "tf - TextFoundry CLI: Reference client for Text Engine (per PRD MVP)",
       "tf"};

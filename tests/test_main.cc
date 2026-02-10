@@ -71,8 +71,8 @@ class EngineTestFixture {
       builder.AddBlockRef(blockId, ver.major, ver.minor);
     }
     CompositionDraft draft = builder.build();
-    auto pubResult = engine.PublishComposition(std::move(draft),
-                                                Engine::VersionBump::Minor);
+    auto pubResult =
+        engine.PublishComposition(std::move(draft), Engine::VersionBump::Minor);
     REQUIRE(pubResult.HasValue());
     auto pub = pubResult.value();
     REQUIRE(pub.id() == id);
@@ -559,14 +559,13 @@ TEST_SUITE("CompositionDraftBuilder") {
             .PublishBlock(std::move(helloDraft), Engine::VersionBump::Minor)
             .value();
 
-    auto builder =
-        CompositionDraftBuilder("welcome.message")
-            .WithProjectKey("myproject")
-            .WithDescription("Welcome message")
-            .AddStaticText("# Welcome\n\n")
-            .AddBlockRef("greeting.hello", 1, 0, {{"name", "User"}})
-            .AddSeparator(SeparatorType::Paragraph)
-            .AddStaticText("Enjoy your stay!");
+    auto builder = CompositionDraftBuilder("welcome.message")
+                       .WithProjectKey("myproject")
+                       .WithDescription("Welcome message")
+                       .AddStaticText("# Welcome\n\n")
+                       .AddBlockRef("greeting.hello", 1, 0, {{"name", "User"}})
+                       .AddSeparator(SeparatorType::Paragraph)
+                       .AddStaticText("Enjoy your stay!");
     auto draft = builder.build();
     auto pubComp =
         fixture.engine
@@ -627,7 +626,7 @@ TEST_CASE_FIXTURE(EngineTestFixture,
       engine.PublishComposition(std::move(draft), Engine::VersionBump::Minor);
   REQUIRE(pubResult.HasValue());
 
-  auto result = engine.render("test.comp");
+  auto result = engine.Render("test.comp");
 
   CHECK(result.HasValue());
   CHECK(result.value().text == "Hello, World!");
@@ -636,7 +635,7 @@ TEST_CASE_FIXTURE(EngineTestFixture,
 
 TEST_CASE_FIXTURE(EngineTestFixture, "render unpublished composition fails") {
   // No composition published with this ID
-  auto result = engine.render("test.comp");
+  auto result = engine.Render("test.comp");
 
   CHECK(result.HasError());
   // Expect storage not found error, since no draft persistence
@@ -652,7 +651,7 @@ TEST_CASE_FIXTURE(EngineTestFixture, "render composition with separator") {
   auto draft = builder.build();
   engine.PublishComposition(std::move(draft), Engine::VersionBump::Minor);
 
-  auto result = engine.render("test.comp");
+  auto result = engine.Render("test.comp");
 
   CHECK(result.HasValue());
   CHECK(result.value().text == "Line 1\nLine 2");
@@ -669,7 +668,7 @@ TEST_CASE_FIXTURE(EngineTestFixture, "render composition with BlockRef") {
   auto draft = builder.build();
   engine.PublishComposition(std::move(draft), Engine::VersionBump::Minor);
 
-  auto result = engine.render("test.comp");
+  auto result = engine.Render("test.comp");
 
   CHECK(result.HasValue());
   CHECK(result.value().text == "Hello, World!");
@@ -689,7 +688,7 @@ TEST_CASE_FIXTURE(EngineTestFixture,
   engine.PublishComposition(std::move(draft), Engine::VersionBump::Minor);
 
   auto ctx = RenderContext{}.WithParam("name", "Alice");
-  auto result = engine.render("test.comp", ctx);
+  auto result = engine.Render("test.comp", ctx);
 
   CHECK(result.HasValue());
   CHECK(result.value().text == "Hello, Alice!");
@@ -709,7 +708,7 @@ TEST_CASE_FIXTURE(EngineTestFixture,
   auto draft = builder.build();
   engine.PublishComposition(std::move(draft), Version{1, 0});
 
-  auto result = engine.render("test.comp", Version{1, 0});
+  auto result = engine.Render("test.comp", Version{1, 0});
 
   CHECK(result.HasValue());
   CHECK(result.value().text == "Hello, Alice!\n\nGoodbye, Alice!");
@@ -723,7 +722,7 @@ TEST_CASE_FIXTURE(EngineTestFixture, "render with missing block fails") {
   auto draft = builder.build();
   engine.PublishComposition(std::move(draft), Version{1, 0});
 
-  auto result = engine.render("test.comp", Version{1, 0});
+  auto result = engine.Render("test.comp", Version{1, 0});
 
   CHECK(result.HasError());
   CHECK(result.error().code == ErrorCode::BlockNotFound);
@@ -735,7 +734,7 @@ TEST_CASE_FIXTURE(EngineTestFixture, "render result contains metadata") {
   auto draft = builder.build();
   engine.PublishComposition(std::move(draft), Version{2, 5});
 
-  auto result = engine.render("my.composition", Version{2, 5});
+  auto result = engine.Render("my.composition", Version{2, 5});
 
   CHECK(result.HasValue());
   CHECK(result.value().compositionId == "my.composition");
@@ -790,8 +789,7 @@ TEST_CASE_FIXTURE(EngineTestFixture, "create and save composition") {
   auto draft = builder.build();
   // Drafts not saved; test publish instead
 
-  auto pub =
-      engine.PublishComposition(std::move(draft), Version{1, 0}).value();
+  auto pub = engine.PublishComposition(std::move(draft), Version{1, 0}).value();
   auto result = engine.LoadComposition("test.comp", pub.version());
   CHECK(result.HasValue());
   CHECK(result.value().id() == "test.comp");
