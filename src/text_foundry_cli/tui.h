@@ -101,6 +101,7 @@ class Tui {
   int selected_comp_block_picker_ = 0;    ///< Selected block in picker.
   std::string comp_add_block_status_ = "Enter block_ref fields and submit";
   std::string comp_add_text_status_ = "Enter static text and submit";
+  bool comp_edit_mode_ = false;  ///< Create modal mode: false=new, true=edit.
 
   // ===== Render tab state =====
   std::string render_comp_id_;  ///< Composition ID input for render tab.
@@ -110,7 +111,7 @@ class Tui {
       "Enter composition ID and click Render";  ///< Output.
   bool focus_render_output_on_next_event_ = false;  ///< Deferred output focus.
   int render_focus_column_ = 1;  ///< 0=list, 1=inputs, 2=output.
-  int render_output_scroll_line_ = 0;  ///< Output scroll offset by source line.
+  float render_output_scroll_y_ = 0.f;  ///< Output scroll position [0..1].
 
   // ===== Settings tab state =====
   std::string settings_project_ = "default";  ///< Active project key.
@@ -118,6 +119,8 @@ class Tui {
       (fs::path(sago::getConfigHome()) / "TextFoundry")
           .string();              ///< Storage path from platform config dir.
   bool settings_strict_ = false;  ///< Strict render/validation mode toggle.
+  bool settings_comp_newline_delimiter_ =
+      true;  ///< Apply '\n' delimiter for newly created compositions.
   std::string settings_status_text_ =
       "Settings are local to TUI session.";  ///< Settings tab status line.
 

@@ -103,29 +103,6 @@ std::optional<std::string> ParseVersion(const std::string& input,
   return std::nullopt;
 }
 
-std::vector<std::string> SplitLines(const std::string& text) {
-  std::vector<std::string> lines;
-  std::istringstream stream(text);
-  std::string line;
-  while (std::getline(stream, line)) {
-    lines.push_back(line);
-  }
-  if (lines.empty()) {
-    lines.push_back("");
-  }
-  return lines;
-}
-
-std::string JoinLinesFrom(const std::vector<std::string>& lines,
-                          const int start) {
-  const int clamped = std::max(0, std::min(start, static_cast<int>(lines.size()) - 1));
-  std::string out;
-  for (size_t i = static_cast<size_t>(clamped); i < lines.size(); ++i) {
-    if (!out.empty()) out += '\n';
-    out += lines[i];
-  }
-  return out;
-}
 }  // namespace
 
 ftxui::Component Tui::RenderTab() {
@@ -143,56 +120,66 @@ ftxui::Component Tui::RenderTab() {
   auto params_input =
       ftxui::Input(&render_params_, "name=value, other=123 (comma or newline)");
   auto output_component = ftxui::Renderer([this](const bool focused) {
-    const auto lines = SplitLines(render_output_);
-    render_output_scroll_line_ = std::max(
-        0, std::min(render_output_scroll_line_, static_cast<int>(lines.size()) - 1));
+    render_output_scroll_y_ = std::clamp(render_output_scroll_y_, 0.f, 1.f);
     auto output_content =
-        ftxui::paragraph(JoinLinesFrom(lines, render_output_scroll_line_)) |
-        ftxui::vscroll_indicator | ftxui::frame | ftxui::xflex | ftxui::yflex;
+        ftxui::hflow(ftxui::paragraph(render_output_)) |
+        ftxui::focusPositionRelative(0.f, render_output_scroll_y_) |
+        ftxui::vscroll_indicator | ftxui::yframe | ftxui::xflex | ftxui::yflex;
     if (focused) {
       output_content = output_content | ftxui::focus;
     }
     return ftxui::window(ftxui::text(" Output "), output_content) |
            ftxui::xflex | ftxui::yflex;
   });
-  output_component = output_component | ftxui::CatchEvent([this](const ftxui::Event& e) {
-                       const auto lines = SplitLines(render_output_);
-                       const int max_scroll = std::max(0, static_cast<int>(lines.size()) - 1);
-                       if (e == ftxui::Event::ArrowDown) {
-                         render_output_scroll_line_ =
-                             std::min(max_scroll, render_output_scroll_line_ + 1);
-                         return true;
-                       }
-                       if (e == ftxui::Event::ArrowUp) {
-                         render_output_scroll_line_ =
-                             std::max(0, render_output_scroll_line_ - 1);
-                         return true;
-                       }
-                       if (e == ftxui::Event::PageDown) {
-                         render_output_scroll_line_ =
-                             std::min(max_scroll, render_output_scroll_line_ + 10);
-                         return true;
-                       }
-                       if (e == ftxui::Event::PageUp) {
-                         render_output_scroll_line_ =
-                             std::max(0, render_output_scroll_line_ - 10);
-                         return true;
-                       }
-                       if (e == ftxui::Event::Home) {
-                         render_output_scroll_line_ = 0;
-                         return true;
-                       }
-                       if (e == ftxui::Event::End) {
-                         render_output_scroll_line_ = max_scroll;
-                         return true;
-                       }
-                       return false;
-                     });
+  constexpr float kArrowStep = 0.04f;
+  constexpr float kPageStep = 0.20f;
+  const auto handle_output_scroll_event = [this](ftxui::Event e) {
+    const auto apply_scroll = [this](const float delta) {
+      render_output_scroll_y_ =
+          std::clamp(render_output_scroll_y_ + delta, 0.f, 1.f);
+    };
+    if (e == ftxui::Event::ArrowDown) {
+      apply_scroll(kArrowStep);
+      return true;
+    }
+    if (e == ftxui::Event::ArrowUp) {
+      apply_scroll(-kArrowStep);
+      return true;
+    }
+    if (e == ftxui::Event::PageDown) {
+      apply_scroll(kPageStep);
+      return true;
+    }
+    if (e == ftxui::Event::PageUp) {
+      apply_scroll(-kPageStep);
+      return true;
+    }
+    if (e == ftxui::Event::Home) {
+      render_output_scroll_y_ = 0.f;
+      return true;
+    }
+    if (e == ftxui::Event::End) {
+      render_output_scroll_y_ = 1.f;
+      return true;
+    }
+    if (e.is_mouse()) {
+      if (e.mouse().button == ftxui::Mouse::WheelDown) {
+        apply_scroll(kArrowStep);
+        return true;
+      }
+      if (e.mouse().button == ftxui::Mouse::WheelUp) {
+        apply_scroll(-kArrowStep);
+        return true;
+      }
+    }
+    return false;
+  };
+  output_component = output_component | ftxui::CatchEvent(handle_output_scroll_event);
 
   auto render_button = ftxui::Button("Render", [this, output_component] {
     if (render_comp_id_.empty()) {
       render_output_ = "Error: Composition ID is required.";
-      render_output_scroll_line_ = 0;
+      render_output_scroll_y_ = 0.f;
       focus_render_output_on_next_event_ = true;
       render_focus_column_ = 2;
       if (auto* active = ftxui::ScreenInteractive::Active(); active != nullptr) {
@@ -206,7 +193,7 @@ ftxui::Component Tui::RenderTab() {
     if (const auto parse_err = ParseRuntimeParams(render_params_, ctx.params);
         parse_err.has_value()) {
       render_output_ = "Error: " + *parse_err;
-      render_output_scroll_line_ = 0;
+      render_output_scroll_y_ = 0.f;
       focus_render_output_on_next_event_ = true;
       render_focus_column_ = 2;
       if (auto* active = ftxui::ScreenInteractive::Active(); active != nullptr) {
@@ -219,7 +206,7 @@ ftxui::Component Tui::RenderTab() {
     if (const auto parse_err = ParseVersion(render_version_, version);
         parse_err.has_value()) {
       render_output_ = "Error: " + *parse_err;
-      render_output_scroll_line_ = 0;
+      render_output_scroll_y_ = 0.f;
       focus_render_output_on_next_event_ = true;
       render_focus_column_ = 2;
       if (auto* active = ftxui::ScreenInteractive::Active(); active != nullptr) {
@@ -233,7 +220,7 @@ ftxui::Component Tui::RenderTab() {
                       : engine_.Render(render_comp_id_, version, ctx);
     if (result.HasError()) {
       render_output_ = "Error: " + result.error().message;
-      render_output_scroll_line_ = 0;
+      render_output_scroll_y_ = 0.f;
       focus_render_output_on_next_event_ = true;
       render_focus_column_ = 2;
       if (auto* active = ftxui::ScreenInteractive::Active(); active != nullptr) {
@@ -243,7 +230,7 @@ ftxui::Component Tui::RenderTab() {
     }
 
     render_output_ = result.value().text;
-    render_output_scroll_line_ = 0;
+    render_output_scroll_y_ = 0.f;
     focus_render_output_on_next_event_ = true;
     render_focus_column_ = 2;
     if (auto* active = ftxui::ScreenInteractive::Active(); active != nullptr) {
@@ -254,7 +241,7 @@ ftxui::Component Tui::RenderTab() {
   auto clear_button = ftxui::Button("Clear", [this] {
     render_params_.clear();
     render_output_ = "Enter composition ID and click Render";
-    render_output_scroll_line_ = 0;
+    render_output_scroll_y_ = 0.f;
   });
 
   auto refresh_button = ftxui::Button("Refresh list", [this] {
@@ -277,12 +264,16 @@ ftxui::Component Tui::RenderTab() {
   auto main = ftxui::Container::Horizontal(
       {compositions_menu, controls, output_component}, &render_focus_column_);
   main = main | ftxui::CatchEvent(
-                    [this, output_component, compositions_menu](
+                    [this, output_component, compositions_menu,
+                     handle_output_scroll_event](
                         const ftxui::Event& e) {
            if (focus_render_output_on_next_event_) {
              render_focus_column_ = 2;
              output_component->TakeFocus();
              focus_render_output_on_next_event_ = false;
+           }
+           if (render_focus_column_ == 2 && handle_output_scroll_event(e)) {
+             return true;
            }
            if (IsCompositionListEvent(e) && compositions_menu->Focused()) {
              ClampIndex(selected_comp_, static_cast<int>(comp_ids_.size()));
@@ -292,7 +283,7 @@ ftxui::Component Tui::RenderTab() {
            }
            if (e == ftxui::Event::CtrlL) {
              render_output_ = "Enter composition ID and click Render";
-             render_output_scroll_line_ = 0;
+             render_output_scroll_y_ = 0.f;
              return true;
            }
            return false;
