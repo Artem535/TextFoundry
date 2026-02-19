@@ -10,23 +10,26 @@ ftxui::Component Tui::SettingsTab() {
   auto project_input = ftxui::Input(&settings_project_, "default");
   auto path_input = ftxui::Input(&settings_path_, "/path/to/TextFoundry");
   auto strict_checkbox = ftxui::Checkbox("Enable strict mode", &settings_strict_);
+  auto composition_newline_checkbox = ftxui::Checkbox(
+      "New compositions: newline delimiter", &settings_comp_newline_delimiter_);
 
   auto apply_button = ftxui::Button("Apply", [this] {
-    settings_status_text_ =
-        "Applied. Strict mode now affects Render tab requests.";
+    settings_status_text_ = "Applied. Render and composition creation settings updated.";
   });
   auto reset_button = ftxui::Button("Reset defaults", [this] {
     settings_project_ = "default";
     settings_path_ = (fs::path(sago::getConfigHome()) / "TextFoundry").string();
     settings_strict_ = false;
+    settings_comp_newline_delimiter_ = true;
     settings_status_text_ = "Defaults restored for this TUI session.";
   });
 
   auto root = ftxui::Container::Vertical(
-      {project_input, path_input, strict_checkbox, apply_button, reset_button});
+      {project_input, path_input, strict_checkbox, composition_newline_checkbox,
+       apply_button, reset_button});
   return ftxui::Renderer(
       root, [project_input, path_input, strict_checkbox, apply_button,
-             reset_button, this] {
+             composition_newline_checkbox, reset_button, this] {
     return ftxui::vbox({
                ui::MakeHeader("Settings", ftxui::Color::Yellow),
                ftxui::separator(),
@@ -39,6 +42,8 @@ ftxui::Component Tui::SettingsTab() {
                                  path_input->Render(),
                                  ftxui::separator(),
                                  strict_checkbox->Render(),
+                                 ftxui::separator(),
+                                 composition_newline_checkbox->Render(),
                                  ftxui::separator(),
                                  apply_button->Render(),
                                  reset_button->Render(),
