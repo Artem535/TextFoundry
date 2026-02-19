@@ -94,6 +94,11 @@ class Tui {
   std::string comp_add_block_version_;  ///< BlockRef version input.
   std::string comp_add_block_params_;   ///< BlockRef local params input.
   std::string comp_add_static_text_;    ///< Static text input.
+  std::vector<std::string> comp_block_picker_ids_;  ///< All block IDs.
+  std::vector<std::string>
+      comp_block_picker_filtered_ids_;   ///< Filtered block IDs.
+  std::string comp_block_picker_search_;  ///< Search query for block picker.
+  int selected_comp_block_picker_ = 0;    ///< Selected block in picker.
   std::string comp_add_block_status_ = "Enter block_ref fields and submit";
   std::string comp_add_text_status_ = "Enter static text and submit";
 
@@ -103,6 +108,9 @@ class Tui {
   std::string render_params_;   ///< Raw runtime params input.
   std::string render_output_ =
       "Enter composition ID and click Render";  ///< Output.
+  bool focus_render_output_on_next_event_ = false;  ///< Deferred output focus.
+  int render_focus_column_ = 1;  ///< 0=list, 1=inputs, 2=output.
+  int render_output_scroll_line_ = 0;  ///< Output scroll offset by source line.
 
   // ===== Settings tab state =====
   std::string settings_project_ = "default";  ///< Active project key.

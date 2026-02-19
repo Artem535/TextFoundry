@@ -38,6 +38,13 @@ std::string Trim(std::string value) {
   return value;
 }
 
+std::string ToLower(std::string s) {
+  std::ranges::transform(
+      s, s.begin(),
+      [](const unsigned char c) { return static_cast<char>(std::tolower(c)); });
+  return s;
+}
+
 std::optional<std::string> ParseVersion(const std::string& input,
                                         Version& out) {
   const auto dot = input.find('.');
@@ -210,7 +217,7 @@ ftxui::Component Tui::CompositionsTab() {
     return ftxui::window(
                ftxui::text(" Details "),
                ftxui::paragraph(comp_details_text_) | ftxui::vscroll_indicator |
-                   ftxui::frame | ftxui::xflex | ftxui::yflex) |
+                   ftxui::yframe | ftxui::xflex | ftxui::yflex) |
            ftxui::xflex | ftxui::yflex;
   });
 
@@ -232,7 +239,7 @@ ftxui::Component Tui::CompositionsTab() {
                         ftxui::text(" List "),
                         ftxui::vbox({
                             list->Render() | ftxui::vscroll_indicator |
-                                ftxui::frame | ftxui::xflex | ftxui::yflex,
+                                ftxui::yframe | ftxui::xflex | ftxui::yflex,
                             ftxui::separator(),
                             open_create_modal_button->Render(),
                             refresh_button->Render(),
@@ -244,7 +251,7 @@ ftxui::Component Tui::CompositionsTab() {
                    left,
                    details->Render() | ftxui::xflex | ftxui::yflex,
                }) |
-               ftxui::xflex | ftxui::yflex | ftxui::border;
+               ftxui::xflex | ftxui::yflex;
       });
 
   auto desc_options = ftxui::InputOption::Default();
@@ -262,6 +269,10 @@ ftxui::Component Tui::CompositionsTab() {
     comp_add_block_id_.clear();
     comp_add_block_version_.clear();
     comp_add_block_params_.clear();
+    comp_block_picker_search_.clear();
+    comp_block_picker_ids_ = engine_.ListBlocks();
+    comp_block_picker_filtered_ids_ = comp_block_picker_ids_;
+    selected_comp_block_picker_ = 0;
     comp_add_block_status_ = "Enter block_ref fields and submit";
     show_add_block_ref_modal_ = true;
   });
@@ -347,13 +358,41 @@ ftxui::Component Tui::CompositionsTab() {
     focus_comp_modal_on_open_ = false;
   });
 
-  auto add_block_id_input = ftxui::Input(&comp_add_block_id_, "role.system");
+  auto apply_block_picker_filter = [this] {
+    const auto search = ToLower(Trim(comp_block_picker_search_));
+    comp_block_picker_filtered_ids_.clear();
+    for (const auto& id : comp_block_picker_ids_) {
+      if (search.empty() || ToLower(id).contains(search)) {
+        comp_block_picker_filtered_ids_.push_back(id);
+      }
+    }
+    ClampIndex(selected_comp_block_picker_,
+               static_cast<int>(comp_block_picker_filtered_ids_.size()));
+  };
+
+  auto block_picker_search_options = ftxui::InputOption::Default();
+  block_picker_search_options.on_change = [apply_block_picker_filter] {
+    apply_block_picker_filter();
+  };
+  auto block_picker_search_input =
+      ftxui::Input(&comp_block_picker_search_, "search block id",
+                   block_picker_search_options);
+  auto block_picker_menu = ftxui::Menu(&comp_block_picker_filtered_ids_,
+                                       &selected_comp_block_picker_);
   auto add_block_version_input = ftxui::Input(&comp_add_block_version_, "1.0");
   auto add_block_params_input =
       ftxui::Input(&comp_add_block_params_, "name=Alice&lang=en");
 
   auto add_block_submit_button = ftxui::Button("Submit", [this] {
-    const auto block_id = Trim(comp_add_block_id_);
+    if (comp_block_picker_filtered_ids_.empty()) {
+      comp_add_block_status_ = "Error: no block selected";
+      return;
+    }
+    const auto idx =
+        std::max(0, std::min(selected_comp_block_picker_,
+                             static_cast<int>(comp_block_picker_filtered_ids_.size()) -
+                                 1));
+    const auto block_id = Trim(comp_block_picker_filtered_ids_[idx]);
     const auto version = Trim(comp_add_block_version_);
     auto params = Trim(comp_add_block_params_);
     std::ranges::replace(params, ',', '&');
@@ -520,41 +559,90 @@ ftxui::Component Tui::CompositionsTab() {
                         });
 
   auto add_block_form = ftxui::Container::Vertical(
-      {add_block_id_input, add_block_version_input, add_block_params_input,
+      {block_picker_search_input, block_picker_menu, add_block_version_input,
+       add_block_params_input,
        add_block_submit_button, add_block_cancel_button});
   auto add_block_modal =
       ftxui::Renderer(add_block_form,
-                      [this, add_block_id_input, add_block_version_input,
+                      [this, block_picker_search_input, block_picker_menu,
+                       add_block_version_input,
                        add_block_params_input, add_block_submit_button,
                        add_block_cancel_button] {
-                        return ftxui::vbox({
-                                   ftxui::text(" Add BlockRef ") | ftxui::bold |
-                                       ftxui::center,
-                                   ftxui::separator(),
-                                   ftxui::text("block id") | ftxui::bold,
-                                   add_block_id_input->Render(),
-                                   ftxui::separator(),
-                                   ftxui::text("version") | ftxui::bold,
-                                   add_block_version_input->Render(),
-                                   ftxui::separator(),
-                                   ftxui::text("local params (optional)") |
-                                       ftxui::bold,
-                                   add_block_params_input->Render(),
-                                   ftxui::separator(),
-                                   ftxui::hbox({add_block_submit_button->Render(),
-                                                ftxui::text(" "),
-                                                add_block_cancel_button->Render()}),
-                                   ftxui::separator(),
-                                   ftxui::paragraph(comp_add_block_status_) |
-                                       ftxui::dim,
-                               }) |
-                               ftxui::xflex | ftxui::yflex |
+                        auto picker_list = comp_block_picker_filtered_ids_.empty()
+                                               ? (ftxui::text("No blocks found") |
+                                                  ftxui::dim)
+                                               : (block_picker_menu->Render() |
+                                                  ftxui::vscroll_indicator |
+                                                  ftxui::frame | ftxui::xflex |
+                                                  ftxui::yflex);
+                        const auto selected_block =
+                            comp_block_picker_filtered_ids_.empty()
+                                ? std::string("-")
+                                : comp_block_picker_filtered_ids_[std::max(
+                                      0, std::min(
+                                             selected_comp_block_picker_,
+                                             static_cast<int>(
+                                                 comp_block_picker_filtered_ids_
+                                                     .size()) -
+                                                 1))];
+                        auto content = ftxui::vbox({
+                            ftxui::text(" Add BlockRef ") | ftxui::bold |
+                                ftxui::center,
+                            ftxui::separator(),
+                            ftxui::text("search block") | ftxui::bold,
+                            block_picker_search_input->Render(),
+                            ftxui::separator(),
+                            ftxui::text("block list") | ftxui::bold,
+                            picker_list | ftxui::size(ftxui::HEIGHT,
+                                                      ftxui::EQUAL, 5),
+                            ftxui::separator(),
+                            ftxui::text("selected: " + selected_block) |
+                                ftxui::dim,
+                            ftxui::separator(),
+                            ftxui::text("version") | ftxui::bold,
+                            add_block_version_input->Render(),
+                            ftxui::separator(),
+                            ftxui::text("local params (optional)") |
+                                ftxui::bold,
+                            add_block_params_input->Render(),
+                            ftxui::separator(),
+                            ftxui::hbox({add_block_submit_button->Render(),
+                                         ftxui::text(" "),
+                                         add_block_cancel_button->Render()}),
+                            ftxui::separator(),
+                            ftxui::paragraph(comp_add_block_status_) |
+                                ftxui::dim,
+                        });
+
+                        return (content | ftxui::vscroll_indicator | ftxui::frame |
+                                ftxui::xflex | ftxui::yflex) |
                                ftxui::borderStyled(ftxui::ROUNDED,
                                                    ftxui::Color::Green) |
                                ftxui::size(ftxui::WIDTH, ftxui::EQUAL, 68) |
-                               ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, 18) |
+                               ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, 24) |
                                ftxui::center;
                       });
+  add_block_modal = add_block_modal | ftxui::CatchEvent(
+                                        [this, block_picker_menu,
+                                         add_block_version_input](
+                                            const ftxui::Event& e) {
+                                          if (!show_add_block_ref_modal_) {
+                                            return false;
+                                          }
+                                          if (IsCompositionListEvent(e)) {
+                                            ClampIndex(
+                                                selected_comp_block_picker_,
+                                                static_cast<int>(
+                                                    comp_block_picker_filtered_ids_
+                                                        .size()));
+                                          }
+                                          if (e == ftxui::Event::Return &&
+                                              block_picker_menu->Focused()) {
+                                            add_block_version_input->TakeFocus();
+                                            return true;
+                                          }
+                                          return false;
+                                        });
 
   auto add_text_form = ftxui::Container::Vertical(
       {add_static_text_input, add_static_submit_button, add_static_cancel_button});
@@ -562,29 +650,27 @@ ftxui::Component Tui::CompositionsTab() {
       ftxui::Renderer(add_text_form,
                       [this, add_static_text_input, add_static_submit_button,
                        add_static_cancel_button] {
-                        return ftxui::vbox({
-                                   ftxui::text(" Add Static Text ") | ftxui::bold |
-                                       ftxui::center,
-                                   ftxui::separator(),
-                                   ftxui::text("text") | ftxui::bold,
-                                   (add_static_text_input->Render() |
-                                    ftxui::focusCursorBar |
-                                    ftxui::vscroll_indicator | ftxui::frame |
-                                    ftxui::xflex | ftxui::yflex),
-                                   ftxui::separator(),
-                                   ftxui::hbox(
-                                       {add_static_submit_button->Render(),
-                                        ftxui::text(" "),
-                                        add_static_cancel_button->Render()}),
-                                   ftxui::separator(),
-                                   ftxui::paragraph(comp_add_text_status_) |
-                                       ftxui::dim,
-                               }) |
-                               ftxui::xflex | ftxui::yflex |
+                        auto content = ftxui::vbox({
+                            ftxui::text(" Add Static Text ") | ftxui::bold |
+                                ftxui::center,
+                            ftxui::separator(),
+                            ftxui::text("text") | ftxui::bold,
+                            (add_static_text_input->Render() |
+                             ftxui::focusCursorBar | ftxui::vscroll_indicator |
+                             ftxui::frame | ftxui::xflex | ftxui::yflex),
+                            ftxui::separator(),
+                            ftxui::hbox({add_static_submit_button->Render(),
+                                         ftxui::text(" "),
+                                         add_static_cancel_button->Render()}),
+                            ftxui::separator(),
+                            ftxui::paragraph(comp_add_text_status_) | ftxui::dim,
+                        });
+                        return (content | ftxui::vscroll_indicator | ftxui::frame |
+                                ftxui::xflex | ftxui::yflex) |
                                ftxui::borderStyled(ftxui::ROUNDED,
                                                    ftxui::Color::BlueLight) |
                                ftxui::size(ftxui::WIDTH, ftxui::EQUAL, 78) |
-                               ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, 20) |
+                               ftxui::size(ftxui::HEIGHT, ftxui::EQUAL, 22) |
                                ftxui::center;
                       });
 
