@@ -144,5 +144,6 @@ class Tui {
    * @brief Refresh details text for currently selected composition.
    */
   void UpdateSelectedCompositionDetails();
+
 };
 }  // namespace tf

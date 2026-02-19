@@ -9,9 +9,10 @@ namespace tf::ui {
 
 ftxui::Element RenderCreateBlockForm(
     const std::string& modal_title, const std::string& submit_button_label,
-    const ftxui::Component& block_id_input,
+    bool is_edit_mode, const ftxui::Component& block_id_input,
     const ftxui::Component& block_type_toggle,
     const ftxui::Component& block_template_input,
+    const std::string& block_template_text,
     const ftxui::Component& block_defaults_input,
     const ftxui::Component& block_tags_input,
     const ftxui::Component& block_lang_input,

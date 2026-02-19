@@ -5,6 +5,7 @@
 
 #include <algorithm>
 #include <ftxui/component/component.hpp>
+#include <ftxui/component/component_options.hpp>
 #include <ftxui/component/screen_interactive.hpp>
 #include <ftxui/dom/elements.hpp>
 #include <string>
@@ -100,8 +101,11 @@ ftxui::Component Tui::BlocksTab() {
   // inside keyboard-driven vertical forms.
   auto block_type_toggle =
       ftxui::Toggle(&BlockTypeLabels(), &block_creator_.BlockTypeIndex());
-  auto block_template_input =
-      ftxui::Input(&block_creator_.BlockTemplate(), "Template with {{params}}");
+  auto template_input_option = ftxui::InputOption::Default();
+  template_input_option.multiline = true;
+  auto block_template_input = ftxui::Input(&block_creator_.BlockTemplate(),
+                                           "Template with {{params}}",
+                                           template_input_option);
   auto block_defaults_input = ftxui::Input(&block_creator_.BlockDefaults(),
                                            "name=value, max_tokens=1000");
   auto block_tags_input =
@@ -142,7 +146,9 @@ ftxui::Component Tui::BlocksTab() {
        block_desc_input, create_button, reset_button, cancel_button] {
         return ui::RenderCreateBlockForm(
             block_creator_.ModalTitle(), block_creator_.SubmitButtonLabel(),
+            block_creator_.CurrentMode() == BlockCreationController::Mode::kEdit,
             block_id_input, block_type_toggle, block_template_input,
+            block_creator_.BlockTemplate(),
             block_defaults_input, block_tags_input, block_lang_input,
             block_desc_input, create_button, reset_button, cancel_button,
             block_creator_.Status());
@@ -163,14 +169,14 @@ ftxui::Component Tui::BlocksTab() {
                                         open_edit_modal_button] {
     auto left =
         ftxui::window(ftxui::text(" Blocks "), list->Render() | ftxui::flex) |
-        ftxui::size(ftxui::WIDTH, ftxui::EQUAL, 36) | ftxui::yflex;
+        ftxui::size(ftxui::WIDTH, ftxui::EQUAL, 42) | ftxui::yflex;
     auto actions = ftxui::window(
         ftxui::text(" Actions "),
         ftxui::vbox({open_create_modal_button->Render(), ftxui::separator(),
                      open_edit_modal_button->Render()}) |
             ftxui::flex);
     auto actions_sized =
-        actions | ftxui::size(ftxui::WIDTH, ftxui::EQUAL, 24) | ftxui::yflex;
+        actions | ftxui::size(ftxui::WIDTH, ftxui::EQUAL, 28) | ftxui::yflex;
 
     return ftxui::hbox({
                left,

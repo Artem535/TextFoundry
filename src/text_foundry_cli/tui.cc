@@ -24,12 +24,9 @@ bool IsUserInputEvent(const ftxui::Event& e) {
   return true;
 }
 
-// Exit shortcuts. F10 mapping can vary between terminals; Esc and 'q' are
-// reliable.
+// Exit shortcuts. Keep explicit F10 handling for portability.
 bool IsExitEvent(const ftxui::Event& e) {
   if (e == ftxui::Event::F10) return true;
-  if (e == ftxui::Event::Escape) return true;
-  if (e == ftxui::Event::Character('q')) return true;
   // Common CSI sequence for F10 in many terminals.
   if (e.input() == "\x1b[21~") return true;
   return false;
@@ -89,7 +86,7 @@ ftxui::Component Tui::MainLayout(auto& screen) {
                ftxui::separator(),
                tab_container->Render() | ftxui::flex,
                ftxui::separator(),
-               ftxui::text("q / Esc / F10 = Exit") | ftxui::dim | ftxui::center,
+               ftxui::text("F10 = Exit") | ftxui::dim | ftxui::center,
            }) |
            ftxui::border | ftxui::flex;
   });
@@ -100,7 +97,7 @@ ftxui::Component Tui::MainLayout(auto& screen) {
                    ftxui::color(ftxui::Color::Orange1),
                ftxui::separator(),
                ftxui::text("Any key - continue") | ftxui::dim | ftxui::center,
-               ftxui::text("F10 / Esc / q - exit") | ftxui::dim | ftxui::center,
+               ftxui::text("F10 - exit") | ftxui::dim | ftxui::center,
            }) |
            ftxui::border | ftxui::center |
            ftxui::size(ftxui::WIDTH, ftxui::EQUAL, 44) |
