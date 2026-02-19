@@ -52,14 +52,17 @@ ftxui::Element RenderCreateBlockForm(
 
   auto editor_panel =
       ftxui::window(ftxui::text(" Template Editor "),
-                    block_template_input->Render() | ftxui::vscroll_indicator |
-                        ftxui::frame | ftxui::xflex | ftxui::yflex) |
+                    block_template_input->Render() | ftxui::focusCursorBar |
+                        ftxui::vscroll_indicator | ftxui::hscroll_indicator |
+                        ftxui::frame | ftxui::xframe | ftxui::xflex |
+                        ftxui::yflex) |
       ftxui::xflex | ftxui::yflex;
 
   auto preview_panel =
       ftxui::window(ftxui::text(" Template Preview "),
                     template_preview | ftxui::vscroll_indicator |
-                        ftxui::frame | ftxui::xflex | ftxui::yflex) |
+                        ftxui::hscroll_indicator | ftxui::frame |
+                        ftxui::xframe | ftxui::xflex | ftxui::yflex) |
       ftxui::xflex | ftxui::yflex;
 
   auto editor_column = ftxui::vbox({

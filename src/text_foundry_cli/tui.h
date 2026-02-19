@@ -10,6 +10,7 @@
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/screen_interactive.hpp>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -60,15 +61,41 @@ class Tui {
   int selected_block_ = 0;              ///< Selected block index in list.
   std::string details_text_ =
       "Select a block to see details";     ///< Right panel.
+  std::optional<std::string> detail_id_;   ///< Selected block ID.
+  std::optional<std::string> detail_type_;  ///< Selected block type.
+  std::optional<std::string> detail_version_;  ///< Selected block version.
+  std::optional<std::string> detail_template_;  ///< Selected block template.
   BlockCreationController block_creator_;  ///< Create/edit form state/logic.
   bool show_create_block_modal_ =
       false;  ///< Create/edit block modal visibility.
+  bool focus_block_modal_on_open_ =
+      false;  ///< Set focus to first modal field on next event.
 
   // ===== Compositions tab state =====
   std::vector<std::string> comp_ids_;  ///< IDs shown in compositions list.
   int selected_comp_ = 0;              ///< Selected composition index.
   std::string comp_details_text_ =
       "Select a composition to see details";  ///< Right panel.
+  bool show_create_comp_modal_ = false;       ///< Create composition modal.
+  bool focus_comp_modal_on_open_ =
+      false;  ///< Set focus to first comp modal field on next event.
+  std::string comp_create_id_;           ///< New composition ID.
+  std::string comp_create_block_refs_;   ///< Block refs raw input.
+  std::string comp_create_static_text_;  ///< Static text fragments raw input.
+  std::string comp_create_description_;  ///< New composition description.
+  std::string comp_create_status_ =
+      "Fill fields and press Create";  ///< Composition modal status line.
+  std::vector<std::string> comp_create_fragments_preview_;  ///< List view rows.
+  std::vector<std::string> comp_create_fragment_specs_;  ///< Ordered specs: B|.. T|..
+  int selected_comp_fragment_ = 0;  ///< Selected fragment row in modal list.
+  bool show_add_block_ref_modal_ = false;   ///< Nested add block-ref modal.
+  bool show_add_static_text_modal_ = false;  ///< Nested add static text modal.
+  std::string comp_add_block_id_;      ///< BlockRef block ID input.
+  std::string comp_add_block_version_;  ///< BlockRef version input.
+  std::string comp_add_block_params_;   ///< BlockRef local params input.
+  std::string comp_add_static_text_;    ///< Static text input.
+  std::string comp_add_block_status_ = "Enter block_ref fields and submit";
+  std::string comp_add_text_status_ = "Enter static text and submit";
 
   // ===== Render tab state =====
   std::string render_comp_id_;  ///< Composition ID input for render tab.

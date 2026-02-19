@@ -39,6 +39,11 @@ void Tui::RefreshBlocksList() {
 }
 
 void Tui::UpdateSelectedBlockDetails() {
+  detail_id_.reset();
+  detail_type_.reset();
+  detail_version_.reset();
+  detail_template_.reset();
+
   if (block_ids_.empty()) {
     details_text_ = "No blocks found.";
     return;
@@ -51,9 +56,11 @@ void Tui::UpdateSelectedBlockDetails() {
   }
 
   const auto& b = result.value();
-  details_text_ = fmt::format("ID: {}\nVersion: {}.{}\nType: {}\nTemplate: {}",
-                              b.Id(), b.version().major, b.version().minor,
-                              BlockTypeToString(b.type()), b.templ().Content());
+  detail_id_ = b.Id();
+  detail_version_ = fmt::format("{}.{}", b.version().major, b.version().minor);
+  detail_type_ = std::string(BlockTypeToString(b.type()));
+  detail_template_ = b.templ().Content();
+  details_text_.clear();
 }
 
 void Tui::SelectBlockById(const std::string& block_id) {
@@ -79,6 +86,7 @@ ftxui::Component Tui::BlocksTab() {
   auto open_create_modal_button = ftxui::Button("New Block", [this] {
     block_creator_.BeginCreate();
     show_create_block_modal_ = true;
+    focus_block_modal_on_open_ = true;
   });
   auto open_edit_modal_button = ftxui::Button("Edit", [this] {
     if (block_ids_.empty()) {
@@ -94,6 +102,7 @@ ftxui::Component Tui::BlocksTab() {
     // Edit mode publishes a new version of the selected block ID.
     block_creator_.BeginEdit(result.value());
     show_create_block_modal_ = true;
+    focus_block_modal_on_open_ = true;
   });
 
   auto block_id_input = ftxui::Input(&block_creator_.BlockId(), "role.system");
@@ -132,11 +141,49 @@ ftxui::Component Tui::BlocksTab() {
        block_defaults_input, block_tags_input, block_lang_input,
        block_desc_input, create_buttons});
 
-  auto details = ftxui::Renderer([this] {
-    return ftxui::window(
+  auto details = ftxui::Renderer([this](const bool focused) {
+    if (!details_text_.empty()) {
+      auto base = ftxui::window(
+                 ftxui::text(" Details "),
+                 ftxui::paragraph(details_text_) | ftxui::xflex |
+                     ftxui::yflex) |
+             ftxui::xflex | ftxui::yflex;
+      return focused ? base | ftxui::borderStyled(ftxui::Color::Orange1) : base;
+    }
+
+    auto section = [&](const std::string& label, const std::string& value) {
+      return ftxui::hbox({
+          ftxui::text(label + ": ") | ftxui::bold,
+          ftxui::text(value),
+      });
+    };
+
+    auto template_value = detail_template_.value_or("");
+    auto template_view = template_value.empty()
+                             ? ftxui::text("(empty)") | ftxui::dim
+                             : ftxui::paragraph(template_value) |
+                                   ftxui::vscroll_indicator |
+                                   ftxui::hscroll_indicator | ftxui::frame |
+                                   ftxui::xframe;
+    if (focused) {
+      template_view = template_view | ftxui::focus;
+    }
+
+    auto base = ftxui::window(
                ftxui::text(" Details "),
-               ftxui::paragraph(details_text_) | ftxui::xflex | ftxui::yflex) |
+               ftxui::vbox({
+                   section("id", detail_id_.value_or("-")),
+                   ftxui::separator(),
+                   section("version", detail_version_.value_or("-")),
+                   ftxui::separator(),
+                   section("type", detail_type_.value_or("-")),
+                   ftxui::separator(),
+                   ftxui::text("template") | ftxui::bold,
+                   template_view | ftxui::xflex | ftxui::yflex,
+               }) |
+                   ftxui::xflex | ftxui::yflex) |
            ftxui::xflex | ftxui::yflex;
+    return focused ? base | ftxui::borderStyled(ftxui::Color::Orange1) : base;
   });
 
   auto create_panel = ftxui::Renderer(
@@ -153,11 +200,79 @@ ftxui::Component Tui::BlocksTab() {
             block_desc_input, create_button, reset_button, cancel_button,
             block_creator_.Status());
       });
+  create_panel = create_panel | ftxui::CatchEvent(
+                                    [this, block_id_input, block_type_toggle,
+                                     block_template_input, block_defaults_input,
+                                     block_tags_input, block_lang_input,
+                                     block_desc_input, create_button,
+                                     reset_button, cancel_button,
+                                     modal_focus_chain =
+                                         std::vector<ftxui::Component>{
+                                             block_id_input,
+                                             block_type_toggle,
+                                             block_template_input,
+                                             block_defaults_input,
+                                             block_tags_input,
+                                             block_lang_input,
+                                             block_desc_input,
+                                             create_button,
+                                             reset_button,
+                                             cancel_button,
+                                         },
+                                     modal_focus_index = 0](
+                                        const ftxui::Event& e) mutable {
+                                      if (!show_create_block_modal_) {
+                                        return false;
+                                      }
+
+                                     if (focus_block_modal_on_open_) {
+                                        modal_focus_index = 2;  // template
+                                        modal_focus_chain[modal_focus_index]
+                                            ->TakeFocus();
+                                        focus_block_modal_on_open_ = false;
+                                      }
+
+                                      if (e != ftxui::Event::Tab &&
+                                          e != ftxui::Event::TabReverse) {
+                                        return false;
+                                      }
+
+                                      // Sync index with actual focused
+                                      // component before moving.
+                                      for (size_t i = 0;
+                                           i < modal_focus_chain.size(); ++i) {
+                                        if (modal_focus_chain[i]->Focused()) {
+                                          modal_focus_index =
+                                              static_cast<int>(i);
+                                          break;
+                                        }
+                                      }
+
+                                      if (e == ftxui::Event::Tab) {
+                                        modal_focus_index =
+                                            (modal_focus_index + 1) %
+                                            static_cast<int>(
+                                                modal_focus_chain.size());
+                                      } else {
+                                        modal_focus_index =
+                                            (modal_focus_index - 1 +
+                                             static_cast<int>(
+                                                 modal_focus_chain.size())) %
+                                            static_cast<int>(
+                                                modal_focus_chain.size());
+                                      }
+                                      modal_focus_chain[modal_focus_index]
+                                          ->TakeFocus();
+                                      return true;
+                                    });
 
   auto content = ftxui::Container::Horizontal(
       {list, details, open_create_modal_button, open_edit_modal_button});
   content =
       content | ftxui::CatchEvent([this](const ftxui::Event& e) {
+        if (show_create_block_modal_) {
+          return false;
+        }
         if (IsBlockListEvent(e)) {
           ClampIndex(selected_block_, static_cast<int>(block_ids_.size()));
           UpdateSelectedBlockDetails();
@@ -190,6 +305,7 @@ ftxui::Component Tui::BlocksTab() {
   return ftxui::CatchEvent(with_modal, [this](const ftxui::Event& e) {
     if (show_create_block_modal_ && e == ftxui::Event::Escape) {
       show_create_block_modal_ = false;
+      focus_block_modal_on_open_ = false;
       return true;
     }
     return false;
