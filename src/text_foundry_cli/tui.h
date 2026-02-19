@@ -67,9 +67,12 @@ class Tui {
   // ===== Compositions tab state =====
   std::vector<std::string> comp_ids_;  ///< IDs shown in compositions list.
   int selected_comp_ = 0;              ///< Selected composition index.
+  std::string comp_details_text_ =
+      "Select a composition to see details";  ///< Right panel.
 
   // ===== Render tab state =====
   std::string render_comp_id_;  ///< Composition ID input for render tab.
+  std::string render_version_;  ///< Optional composition version (major.minor).
   std::string render_params_;   ///< Raw runtime params input.
   std::string render_output_ =
       "Enter composition ID and click Render";  ///< Output.
@@ -80,6 +83,8 @@ class Tui {
       (fs::path(sago::getConfigHome()) / "TextFoundry")
           .string();              ///< Storage path from platform config dir.
   bool settings_strict_ = false;  ///< Strict render/validation mode toggle.
+  std::string settings_status_text_ =
+      "Settings are local to TUI session.";  ///< Settings tab status line.
 
   // ===== Component factories =====
   /**
@@ -98,12 +103,12 @@ class Tui {
    * @brief Build Compositions tab component.
    * @return Compositions tab component.
    */
-  static ftxui::Component CompositionsTab();
+  ftxui::Component CompositionsTab();
   /**
    * @brief Build Render tab component.
    * @return Render tab component.
    */
-  static ftxui::Component RenderTab();
+  ftxui::Component RenderTab();
   /**
    * @brief Build Settings tab component.
    * @return Settings tab component.
@@ -129,5 +134,15 @@ class Tui {
    * @param block_id Published block ID.
    */
   void OnBlockPublished(const std::string& block_id);
+
+  // ===== Compositions helpers =====
+  /**
+   * @brief Reload composition IDs from engine and clamp selected index.
+   */
+  void RefreshCompositionsList();
+  /**
+   * @brief Refresh details text for currently selected composition.
+   */
+  void UpdateSelectedCompositionDetails();
 };
 }  // namespace tf
