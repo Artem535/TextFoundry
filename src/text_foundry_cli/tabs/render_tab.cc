@@ -1,22 +1,232 @@
 #include "../tui.h"
 #include "tab_header.h"
 
+#include <algorithm>
+#include <cctype>
 #include <ftxui/component/component.hpp>
 #include <ftxui/dom/elements.hpp>
+#include <optional>
+#include <sstream>
+#include <stdexcept>
+#include <string>
 
 namespace tf {
+namespace {
+void ClampIndex(int& idx, const int size) {
+  if (size <= 0) {
+    idx = 0;
+    return;
+  }
+  idx = std::max(0, std::min(idx, size - 1));
+}
+
+bool IsCompositionListEvent(const ftxui::Event& e) {
+  return e == ftxui::Event::ArrowUp || e == ftxui::Event::ArrowDown ||
+         e == ftxui::Event::Return || e.is_mouse();
+}
+
+std::string Trim(std::string value) {
+  const auto is_space = [](const unsigned char c) { return std::isspace(c); };
+  while (!value.empty() && is_space(static_cast<unsigned char>(value.front()))) {
+    value.erase(value.begin());
+  }
+  while (!value.empty() && is_space(static_cast<unsigned char>(value.back()))) {
+    value.pop_back();
+  }
+  return value;
+}
+
+std::optional<std::string> ParseRuntimeParams(const std::string& input,
+                                              Params& out) {
+  std::istringstream stream(input);
+  std::string line;
+  while (std::getline(stream, line)) {
+    line = Trim(line);
+    if (line.empty()) continue;
+
+    size_t start = 0;
+    while (start <= line.size()) {
+      const auto comma = line.find(',', start);
+      const std::string token = line.substr(
+          start, comma == std::string::npos ? std::string::npos : comma - start);
+      const std::string kv = Trim(token);
+      if (!kv.empty()) {
+        const auto eq = kv.find('=');
+        if (eq == std::string::npos) {
+          return "Invalid param format: '" + kv + "' (expected key=value)";
+        }
+        const std::string key = Trim(kv.substr(0, eq));
+        const std::string value = Trim(kv.substr(eq + 1));
+        if (key.empty()) {
+          return "Parameter name cannot be empty";
+        }
+        out[key] = value;
+      }
+
+      if (comma == std::string::npos) break;
+      start = comma + 1;
+    }
+  }
+  return std::nullopt;
+}
+
+std::optional<std::string> ParseVersion(const std::string& input,
+                                        Version& out) {
+  const std::string text = Trim(input);
+  if (text.empty()) return std::nullopt;
+
+  const auto dot = text.find('.');
+  if (dot == std::string::npos) {
+    return "Invalid version format: expected major.minor";
+  }
+  const std::string major_str = Trim(text.substr(0, dot));
+  const std::string minor_str = Trim(text.substr(dot + 1));
+  if (major_str.empty() || minor_str.empty()) {
+    return "Invalid version format: expected major.minor";
+  }
+
+  try {
+    const auto major_num = std::stoi(major_str);
+    const auto minor_num = std::stoi(minor_str);
+    if (major_num < 0 || major_num > 65535 || minor_num < 0 ||
+        minor_num > 65535) {
+      return "Version numbers must be in range 0..65535";
+    }
+    out = Version{static_cast<uint16_t>(major_num),
+                  static_cast<uint16_t>(minor_num)};
+  } catch (const std::exception&) {
+    return "Invalid version format: expected numeric major.minor";
+  }
+
+  return std::nullopt;
+}
+}  // namespace
 
 ftxui::Component Tui::RenderTab() {
-  auto root = ftxui::Container::Vertical({});
-  return ftxui::Renderer(root, [] {
+  RefreshCompositionsList();
+  ClampIndex(selected_comp_, static_cast<int>(comp_ids_.size()));
+  if (render_comp_id_.empty() && !comp_ids_.empty()) {
+    render_comp_id_ = comp_ids_[selected_comp_];
+  }
+
+  auto compositions_menu = ftxui::Menu(&comp_ids_, &selected_comp_);
+  auto comp_id_input =
+      ftxui::Input(&render_comp_id_, "composition.id (e.g. welcome.message)");
+  auto version_input =
+      ftxui::Input(&render_version_, "optional version, e.g. 1.0");
+  auto params_input =
+      ftxui::Input(&render_params_, "name=value, other=123 (comma or newline)");
+
+  auto render_button = ftxui::Button("Render", [this] {
+    if (render_comp_id_.empty()) {
+      render_output_ = "Error: Composition ID is required.";
+      return;
+    }
+
+    RenderContext ctx;
+    ctx.strictMode = settings_strict_;
+    if (const auto parse_err = ParseRuntimeParams(render_params_, ctx.params);
+        parse_err.has_value()) {
+      render_output_ = "Error: " + *parse_err;
+      return;
+    }
+
+    Version version;
+    if (const auto parse_err = ParseVersion(render_version_, version);
+        parse_err.has_value()) {
+      render_output_ = "Error: " + *parse_err;
+      return;
+    }
+
+    auto result = Trim(render_version_).empty()
+                      ? engine_.Render(render_comp_id_, ctx)
+                      : engine_.Render(render_comp_id_, version, ctx);
+    if (result.HasError()) {
+      render_output_ = "Error: " + result.error().message;
+      return;
+    }
+
+    render_output_ = result.value().text;
+  });
+
+  auto clear_button = ftxui::Button("Clear", [this] {
+    render_params_.clear();
+    render_output_ = "Enter composition ID and click Render";
+  });
+
+  auto refresh_button = ftxui::Button("Refresh list", [this] {
+    const std::string selected_id = render_comp_id_;
+    RefreshCompositionsList();
+    if (!selected_id.empty()) {
+      const auto it = std::ranges::find(comp_ids_, selected_id);
+      if (it != comp_ids_.end()) {
+        selected_comp_ =
+            static_cast<int>(std::distance(comp_ids_.begin(), it));
+      }
+    }
+    ClampIndex(selected_comp_, static_cast<int>(comp_ids_.size()));
+  });
+
+  auto controls = ftxui::Container::Vertical(
+      {comp_id_input, version_input, params_input, render_button, clear_button,
+       refresh_button});
+  auto main = ftxui::Container::Horizontal({compositions_menu, controls});
+  main = main | ftxui::CatchEvent([this](const ftxui::Event& e) {
+           if (IsCompositionListEvent(e)) {
+             ClampIndex(selected_comp_, static_cast<int>(comp_ids_.size()));
+             if (!comp_ids_.empty()) {
+               render_comp_id_ = comp_ids_[selected_comp_];
+             }
+           }
+           return false;
+         });
+
+  return ftxui::Renderer(main, [compositions_menu, comp_id_input, version_input,
+                                params_input, render_button, clear_button,
+                                refresh_button, this] {
+    auto list_panel = ftxui::window(
+                          ftxui::text(" Compositions "),
+                          compositions_menu->Render() | ftxui::flex) |
+                      ftxui::size(ftxui::WIDTH, ftxui::EQUAL, 36) |
+                      ftxui::yflex;
+
+    auto controls_panel = ftxui::window(
+        ftxui::text(" Render Inputs "),
+        ftxui::vbox({
+            ftxui::text("Composition ID"),
+            comp_id_input->Render(),
+            ftxui::separator(),
+            ftxui::text("Version (optional)"),
+            version_input->Render(),
+            ftxui::text("Leave empty to render latest version") | ftxui::dim,
+            ftxui::separator(),
+            ftxui::text("Runtime params"),
+            params_input->Render(),
+            ftxui::text("Format: key=value, key2=value2") | ftxui::dim,
+            ftxui::separator(),
+            render_button->Render(),
+            clear_button->Render(),
+            refresh_button->Render(),
+            ftxui::separator(),
+            ftxui::text(settings_strict_ ? "Strict mode: ON"
+                                         : "Strict mode: OFF") |
+                ftxui::dim,
+        })) |
+                          ftxui::size(ftxui::WIDTH, ftxui::EQUAL, 34) |
+                          ftxui::yflex;
+
     return ftxui::vbox({
                ui::MakeHeader("Render", ftxui::Color::Magenta),
                ftxui::separator(),
-               ftxui::text("Temporary stub tab"),
-               ftxui::text("Diagnostics mode: component content disabled") |
-                   ftxui::dim,
+               ftxui::hbox({list_panel, controls_panel}) | ftxui::xflex |
+                   ftxui::yflex,
+               ftxui::separator(),
+               ftxui::window(ftxui::text(" Output "),
+                             ftxui::paragraph(render_output_) | ftxui::xflex |
+                                 ftxui::yflex) |
+                   ftxui::xflex | ftxui::yflex,
            }) |
-           ftxui::flex | ftxui::border;
+           ftxui::xflex | ftxui::yflex | ftxui::border;
   });
 }
 
