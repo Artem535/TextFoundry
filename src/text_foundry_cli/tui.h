@@ -32,6 +32,13 @@ namespace fs = std::filesystem;
  */
 class Tui {
  public:
+  enum class CompositionFragmentEditMode {
+    Append,
+    InsertBefore,
+    InsertAfter,
+    Replace,
+  };
+
   /**
    * @brief Construct TUI bound to a TextFoundry engine instance.
    * @param engine Engine used for block/composition operations.
@@ -57,14 +64,19 @@ class Tui {
                                          "Settings"};
 
   // ===== Blocks tab state =====
-  std::vector<std::string> block_ids_;  ///< IDs shown in blocks list.
-  int selected_block_ = 0;              ///< Selected block index in list.
+  std::vector<std::string> block_ids_;  ///< All known block IDs.
+  std::vector<std::string> block_folders_;  ///< Virtual folders from BlockId namespaces.
+  std::vector<std::string> visible_block_ids_;  ///< IDs shown in filtered blocks list.
+  int selected_block_folder_ = 0;       ///< Selected virtual folder index.
+  int selected_block_ = 0;              ///< Selected block index in filtered list.
   std::string details_text_ =
       "Select a block to see details";     ///< Right panel.
   std::optional<std::string> detail_id_;   ///< Selected block ID.
   std::optional<std::string> detail_type_;  ///< Selected block type.
   std::optional<std::string> detail_version_;  ///< Selected block version.
   std::optional<std::string> detail_template_;  ///< Selected block template.
+  float detail_template_scroll_y_ =
+      0.f;  ///< Block template scroll position [0..1].
   BlockCreationController block_creator_;  ///< Create/edit form state/logic.
   bool show_create_block_modal_ =
       false;  ///< Create/edit block modal visibility.
@@ -88,6 +100,9 @@ class Tui {
   std::vector<std::string> comp_create_fragments_preview_;  ///< List view rows.
   std::vector<std::string> comp_create_fragment_specs_;  ///< Ordered specs: B|.. T|..
   int selected_comp_fragment_ = 0;  ///< Selected fragment row in modal list.
+  CompositionFragmentEditMode comp_fragment_edit_mode_ =
+      CompositionFragmentEditMode::Append;  ///< How modal submit applies fragment.
+  int comp_fragment_edit_index_ = -1;  ///< Target fragment index for edit/insert.
   bool show_add_block_ref_modal_ = false;   ///< Nested add block-ref modal.
   bool show_add_static_text_modal_ = false;  ///< Nested add static text modal.
   std::string comp_add_block_id_;      ///< BlockRef block ID input.
@@ -109,6 +124,8 @@ class Tui {
   std::string render_params_;   ///< Raw runtime params input.
   std::string render_output_ =
       "Enter composition ID and click Render";  ///< Output.
+  std::string render_status_text_ =
+      "Render output actions are available after rendering.";  ///< Render status.
   bool focus_render_output_on_next_event_ = false;  ///< Deferred output focus.
   int render_focus_column_ = 1;  ///< 0=list, 1=inputs, 2=output.
   float render_output_scroll_y_ = 0.f;  ///< Output scroll position [0..1].
@@ -158,6 +175,14 @@ class Tui {
    * @brief Reload block IDs from engine and clamp selected index.
    */
   void RefreshBlocksList();
+  /**
+   * @brief Rebuild virtual folder list from current block IDs.
+   */
+  void RefreshBlockFolders();
+  /**
+   * @brief Rebuild filtered block list for selected folder.
+   */
+  void RefreshVisibleBlocks();
   /**
    * @brief Refresh details text for currently selected block.
    */

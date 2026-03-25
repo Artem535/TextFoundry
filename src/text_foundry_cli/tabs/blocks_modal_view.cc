@@ -1,5 +1,7 @@
 #include "blocks_modal_view.h"
 
+#include "../ui_style.h"
+
 #include <ftxui/component/component.hpp>
 #include <ftxui/dom/elements.hpp>
 #include <ftxui/screen/terminal.hpp>
@@ -48,21 +50,17 @@ ftxui::Element RenderCreateBlockForm(
   auto template_preview = block_template_text.empty()
                               ? ftxui::text("Template preview will appear here") |
                                     ftxui::dim
-                              : ftxui::paragraph(block_template_text);
+                              : ftxui::paragraph(block_template_text) |
+                                    ftxui::xflex | ftxui::yflex;
 
   auto editor_panel =
       ftxui::window(ftxui::text(" Template Editor "),
-                    block_template_input->Render() | ftxui::focusCursorBar |
-                        ftxui::vscroll_indicator | ftxui::hscroll_indicator |
-                        ftxui::frame | ftxui::xframe | ftxui::xflex |
-                        ftxui::yflex) |
+                    ui::ModalScrollPane(block_template_input->Render())) |
       ftxui::xflex | ftxui::yflex;
 
   auto preview_panel =
       ftxui::window(ftxui::text(" Template Preview "),
-                    template_preview | ftxui::vscroll_indicator |
-                        ftxui::hscroll_indicator | ftxui::frame |
-                        ftxui::xframe | ftxui::xflex | ftxui::yflex) |
+                    ui::ModalScrollPane(std::move(template_preview))) |
       ftxui::xflex | ftxui::yflex;
 
   auto editor_column = ftxui::vbox({

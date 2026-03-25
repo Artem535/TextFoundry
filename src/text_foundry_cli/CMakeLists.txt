@@ -11,6 +11,8 @@ add_executable(tf
         application_settings.h
         block_creation_controller.cc
         block_creation_controller.h
+        ui_style.cc
+        ui_style.h
         tui.cc
         tui.h
         tabs/blocks_tab.cc
@@ -32,3 +34,5 @@ target_link_libraries(tf
         sago::platform_folders
         ftxui::dom ftxui::screen ftxui::component
 )
+
+install(TARGETS tf RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
