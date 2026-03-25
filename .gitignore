@@ -4,6 +4,7 @@
 /build/
 .idea
 digest.txt
+build-rel
 
 # Compiled Object files
 *.slo
