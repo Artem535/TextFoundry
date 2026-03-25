@@ -1,4 +1,5 @@
 #include "../tui.h"
+#include "../ui_style.h"
 #include "tab_header.h"
 
 #include <algorithm>
@@ -123,6 +124,70 @@ std::optional<std::string> AddBlockRefFromLine(CompositionDraftBuilder& builder,
   builder.AddBlockRef(block_id, version.major, version.minor, params);
   return std::nullopt;
 }
+
+std::optional<std::string> ParseBlockRefLine(
+    const std::string& line, std::string& block_id, std::string& version_text,
+    std::string& params_text) {
+  const auto at = line.find('@');
+  if (at == std::string::npos) {
+    return "Block ref must include version: " + line;
+  }
+
+  block_id = Trim(line.substr(0, at));
+  auto rest = Trim(line.substr(at + 1));
+  if (block_id.empty() || rest.empty()) {
+    return "Invalid block ref: " + line;
+  }
+
+  params_text.clear();
+  const auto q = rest.find('?');
+  if (q == std::string::npos) {
+    version_text = Trim(rest);
+  } else {
+    version_text = Trim(rest.substr(0, q));
+    params_text = Trim(rest.substr(q + 1));
+  }
+
+  Version version;
+  if (const auto err = ParseVersion(version_text, version); err.has_value()) {
+    return "Invalid block ref version in '" + line + "': " + *err;
+  }
+
+  return std::nullopt;
+}
+
+std::string PreviewForBlockRefLine(const std::string& line) {
+  std::string block_id;
+  std::string version_text;
+  std::string params_text;
+  if (ParseBlockRefLine(line, block_id, version_text, params_text).has_value()) {
+    return "BlockRef " + line;
+  }
+
+  std::string preview = "BlockRef " + block_id + "@" + version_text;
+  if (!params_text.empty()) {
+    preview += " [" + params_text + "]";
+  }
+  return preview;
+}
+
+std::string PreviewForStaticText(std::string text) {
+  std::ranges::replace(text, '\n', ' ');
+  if (text.size() > 80) text = text.substr(0, 77) + "...";
+  return "StaticText \"" + text + "\"";
+}
+
+std::string PreviewForSeparatorType(const SeparatorType type) {
+  if (type == SeparatorType::Newline) return "Separator \\n";
+  if (type == SeparatorType::Paragraph) return "Separator \\n\\n";
+  return "Separator ---";
+}
+
+bool IsShiftArrowUp(const ftxui::Event& e) { return e.input() == "\x1B[1;2A"; }
+
+bool IsShiftArrowDown(const ftxui::Event& e) {
+  return e.input() == "\x1B[1;2B";
+}
 }  // namespace
 
 void Tui::RefreshCompositionsList() {
@@ -203,6 +268,8 @@ ftxui::Component Tui::CompositionsTab() {
     comp_add_static_text_.clear();
     comp_add_block_status_ = "Enter block_ref fields and submit";
     comp_add_text_status_ = "Enter static text and submit";
+    comp_fragment_edit_mode_ = CompositionFragmentEditMode::Append;
+    comp_fragment_edit_index_ = -1;
 
     show_create_comp_modal_ = true;
     show_add_block_ref_modal_ = false;
@@ -291,6 +358,8 @@ ftxui::Component Tui::CompositionsTab() {
     comp_add_static_text_.clear();
     comp_add_block_status_ = "Enter block_ref fields and submit";
     comp_add_text_status_ = "Enter static text and submit";
+    comp_fragment_edit_mode_ = CompositionFragmentEditMode::Append;
+    comp_fragment_edit_index_ = -1;
 
     show_create_comp_modal_ = true;
     show_add_block_ref_modal_ = false;
@@ -302,9 +371,9 @@ ftxui::Component Tui::CompositionsTab() {
     UpdateSelectedCompositionDetails();
   });
 
-  auto details = ftxui::Renderer([this] {
+  auto details = ftxui::Renderer([this](const bool focused) {
     return ftxui::window(
-               ftxui::text(" Details "),
+               ui::FocusedWindowTitle("Details", focused),
                ftxui::paragraph(comp_details_text_) | ftxui::vscroll_indicator |
                    ftxui::yframe | ftxui::xflex | ftxui::yflex) |
            ftxui::xflex | ftxui::yflex;
@@ -328,7 +397,11 @@ ftxui::Component Tui::CompositionsTab() {
       [list, details, open_create_modal_button, open_edit_modal_button,
        refresh_button] {
         auto left = ftxui::window(
-                        ftxui::text(" List "),
+                        ui::FocusedWindowTitle(
+                            "List", list->Focused() ||
+                                        open_create_modal_button->Focused() ||
+                                        open_edit_modal_button->Focused() ||
+                                        refresh_button->Focused()),
                         ftxui::vbox({
                             list->Render() | ftxui::vscroll_indicator |
                                 ftxui::yframe | ftxui::xflex | ftxui::yflex,
@@ -347,12 +420,12 @@ ftxui::Component Tui::CompositionsTab() {
                ftxui::xflex | ftxui::yflex;
       });
 
-  auto desc_options = ftxui::InputOption::Default();
-  desc_options.multiline = true;
-  auto static_text_options = ftxui::InputOption::Default();
-  static_text_options.multiline = true;
+  auto single_line_input_options = ui::ModalInputOption();
+  auto desc_options = ui::ModalInputOption(true);
+  auto static_text_options = ui::ModalInputOption(true);
 
-  auto comp_id_input = ftxui::Input(&comp_create_id_, "welcome.message");
+  auto comp_id_input =
+      ftxui::Input(&comp_create_id_, "welcome.message", single_line_input_options);
   auto description_input =
       ftxui::Input(&comp_create_description_, "Composition purpose", desc_options);
   auto fragments_menu =
@@ -373,6 +446,178 @@ ftxui::Component Tui::CompositionsTab() {
     comp_add_static_text_.clear();
     comp_add_text_status_ = "Enter static text and submit";
     show_add_static_text_modal_ = true;
+  });
+  auto add_separator_button = ftxui::Button("Add Separator", [this] {
+    const auto apply_separator = [this](const SeparatorType type) {
+      const std::string spec = "S|" + std::string(SeparatorTypeToString(type));
+      const std::string preview = PreviewForSeparatorType(type);
+      int target_index = static_cast<int>(comp_create_fragment_specs_.size());
+
+      switch (comp_fragment_edit_mode_) {
+        case CompositionFragmentEditMode::Append:
+          comp_create_fragment_specs_.push_back(spec);
+          comp_create_fragments_preview_.push_back(preview);
+          target_index =
+              static_cast<int>(comp_create_fragments_preview_.size()) - 1;
+          break;
+        case CompositionFragmentEditMode::InsertBefore:
+          target_index = std::clamp(
+              comp_fragment_edit_index_, 0,
+              static_cast<int>(comp_create_fragment_specs_.size()));
+          comp_create_fragment_specs_.insert(
+              comp_create_fragment_specs_.begin() + target_index, spec);
+          comp_create_fragments_preview_.insert(
+              comp_create_fragments_preview_.begin() + target_index, preview);
+          break;
+        case CompositionFragmentEditMode::InsertAfter:
+          target_index = std::clamp(
+              comp_fragment_edit_index_ + 1, 0,
+              static_cast<int>(comp_create_fragment_specs_.size()));
+          comp_create_fragment_specs_.insert(
+              comp_create_fragment_specs_.begin() + target_index, spec);
+          comp_create_fragments_preview_.insert(
+              comp_create_fragments_preview_.begin() + target_index, preview);
+          break;
+        case CompositionFragmentEditMode::Replace:
+          target_index = std::clamp(
+              comp_fragment_edit_index_, 0,
+              static_cast<int>(comp_create_fragment_specs_.size()) - 1);
+          comp_create_fragment_specs_[target_index] = spec;
+          comp_create_fragments_preview_[target_index] = preview;
+          break;
+      }
+
+      selected_comp_fragment_ = target_index;
+      comp_fragment_edit_mode_ = CompositionFragmentEditMode::Append;
+      comp_fragment_edit_index_ = -1;
+      comp_create_status_ = "Added separator";
+    };
+
+    SeparatorType type = SeparatorType::Newline;
+    if (!comp_create_fragment_specs_.empty()) {
+      const int idx = std::clamp(selected_comp_fragment_, 0,
+                                 static_cast<int>(comp_create_fragment_specs_.size()) -
+                                     1);
+      const auto& spec = comp_create_fragment_specs_[idx];
+      if (spec.starts_with("S|")) {
+        const auto current = Trim(spec.substr(2));
+        if (current == "newline") {
+          type = SeparatorType::Paragraph;
+        } else if (current == "paragraph") {
+          type = SeparatorType::Hr;
+        }
+      }
+    }
+
+    apply_separator(type);
+  });
+  auto move_fragment = [this](const int delta) {
+    if (comp_create_fragment_specs_.empty()) {
+      comp_create_status_ = "Nothing to move";
+      return;
+    }
+    const int from =
+        std::clamp(selected_comp_fragment_, 0,
+                   static_cast<int>(comp_create_fragment_specs_.size()) - 1);
+    const int to = std::clamp(from + delta, 0,
+                              static_cast<int>(comp_create_fragment_specs_.size()) - 1);
+    if (from == to) return;
+    std::swap(comp_create_fragment_specs_[from], comp_create_fragment_specs_[to]);
+    std::swap(comp_create_fragments_preview_[from],
+              comp_create_fragments_preview_[to]);
+    selected_comp_fragment_ = to;
+    comp_create_status_ = "Moved fragment";
+  };
+  auto insert_before_button = ftxui::Button("Insert Before", [this] {
+    if (comp_create_fragment_specs_.empty()) {
+      comp_create_status_ = "Nothing selected";
+      return;
+    }
+    comp_fragment_edit_mode_ = CompositionFragmentEditMode::InsertBefore;
+    comp_fragment_edit_index_ = std::clamp(
+        selected_comp_fragment_, 0,
+        static_cast<int>(comp_create_fragment_specs_.size()) - 1);
+    comp_create_status_ =
+        "Insert mode: choose Add BlockRef or Add StaticText to insert before";
+  });
+  auto insert_after_button = ftxui::Button("Insert After", [this] {
+    if (comp_create_fragment_specs_.empty()) {
+      comp_create_status_ = "Nothing selected";
+      return;
+    }
+    comp_fragment_edit_mode_ = CompositionFragmentEditMode::InsertAfter;
+    comp_fragment_edit_index_ = std::clamp(
+        selected_comp_fragment_, 0,
+        static_cast<int>(comp_create_fragment_specs_.size()) - 1);
+    comp_create_status_ =
+        "Insert mode: choose Add BlockRef or Add StaticText to insert after";
+  });
+  auto edit_selected_button = ftxui::Button("Edit Selected", [this] {
+    if (comp_create_fragment_specs_.empty()) {
+      comp_create_status_ = "Nothing selected";
+      return;
+    }
+
+    comp_fragment_edit_mode_ = CompositionFragmentEditMode::Replace;
+    comp_fragment_edit_index_ = std::clamp(
+        selected_comp_fragment_, 0,
+        static_cast<int>(comp_create_fragment_specs_.size()) - 1);
+
+    const auto& spec = comp_create_fragment_specs_[comp_fragment_edit_index_];
+    if (spec.starts_with("B|")) {
+      std::string block_id;
+      std::string version_text;
+      std::string params_text;
+      if (const auto err =
+              ParseBlockRefLine(spec.substr(2), block_id, version_text, params_text);
+          err.has_value()) {
+        comp_create_status_ = "Error: " + *err;
+        return;
+      }
+      comp_add_block_id_ = block_id;
+      comp_add_block_version_ = version_text;
+      comp_add_block_params_ = params_text;
+      comp_block_picker_search_ = block_id;
+      comp_block_picker_ids_ = engine_.ListBlocks();
+      comp_block_picker_filtered_ids_ = comp_block_picker_ids_;
+      selected_comp_block_picker_ = 0;
+      for (size_t i = 0; i < comp_block_picker_filtered_ids_.size(); ++i) {
+        if (comp_block_picker_filtered_ids_[i] == block_id) {
+          selected_comp_block_picker_ = static_cast<int>(i);
+          break;
+        }
+      }
+      comp_add_block_status_ = "Edit selected block ref";
+      show_add_block_ref_modal_ = true;
+      return;
+    }
+
+    if (spec.starts_with("T|")) {
+      comp_add_static_text_ = spec.substr(2);
+      comp_add_text_status_ = "Edit selected static text";
+      show_add_static_text_modal_ = true;
+      return;
+    }
+
+    if (spec.starts_with("S|")) {
+      const auto current = Trim(spec.substr(2));
+      SeparatorType next = SeparatorType::Newline;
+      if (current == "newline") {
+        next = SeparatorType::Paragraph;
+      } else if (current == "paragraph") {
+        next = SeparatorType::Hr;
+      }
+      comp_create_fragment_specs_[comp_fragment_edit_index_] =
+          "S|" + std::string(SeparatorTypeToString(next));
+      comp_create_fragments_preview_[comp_fragment_edit_index_] =
+          PreviewForSeparatorType(next);
+      comp_fragment_edit_mode_ = CompositionFragmentEditMode::Append;
+      comp_fragment_edit_index_ = -1;
+      comp_create_status_ = "Updated selected separator";
+      return;
+    }
+
+    comp_create_status_ = "Selected fragment type is not editable here";
   });
   auto insert_newlines_button = ftxui::Button("Insert \\n Between", [this] {
     if (comp_create_fragment_specs_.size() < 2) {
@@ -420,6 +665,27 @@ ftxui::Component Tui::CompositionsTab() {
     ClampIndex(selected_comp_fragment_,
                static_cast<int>(comp_create_fragments_preview_.size()));
     comp_create_status_ = "Removed fragment";
+  });
+  auto remove_separators_button = ftxui::Button("Remove Separators", [this] {
+    if (comp_create_fragment_specs_.empty()) {
+      comp_create_status_ = "Nothing to clean";
+      return;
+    }
+
+    std::vector<std::string> filtered_specs;
+    std::vector<std::string> filtered_preview;
+    filtered_specs.reserve(comp_create_fragment_specs_.size());
+    filtered_preview.reserve(comp_create_fragments_preview_.size());
+    for (size_t i = 0; i < comp_create_fragment_specs_.size(); ++i) {
+      if (comp_create_fragment_specs_[i].starts_with("S|")) continue;
+      filtered_specs.push_back(comp_create_fragment_specs_[i]);
+      filtered_preview.push_back(comp_create_fragments_preview_[i]);
+    }
+    comp_create_fragment_specs_ = std::move(filtered_specs);
+    comp_create_fragments_preview_ = std::move(filtered_preview);
+    ClampIndex(selected_comp_fragment_,
+               static_cast<int>(comp_create_fragments_preview_.size()));
+    comp_create_status_ = "Removed all separators";
   });
 
   auto create_button = ftxui::Button("Create", [this] {
@@ -523,7 +789,7 @@ ftxui::Component Tui::CompositionsTab() {
                static_cast<int>(comp_block_picker_filtered_ids_.size()));
   };
 
-  auto block_picker_search_options = ftxui::InputOption::Default();
+  auto block_picker_search_options = ui::ModalInputOption();
   block_picker_search_options.on_change = [apply_block_picker_filter] {
     apply_block_picker_filter();
   };
@@ -532,9 +798,11 @@ ftxui::Component Tui::CompositionsTab() {
                    block_picker_search_options);
   auto block_picker_menu = ftxui::Menu(&comp_block_picker_filtered_ids_,
                                        &selected_comp_block_picker_);
-  auto add_block_version_input = ftxui::Input(&comp_add_block_version_, "1.0");
+  auto add_block_version_input =
+      ftxui::Input(&comp_add_block_version_, "1.0", single_line_input_options);
   auto add_block_params_input =
-      ftxui::Input(&comp_add_block_params_, "name=Alice&lang=en");
+      ftxui::Input(&comp_add_block_params_, "name=Alice&lang=en",
+                   single_line_input_options);
 
   auto add_block_submit_button = ftxui::Button("Submit", [this] {
     if (comp_block_picker_filtered_ids_.empty()) {
@@ -570,12 +838,44 @@ ftxui::Component Tui::CompositionsTab() {
       return;
     }
 
-    comp_create_fragment_specs_.push_back("B|" + line);
-    std::string preview = "BlockRef " + block_id + "@" + version;
-    if (!params.empty()) preview += " [" + params + "]";
-    comp_create_fragments_preview_.push_back(preview);
-    selected_comp_fragment_ =
-        static_cast<int>(comp_create_fragments_preview_.size()) - 1;
+    const std::string spec = "B|" + line;
+    const std::string preview = PreviewForBlockRefLine(line);
+    auto target_index = static_cast<int>(comp_create_fragment_specs_.size());
+    switch (comp_fragment_edit_mode_) {
+      case CompositionFragmentEditMode::Append:
+        comp_create_fragment_specs_.push_back(spec);
+        comp_create_fragments_preview_.push_back(preview);
+        target_index = static_cast<int>(comp_create_fragments_preview_.size()) - 1;
+        break;
+      case CompositionFragmentEditMode::InsertBefore:
+        target_index = std::clamp(comp_fragment_edit_index_, 0,
+                                  static_cast<int>(comp_create_fragment_specs_.size()));
+        comp_create_fragment_specs_.insert(comp_create_fragment_specs_.begin() +
+                                               target_index,
+                                           spec);
+        comp_create_fragments_preview_.insert(
+            comp_create_fragments_preview_.begin() + target_index, preview);
+        break;
+      case CompositionFragmentEditMode::InsertAfter:
+        target_index = std::clamp(comp_fragment_edit_index_ + 1, 0,
+                                  static_cast<int>(comp_create_fragment_specs_.size()));
+        comp_create_fragment_specs_.insert(comp_create_fragment_specs_.begin() +
+                                               target_index,
+                                           spec);
+        comp_create_fragments_preview_.insert(
+            comp_create_fragments_preview_.begin() + target_index, preview);
+        break;
+      case CompositionFragmentEditMode::Replace:
+        target_index = std::clamp(comp_fragment_edit_index_, 0,
+                                  static_cast<int>(comp_create_fragment_specs_.size()) -
+                                      1);
+        comp_create_fragment_specs_[target_index] = spec;
+        comp_create_fragments_preview_[target_index] = preview;
+        break;
+    }
+    selected_comp_fragment_ = target_index;
+    comp_fragment_edit_mode_ = CompositionFragmentEditMode::Append;
+    comp_fragment_edit_index_ = -1;
     comp_create_status_ = "Added BlockRef";
     show_add_block_ref_modal_ = false;
   });
@@ -592,13 +892,44 @@ ftxui::Component Tui::CompositionsTab() {
       return;
     }
 
-    comp_create_fragment_specs_.push_back("T|" + text);
-    auto preview = text;
-    std::ranges::replace(preview, '\n', ' ');
-    if (preview.size() > 80) preview = preview.substr(0, 77) + "...";
-    comp_create_fragments_preview_.push_back("StaticText \"" + preview + "\"");
-    selected_comp_fragment_ =
-        static_cast<int>(comp_create_fragments_preview_.size()) - 1;
+    const std::string spec = "T|" + text;
+    const std::string preview = PreviewForStaticText(text);
+    auto target_index = static_cast<int>(comp_create_fragment_specs_.size());
+    switch (comp_fragment_edit_mode_) {
+      case CompositionFragmentEditMode::Append:
+        comp_create_fragment_specs_.push_back(spec);
+        comp_create_fragments_preview_.push_back(preview);
+        target_index = static_cast<int>(comp_create_fragments_preview_.size()) - 1;
+        break;
+      case CompositionFragmentEditMode::InsertBefore:
+        target_index = std::clamp(comp_fragment_edit_index_, 0,
+                                  static_cast<int>(comp_create_fragment_specs_.size()));
+        comp_create_fragment_specs_.insert(comp_create_fragment_specs_.begin() +
+                                               target_index,
+                                           spec);
+        comp_create_fragments_preview_.insert(
+            comp_create_fragments_preview_.begin() + target_index, preview);
+        break;
+      case CompositionFragmentEditMode::InsertAfter:
+        target_index = std::clamp(comp_fragment_edit_index_ + 1, 0,
+                                  static_cast<int>(comp_create_fragment_specs_.size()));
+        comp_create_fragment_specs_.insert(comp_create_fragment_specs_.begin() +
+                                               target_index,
+                                           spec);
+        comp_create_fragments_preview_.insert(
+            comp_create_fragments_preview_.begin() + target_index, preview);
+        break;
+      case CompositionFragmentEditMode::Replace:
+        target_index = std::clamp(comp_fragment_edit_index_, 0,
+                                  static_cast<int>(comp_create_fragment_specs_.size()) -
+                                      1);
+        comp_create_fragment_specs_[target_index] = spec;
+        comp_create_fragments_preview_[target_index] = preview;
+        break;
+    }
+    selected_comp_fragment_ = target_index;
+    comp_fragment_edit_mode_ = CompositionFragmentEditMode::Append;
+    comp_fragment_edit_index_ = -1;
     comp_create_status_ = "Added StaticText";
     show_add_static_text_modal_ = false;
   });
@@ -608,16 +939,39 @@ ftxui::Component Tui::CompositionsTab() {
 
   auto modal_form = ftxui::Container::Vertical(
       {comp_id_input, description_input, add_block_ref_button,
-       add_static_text_button, insert_newlines_button, remove_fragment_button,
+       add_static_text_button, add_separator_button, insert_before_button,
+       insert_after_button,
+       edit_selected_button, insert_newlines_button, remove_separators_button,
+       remove_fragment_button,
        fragments_menu, create_button, cancel_button});
   auto modal_panel = ftxui::Renderer(
       modal_form,
       [this, comp_id_input, description_input, fragments_menu,
-       add_block_ref_button, add_static_text_button, insert_newlines_button,
-       remove_fragment_button, create_button, cancel_button] {
+       add_block_ref_button, add_static_text_button, add_separator_button,
+       insert_before_button, insert_after_button, edit_selected_button,
+       insert_newlines_button,
+       remove_separators_button, remove_fragment_button, create_button,
+       cancel_button] {
         const auto terminal_size = ftxui::Terminal::Size();
         const int modal_width = std::max(80, terminal_size.dimx * 9 / 10);
         const int modal_height = std::max(24, terminal_size.dimy * 9 / 10);
+
+        const auto mode_text = [this] {
+          switch (comp_fragment_edit_mode_) {
+            case CompositionFragmentEditMode::Append:
+              return std::string("Mode: Append");
+            case CompositionFragmentEditMode::InsertBefore:
+              return "Mode: Insert Before #" +
+                     std::to_string(std::max(0, comp_fragment_edit_index_));
+            case CompositionFragmentEditMode::InsertAfter:
+              return "Mode: Insert After #" +
+                     std::to_string(std::max(0, comp_fragment_edit_index_));
+            case CompositionFragmentEditMode::Replace:
+              return "Mode: Replace #" +
+                     std::to_string(std::max(0, comp_fragment_edit_index_));
+          }
+          return std::string("Mode: Append");
+        }();
 
         auto left = ftxui::window(
             ftxui::text(" Builder "),
@@ -630,13 +984,28 @@ ftxui::Component Tui::CompositionsTab() {
                 ftxui::separator(),
                 add_block_ref_button->Render(),
                 add_static_text_button->Render(),
+                add_separator_button->Render(),
+                insert_before_button->Render(),
+                insert_after_button->Render(),
+                edit_selected_button->Render(),
                 insert_newlines_button->Render(),
+                remove_separators_button->Render(),
                 remove_fragment_button->Render(),
                 ftxui::separator(),
                 ftxui::hbox({
                     ftxui::text(comp_edit_mode_ ? "Mode: Edit" : "Mode: Create") |
                         ftxui::dim,
                 }),
+                ftxui::text(mode_text) | ftxui::dim,
+                ftxui::text(
+                    "Hotkeys: b block, t text, s separator, e edit, d delete") |
+                    ftxui::dim,
+                ftxui::text(
+                    "         [ before, ] after, r clean separators, n insert \\n") |
+                    ftxui::dim,
+                ftxui::text(
+                    "         Shift+Up / Shift+Down move selected fragment") |
+                    ftxui::dim,
                 create_button->Render(),
                 cancel_button->Render(),
                 ftxui::separator(),
@@ -646,8 +1015,7 @@ ftxui::Component Tui::CompositionsTab() {
 
         auto list_view = comp_create_fragments_preview_.empty()
                              ? (ftxui::text("No fragments yet") | ftxui::dim)
-                             : (fragments_menu->Render() | ftxui::vscroll_indicator |
-                                ftxui::frame | ftxui::xflex | ftxui::yflex);
+                             : ui::ModalScrollPane(fragments_menu->Render());
         auto right = ftxui::window(ftxui::text(" Result List "),
                                    list_view | ftxui::xflex | ftxui::yflex);
 
@@ -667,14 +1035,22 @@ ftxui::Component Tui::CompositionsTab() {
       modal_panel | ftxui::CatchEvent(
                         [this, comp_id_input, description_input,
                          add_block_ref_button, add_static_text_button,
-                         insert_newlines_button, remove_fragment_button,
+                         add_separator_button, insert_before_button,
+                         insert_after_button,
+                         edit_selected_button, insert_newlines_button,
+                         remove_separators_button, remove_fragment_button,
                          fragments_menu, create_button, cancel_button,
                          modal_focus_chain = std::vector<ftxui::Component>{
                              comp_id_input,
                              description_input,
                              add_block_ref_button,
                              add_static_text_button,
+                             add_separator_button,
+                             insert_before_button,
+                             insert_after_button,
+                             edit_selected_button,
                              insert_newlines_button,
+                             remove_separators_button,
                              remove_fragment_button,
                              fragments_menu,
                              create_button,
@@ -716,6 +1092,78 @@ ftxui::Component Tui::CompositionsTab() {
                           modal_focus_chain[modal_focus_index]->TakeFocus();
                           return true;
                         });
+  modal_panel = modal_panel | ftxui::CatchEvent([move_fragment](
+                                                    const ftxui::Event& e) {
+    if (IsShiftArrowUp(e)) {
+      move_fragment(-1);
+      return true;
+    }
+    if (IsShiftArrowDown(e)) {
+      move_fragment(1);
+      return true;
+    }
+    return false;
+  });
+  modal_panel =
+      modal_panel | ftxui::CatchEvent(
+                        [this, comp_id_input, description_input,
+                         add_block_ref_button, add_static_text_button,
+                         add_separator_button, insert_before_button,
+                         insert_after_button, edit_selected_button,
+                         insert_newlines_button, remove_separators_button,
+                         remove_fragment_button](const ftxui::Event& e) {
+                          if (!show_create_comp_modal_ ||
+                              show_add_block_ref_modal_ ||
+                              show_add_static_text_modal_) {
+                            return false;
+                          }
+                          if (comp_id_input->Focused() ||
+                              description_input->Focused()) {
+                            return false;
+                          }
+                          if (!e.is_character()) {
+                            return false;
+                          }
+
+                          const auto ch = e.character();
+                          if (ch == "b") {
+                            add_block_ref_button->OnEvent(ftxui::Event::Return);
+                            return true;
+                          }
+                          if (ch == "t") {
+                            add_static_text_button->OnEvent(ftxui::Event::Return);
+                            return true;
+                          }
+                          if (ch == "s") {
+                            add_separator_button->OnEvent(ftxui::Event::Return);
+                            return true;
+                          }
+                          if (ch == "e") {
+                            edit_selected_button->OnEvent(ftxui::Event::Return);
+                            return true;
+                          }
+                          if (ch == "d") {
+                            remove_fragment_button->OnEvent(ftxui::Event::Return);
+                            return true;
+                          }
+                          if (ch == "r") {
+                            remove_separators_button->OnEvent(ftxui::Event::Return);
+                            return true;
+                          }
+                          if (ch == "n") {
+                            insert_newlines_button->OnEvent(ftxui::Event::Return);
+                            return true;
+                          }
+                          if (ch == "[") {
+                            insert_before_button->OnEvent(ftxui::Event::Return);
+                            return true;
+                          }
+                          if (ch == "]") {
+                            insert_after_button->OnEvent(ftxui::Event::Return);
+                            return true;
+                          }
+                          return false;
+                        });
 
   auto add_block_form = ftxui::Container::Vertical(
       {block_picker_search_input, block_picker_menu, add_block_version_input,
@@ -730,10 +1178,8 @@ ftxui::Component Tui::CompositionsTab() {
                         auto picker_list = comp_block_picker_filtered_ids_.empty()
                                                ? (ftxui::text("No blocks found") |
                                                   ftxui::dim)
-                                               : (block_picker_menu->Render() |
-                                                  ftxui::vscroll_indicator |
-                                                  ftxui::frame | ftxui::xflex |
-                                                  ftxui::yflex);
+                                               : ui::ModalScrollPane(
+                                                     block_picker_menu->Render());
                         const auto selected_block =
                             comp_block_picker_filtered_ids_.empty()
                                 ? std::string("-")
@@ -773,8 +1219,7 @@ ftxui::Component Tui::CompositionsTab() {
                                 ftxui::dim,
                         });
 
-                        return (content | ftxui::vscroll_indicator | ftxui::frame |
-                                ftxui::xflex | ftxui::yflex) |
+                        return ui::ModalScrollPane(std::move(content)) |
                                ftxui::borderStyled(ftxui::ROUNDED,
                                                    ftxui::Color::Green) |
                                ftxui::size(ftxui::WIDTH, ftxui::EQUAL, 68) |
@@ -814,9 +1259,7 @@ ftxui::Component Tui::CompositionsTab() {
                                 ftxui::center,
                             ftxui::separator(),
                             ftxui::text("text") | ftxui::bold,
-                            (add_static_text_input->Render() |
-                             ftxui::focusCursorBar | ftxui::vscroll_indicator |
-                             ftxui::frame | ftxui::xflex | ftxui::yflex),
+                            ui::ModalScrollPane(add_static_text_input->Render()),
                             ftxui::separator(),
                             ftxui::hbox({add_static_submit_button->Render(),
                                          ftxui::text(" "),
@@ -824,8 +1267,7 @@ ftxui::Component Tui::CompositionsTab() {
                             ftxui::separator(),
                             ftxui::paragraph(comp_add_text_status_) | ftxui::dim,
                         });
-                        return (content | ftxui::vscroll_indicator | ftxui::frame |
-                                ftxui::xflex | ftxui::yflex) |
+                        return ui::ModalScrollPane(std::move(content)) |
                                ftxui::borderStyled(ftxui::ROUNDED,
                                                    ftxui::Color::BlueLight) |
                                ftxui::size(ftxui::WIDTH, ftxui::EQUAL, 78) |

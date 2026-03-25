@@ -716,7 +716,6 @@ void Application::InitEngine() {
                           .default_data_path = settings_.data_path.string()};
 
   engine_.emplace(config);
-  // FullInit() уже вызывается в конструкторе Engine
 }
 
 // ============================================================================

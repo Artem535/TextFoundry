@@ -1,11 +1,14 @@
 #include "../tui.h"
+#include "../ui_style.h"
 #include "tab_header.h"
 
 #include <algorithm>
 #include <cctype>
+#include <cstdint>
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/screen_interactive.hpp>
 #include <ftxui/dom/elements.hpp>
+#include <iostream>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
@@ -103,6 +106,104 @@ std::optional<std::string> ParseVersion(const std::string& input,
   return std::nullopt;
 }
 
+std::string Base64Encode(const std::string& input) {
+  static constexpr char kAlphabet[] =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+
+  std::string output;
+  output.reserve(((input.size() + 2) / 3) * 4);
+
+  for (size_t i = 0; i < input.size(); i += 3) {
+    const auto b0 = static_cast<std::uint8_t>(input[i]);
+    const auto b1 = i + 1 < input.size() ? static_cast<std::uint8_t>(input[i + 1]) : 0;
+    const auto b2 = i + 2 < input.size() ? static_cast<std::uint8_t>(input[i + 2]) : 0;
+
+    output.push_back(kAlphabet[(b0 >> 2) & 0x3F]);
+    output.push_back(kAlphabet[((b0 & 0x03) << 4) | ((b1 >> 4) & 0x0F)]);
+    output.push_back(i + 1 < input.size()
+                         ? kAlphabet[((b1 & 0x0F) << 2) | ((b2 >> 6) & 0x03)]
+                         : '=');
+    output.push_back(i + 2 < input.size() ? kAlphabet[b2 & 0x3F] : '=');
+  }
+
+  return output;
+}
+
+bool CopyToClipboardOsc52(const std::string& text) {
+  if (text.empty()) {
+    return false;
+  }
+
+  std::cout << "\033]52;c;" << Base64Encode(text) << "\a" << std::flush;
+  return static_cast<bool>(std::cout);
+}
+
+StructuralStyle EffectiveStyle(const Composition& composition) {
+  if (composition.GetStyleProfile().has_value()) {
+    return composition.GetStyleProfile()->structural;
+  }
+  return {};
+}
+
+std::string ApplyStructuralStyle(const std::vector<std::string>& fragment_texts,
+                                 const StructuralStyle& style) {
+  std::ostringstream result;
+  if (style.preamble.has_value()) {
+    result << *style.preamble;
+  }
+
+  for (size_t i = 0; i < fragment_texts.size(); ++i) {
+    std::string text = fragment_texts[i];
+    if (style.blockWrapper.has_value()) {
+      std::string wrapped = *style.blockWrapper;
+      constexpr std::string_view kContent = "{{content}}";
+      if (const size_t pos = wrapped.find(kContent); pos != std::string::npos) {
+        wrapped.replace(pos, kContent.size(), text);
+      }
+      text = std::move(wrapped);
+    }
+
+    result << text;
+    if (i + 1 < fragment_texts.size() && style.delimiter.has_value()) {
+      result << *style.delimiter;
+    }
+  }
+
+  if (style.postamble.has_value()) {
+    result << *style.postamble;
+  }
+  return result.str();
+}
+
+Result<std::string> BuildRawRender(Engine& engine, const Composition& composition) {
+  std::vector<std::string> fragment_texts;
+  fragment_texts.reserve(composition.fragments().size());
+
+  for (const auto& fragment : composition.fragments()) {
+    if (fragment.IsStaticText()) {
+      fragment_texts.push_back(fragment.AsStaticText().text());
+      continue;
+    }
+    if (fragment.IsSeparator()) {
+      fragment_texts.push_back(fragment.AsSeparator().toString());
+      continue;
+    }
+
+    const auto& block_ref = fragment.AsBlockRef();
+    auto block_result = block_ref.version().has_value()
+                            ? engine.LoadBlock(block_ref.GetBlockId(),
+                                               *block_ref.version())
+                            : engine.LoadBlock(block_ref.GetBlockId());
+    if (block_result.HasError()) {
+      return Result<std::string>(block_result.error());
+    }
+    fragment_texts.push_back(block_result.value().templ().Content());
+  }
+
+  return Result<std::string>(
+      ApplyStructuralStyle(fragment_texts, EffectiveStyle(composition)));
+}
+
 }  // namespace
 
 ftxui::Component Tui::RenderTab() {
@@ -128,7 +229,8 @@ ftxui::Component Tui::RenderTab() {
     if (focused) {
       output_content = output_content | ftxui::focus;
     }
-    return ftxui::window(ftxui::text(" Output "), output_content) |
+    return ftxui::window(ui::FocusedWindowTitle("Output", focused),
+                         output_content) |
            ftxui::xflex | ftxui::yflex;
   });
   constexpr float kArrowStep = 0.04f;
@@ -231,6 +333,7 @@ ftxui::Component Tui::RenderTab() {
 
     render_output_ = result.value().text;
     render_output_scroll_y_ = 0.f;
+    render_status_text_ = "Rendered successfully.";
     focus_render_output_on_next_event_ = true;
     render_focus_column_ = 2;
     if (auto* active = ftxui::ScreenInteractive::Active(); active != nullptr) {
@@ -238,10 +341,56 @@ ftxui::Component Tui::RenderTab() {
     }
   });
 
+  auto copy_render_button = ftxui::Button("Copy Render", [this] {
+    if (render_output_.empty() ||
+        render_output_ == "Enter composition ID and click Render" ||
+        render_output_.starts_with("Error: ")) {
+      render_status_text_ = "Nothing to copy from render output.";
+      return;
+    }
+
+    render_status_text_ = CopyToClipboardOsc52(render_output_)
+                              ? "Copied render output to terminal clipboard."
+                              : "Failed to copy render output.";
+  });
+
+  auto copy_raw_button = ftxui::Button("Copy Raw", [this] {
+    if (render_comp_id_.empty()) {
+      render_status_text_ = "Composition ID is required for raw copy.";
+      return;
+    }
+
+    Version version;
+    if (const auto parse_err = ParseVersion(render_version_, version);
+        parse_err.has_value()) {
+      render_status_text_ = "Error: " + *parse_err;
+      return;
+    }
+
+    auto composition_result = Trim(render_version_).empty()
+                                  ? engine_.LoadComposition(render_comp_id_)
+                                  : engine_.LoadComposition(render_comp_id_, version);
+    if (composition_result.HasError()) {
+      render_status_text_ = "Error: " + composition_result.error().message;
+      return;
+    }
+
+    auto raw_result = BuildRawRender(engine_, composition_result.value());
+    if (raw_result.HasError()) {
+      render_status_text_ = "Error: " + raw_result.error().message;
+      return;
+    }
+
+    render_status_text_ = CopyToClipboardOsc52(raw_result.value())
+                              ? "Copied raw composition render to terminal clipboard."
+                              : "Failed to copy raw composition render.";
+  });
+
   auto clear_button = ftxui::Button("Clear", [this] {
     render_params_.clear();
     render_output_ = "Enter composition ID and click Render";
     render_output_scroll_y_ = 0.f;
+    render_status_text_ = "Render output actions are available after rendering.";
   });
 
   auto refresh_button = ftxui::Button("Refresh list", [this] {
@@ -258,8 +407,56 @@ ftxui::Component Tui::RenderTab() {
   });
 
   auto controls = ftxui::Container::Vertical(
-      {comp_id_input, version_input, params_input, render_button, clear_button,
-       refresh_button});
+      {comp_id_input, version_input, params_input, render_button,
+       copy_render_button, copy_raw_button, clear_button, refresh_button});
+  auto controls_panel = ftxui::Renderer(
+      controls,
+      [comp_id_input, version_input, params_input, render_button, clear_button,
+       refresh_button, copy_render_button, copy_raw_button, this] {
+        const bool title_focused =
+            comp_id_input->Focused() || version_input->Focused() ||
+            params_input->Focused() || render_button->Focused() ||
+            copy_render_button->Focused() || copy_raw_button->Focused() ||
+            clear_button->Focused() || refresh_button->Focused();
+        return ftxui::window(
+                   ui::FocusedWindowTitle("Render Inputs", title_focused),
+                   ftxui::vbox({
+                       ftxui::text("Composition ID"),
+                       comp_id_input->Render(),
+                       ftxui::separator(),
+                       ftxui::text("Version (optional)"),
+                       version_input->Render(),
+                       ftxui::text("Leave empty to render latest version") |
+                           ftxui::dim,
+                       ftxui::separator(),
+                       ftxui::text("Runtime params"),
+                       params_input->Render(),
+                       ftxui::text("Format: key=value, key2=value2") |
+                           ftxui::dim,
+                       ftxui::separator(),
+                       render_button->Render(),
+                       copy_render_button->Render(),
+                       copy_raw_button->Render(),
+                       clear_button->Render(),
+                       refresh_button->Render(),
+                       ftxui::separator(),
+                        ftxui::text(settings_strict_ ? "Strict mode: ON"
+                                                    : "Strict mode: OFF") |
+                           ftxui::dim,
+                       ftxui::separator(),
+                       ftxui::paragraph(render_status_text_) | ftxui::dim,
+                   })) |
+               ftxui::size(ftxui::WIDTH, ftxui::EQUAL, 34) | ftxui::yflex;
+      });
+  auto list_panel = ftxui::Renderer(
+      compositions_menu,
+      [compositions_menu] {
+        return ftxui::window(
+                   ui::FocusedWindowTitle("Compositions",
+                                          compositions_menu->Focused()),
+                   compositions_menu->Render() | ftxui::flex) |
+               ftxui::size(ftxui::WIDTH, ftxui::EQUAL, 36) | ftxui::yflex;
+      });
 
   auto main = ftxui::Container::Horizontal(
       {compositions_menu, controls, output_component}, &render_focus_column_);
@@ -289,43 +486,10 @@ ftxui::Component Tui::RenderTab() {
            return false;
          });
 
-  return ftxui::Renderer(main, [compositions_menu, comp_id_input, version_input,
-                                params_input, render_button, clear_button,
-                                refresh_button, output_component, this] {
-    auto list_panel = ftxui::window(
-                          ftxui::text(" Compositions "),
-                          compositions_menu->Render() | ftxui::flex) |
-                      ftxui::size(ftxui::WIDTH, ftxui::EQUAL, 36) |
-                      ftxui::yflex;
-
-    auto controls_panel = ftxui::window(
-        ftxui::text(" Render Inputs "),
-        ftxui::vbox({
-            ftxui::text("Composition ID"),
-            comp_id_input->Render(),
-            ftxui::separator(),
-            ftxui::text("Version (optional)"),
-            version_input->Render(),
-            ftxui::text("Leave empty to render latest version") | ftxui::dim,
-            ftxui::separator(),
-            ftxui::text("Runtime params"),
-            params_input->Render(),
-            ftxui::text("Format: key=value, key2=value2") | ftxui::dim,
-            ftxui::separator(),
-            render_button->Render(),
-            clear_button->Render(),
-            refresh_button->Render(),
-            ftxui::separator(),
-            ftxui::text(settings_strict_ ? "Strict mode: ON"
-                                         : "Strict mode: OFF") |
-                ftxui::dim,
-        })) |
-                          ftxui::size(ftxui::WIDTH, ftxui::EQUAL, 34) |
-                          ftxui::yflex;
-
+  return ftxui::Renderer(main, [output_component, list_panel, controls_panel] {
     return ftxui::hbox({
-               list_panel,
-               controls_panel,
+               list_panel->Render(),
+               controls_panel->Render(),
                output_component->Render() | ftxui::xflex | ftxui::yflex,
            }) |
            ftxui::xflex | ftxui::yflex;

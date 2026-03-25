@@ -1,4 +1,5 @@
 #include "../tui.h"
+#include "../ui_style.h"
 #include "tab_header.h"
 
 #include <ftxui/component/component.hpp>
@@ -30,10 +31,14 @@ ftxui::Component Tui::SettingsTab() {
   return ftxui::Renderer(
       root, [project_input, path_input, strict_checkbox, apply_button,
              composition_newline_checkbox, reset_button, this] {
+    const bool session_focused =
+        project_input->Focused() || path_input->Focused() ||
+        strict_checkbox->Focused() || composition_newline_checkbox->Focused() ||
+        apply_button->Focused() || reset_button->Focused();
     return ftxui::vbox({
                ui::MakeHeader("Settings", ftxui::Color::Yellow),
                ftxui::separator(),
-               ftxui::window(ftxui::text(" Session "),
+               ftxui::window(ui::FocusedWindowTitle("Session", session_focused),
                              ftxui::vbox({
                                  ftxui::text("Project key"),
                                  project_input->Render(),
