@@ -1,0 +1,2 @@
+singleton ColorPalette 1.0 ColorPalette.qml
+singleton General 1.0 General.qml
