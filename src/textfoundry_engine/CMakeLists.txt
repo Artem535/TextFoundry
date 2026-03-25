@@ -43,7 +43,35 @@ add_library(textfoundry_core STATIC
         tf/database_scheme.obx.cpp
 )
 
-target_include_directories(textfoundry_core PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_include_directories(textfoundry_core
+        PUBLIC
+            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
+            $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
+)
 
-target_link_libraries(textfoundry_core ctre::ctre spdlog::spdlog objectbox reflectcpp::reflectcpp)
+target_link_libraries(textfoundry_core
+        PUBLIC
+            ctre::ctre
+            spdlog::spdlog
+            objectbox
+            reflectcpp::reflectcpp
+)
 
+set_target_properties(textfoundry_core PROPERTIES EXPORT_NAME Core)
+
+install(
+        TARGETS textfoundry_core
+        EXPORT TextFoundryTargets
+        ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
+install(
+        DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/tf
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+        FILES_MATCHING
+            PATTERN "*.h"
+            PATTERN "*.hpp"
+)
