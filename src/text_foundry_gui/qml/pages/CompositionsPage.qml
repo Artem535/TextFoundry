@@ -4,6 +4,8 @@ import QtQuick.Layouts
 import TextFoundry
 
 Page {
+    id: root
+
     background: Rectangle {
         color: ColorPalette.background
     }
@@ -11,6 +13,7 @@ Page {
     RowLayout {
         anchors.fill: parent
         spacing: General.spacingLarge
+        visible: !CompositionEditorVm.open
 
         Frame {
             Layout.preferredWidth: 320
@@ -26,8 +29,9 @@ Page {
                 anchors.margins: General.paddingMedium
                 spacing: General.paddingSmall
 
-                RowLayout {
+                ColumnLayout {
                     Layout.fillWidth: true
+                    spacing: General.spacingSmall
 
                     Label {
                         text: "Compositions"
@@ -35,11 +39,43 @@ Page {
                         font.bold: true
                     }
 
-                    Item { Layout.fillWidth: true }
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: General.spacingSmall
 
-                    Button {
-                        text: "Reload"
-                        onClicked: CompositionsVm.reload()
+                        SvgToolButton {
+                            compact: true
+                            iconSource: Icons.addSvg
+                            labelText: "New"
+                            onClicked: CompositionEditorVm.openCreateEditor()
+                        }
+
+                        SvgToolButton {
+                            compact: true
+                            iconSource: Icons.editSvg
+                            labelText: "Edit"
+                            enabled: CompositionsVm.selectedCompositionId.length > 0
+                            onClicked: CompositionEditorVm.openEditor()
+                        }
+
+                        SvgToolButton {
+                            compact: true
+                            iconSource: Icons.deprecateSvg
+                            labelText: "Deprecate"
+                            enabled: CompositionsVm.selectedCompositionId.length > 0
+                            onClicked: CompositionsVm.deprecateSelected()
+                        }
+
+                        Item {
+                            Layout.fillWidth: true
+                        }
+
+                        SvgToolButton {
+                            compact: true
+                            iconSource: Icons.reloadSvg
+                            labelText: "Reload"
+                            onClicked: CompositionsVm.reload()
+                        }
                     }
                 }
 
@@ -176,6 +212,19 @@ Page {
                     }
                 }
             }
+        }
+    }
+
+    CompositionEditorWindow {
+        anchors.fill: parent
+        visible: CompositionEditorVm.open
+    }
+
+    Connections {
+        target: CompositionEditorVm
+
+        function onSaved() {
+            CompositionEditorVm.closeEditor()
         }
     }
 }

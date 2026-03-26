@@ -9,9 +9,39 @@ set_source_files_properties(qml/Constants/ColorPalette.qml PROPERTIES
 set_source_files_properties(qml/Constants/General.qml PROPERTIES
     QT_QML_SINGLETON_TYPE TRUE
 )
+set_source_files_properties(qml/Constants/Icons.qml PROPERTIES
+    QT_QML_SINGLETON_TYPE TRUE
+)
 
 qt_add_executable(textfoundry_gui
     main.cc
+)
+
+set(TEXTFOUNDRY_GUI_RESOURCES
+    "resource/font/Font Awesome 7 Brands-Regular-400.otf"
+    "resource/font/Font Awesome 7 Free-Regular-400.otf"
+    "resource/font/Font Awesome 7 Free-Solid-900.otf"
+    "resource/font/FiraCodeNerdFont-Regular.ttf"
+    "resource/icons/solid/cubes.svg"
+    "resource/icons/solid/layer-group.svg"
+    "resource/icons/solid/eye.svg"
+    "resource/icons/solid/gear.svg"
+    "resource/icons/solid/arrow-left.svg"
+    "resource/icons/solid/floppy-disk.svg"
+    "resource/icons/solid/plus.svg"
+    "resource/icons/solid/edit.svg"
+    "resource/icons/solid/arrows-rotate.svg"
+    "resource/icons/solid/ban.svg"
+    "resource/icons/solid/copy.svg"
+    "resource/icons/solid/eraser.svg"
+    "resource/icons/solid/xmark.svg"
+    "resource/icons/solid/font.svg"
+    "resource/icons/solid/grip-lines.svg"
+    "resource/icons/solid/check.svg"
+    "resource/icons/solid/scissors.svg"
+    "resource/icons/solid/paste.svg"
+    "resource/icons/solid/trash.svg"
+    "resource/icons/solid/broom.svg"
 )
 
 qt_add_qml_module(textfoundry_gui
@@ -21,9 +51,18 @@ qt_add_qml_module(textfoundry_gui
         qml/Main.qml
         qml/Constants/ColorPalette.qml
         qml/Constants/General.qml
+        qml/Constants/Icons.qml
+        qml/components/AppIcon.qml
         qml/components/DetailField.qml
+        qml/components/IconToolButton.qml
+        qml/components/SvgIcon.qml
+        qml/components/SvgToolButton.qml
         qml/components/TagChip.qml
         qml/components/CodePreview.qml
+        qml/components/DragHandle.qml
+        qml/components/CompositionEditorWindow.qml
+        qml/components/CompositionEditorSidebar.qml
+        qml/components/CompositionFragmentCard.qml
         qml/pages/BlocksPage.qml
         qml/pages/CompositionsPage.qml
         qml/pages/RenderPage.qml
@@ -36,10 +75,14 @@ qt_add_qml_module(textfoundry_gui
         models/blocks_model.h
         viewmodels/block_editor_view_model.cc
         viewmodels/block_editor_view_model.h
+        viewmodels/composition_editor_view_model.cc
+        viewmodels/composition_editor_view_model.h
         viewmodels/compositions_view_model.cc
         viewmodels/compositions_view_model.h
         viewmodels/render_view_model.cc
         viewmodels/render_view_model.h
+    RESOURCES
+        ${TEXTFOUNDRY_GUI_RESOURCES}
 )
 
 target_include_directories(textfoundry_gui PRIVATE

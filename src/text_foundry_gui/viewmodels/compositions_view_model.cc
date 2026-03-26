@@ -13,6 +13,26 @@
 namespace tf::gui {
 namespace {
 
+std::optional<std::string> ParseVersionText(const QString& input, Version& out) {
+  const QString trimmed = input.trimmed();
+  const auto parts = trimmed.split('.');
+  if (parts.size() != 2) {
+    return "Version must be major.minor";
+  }
+
+  bool major_ok = false;
+  bool minor_ok = false;
+  const int major = parts[0].toInt(&major_ok);
+  const int minor = parts[1].toInt(&minor_ok);
+  if (!major_ok || !minor_ok || major < 0 || major > 65535 || minor < 0 ||
+      minor > 65535) {
+    return "Version must be major.minor in range 0..65535";
+  }
+
+  out = Version{static_cast<uint16_t>(major), static_cast<uint16_t>(minor)};
+  return std::nullopt;
+}
+
 QString PreviewStaticText(std::string text) {
   std::ranges::replace(text, '\n', ' ');
   if (text.size() > 96) {
@@ -106,6 +126,32 @@ void CompositionsViewModel::reload() {
 
 void CompositionsViewModel::selectComposition(const QString& value) {
   setSelectedCompositionId(value);
+}
+
+void CompositionsViewModel::deprecateSelected() {
+  if (selected_composition_id_.isEmpty()) {
+    setStatusText(QStringLiteral("Select a composition first."));
+    return;
+  }
+
+  Version version;
+  if (const auto parse_error = ParseVersionText(selected_version_, version);
+      parse_error.has_value()) {
+    setStatusText(QString("Error: %1")
+                      .arg(QString::fromStdString(*parse_error)));
+    return;
+  }
+
+  const auto error = session_->engine().DeprecateComposition(
+      selected_composition_id_.toStdString(), version);
+  if (error.is_error()) {
+    setStatusText(
+        QString("Error: %1").arg(QString::fromStdString(error.message)));
+    return;
+  }
+
+  reload();
+  setStatusText(QStringLiteral("Deprecated selected composition version."));
 }
 
 void CompositionsViewModel::syncCompositions() {

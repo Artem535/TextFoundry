@@ -41,6 +41,7 @@ class CompositionsViewModel : public QObject {
 
   Q_INVOKABLE void reload();
   Q_INVOKABLE void selectComposition(const QString& value);
+  Q_INVOKABLE void deprecateSelected();
 
  signals:
   void compositionsChanged();
