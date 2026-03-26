@@ -31,6 +31,8 @@ Frame {
             readOnly: true
             wrapMode: TextEdit.Wrap
             selectByMouse: true
+            font.family: General.monospaceFamily
+            font.pixelSize: SessionVm.previewFontSize
             color: root.palette.windowText
             selectedTextColor: root.palette.highlightedText
             selectionColor: root.palette.highlight

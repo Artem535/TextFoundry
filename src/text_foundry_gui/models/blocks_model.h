@@ -63,6 +63,7 @@ class BlocksModel : public QAbstractItemModel {
 
   Q_INVOKABLE void reload();
   Q_INVOKABLE void selectBlock(const QString& block_id);
+  Q_INVOKABLE void deprecateSelected();
 
  signals:
   void selectedBlockIdChanged();

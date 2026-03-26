@@ -13,10 +13,10 @@ ApplicationWindow {
 
     property int currentTab: 0
     property var navigationItems: [
-        { title: "Blocks", subtitle: "Templates and blocks" },
-        { title: "Compositions", subtitle: "Prompt assembly" },
-        { title: "Render", subtitle: "Preview and export" },
-        { title: "Settings", subtitle: "Session and engine" }
+        { title: "Blocks", subtitle: "Templates and blocks", icon: Icons.blocksSvg },
+        { title: "Compositions", subtitle: "Prompt assembly", icon: Icons.compositionsSvg },
+        { title: "Render", subtitle: "Preview and export", icon: Icons.renderSvg },
+        { title: "Settings", subtitle: "Session and engine", icon: Icons.settingsSvg }
     ]
 
     palette.window: ColorPalette.background
@@ -138,26 +138,41 @@ ApplicationWindow {
                                 contentItem: Column {
                                     spacing: 2
 
-                                Label {
-                                    text: modelData.title
-                                    color: root.currentTab === index
-                                           ? ColorPalette.onPrimary
-                                           : ColorPalette.textPrimary
-                                    font.pixelSize: 18
-                                    font.bold: true
-                                }
+                                    RowLayout {
+                                        spacing: General.spacingSmall
 
-                                Label {
-                                    text: modelData.subtitle
-                                    color: root.currentTab === index
-                                           ? ColorPalette.onPrimary
-                                           : ColorPalette.onSurfaceMuted
-                                    font.pixelSize: 14
-                                    elide: Text.ElideRight
+                                        SvgIcon {
+                                            source: modelData.icon
+                                            Layout.alignment: Qt.AlignVCenter
+                                            color: root.currentTab === index
+                                                   ? ColorPalette.onPrimary
+                                                   : ColorPalette.textPrimary
+                                            iconWidth: 14
+                                            iconHeight: 14
+                                        }
+
+                                        Label {
+                                            text: modelData.title
+                                            Layout.alignment: Qt.AlignVCenter
+                                            color: root.currentTab === index
+                                                   ? ColorPalette.onPrimary
+                                                   : ColorPalette.textPrimary
+                                            font.pixelSize: 18
+                                            font.bold: true
+                                        }
+                                    }
+
+                                    Label {
+                                        text: modelData.subtitle
+                                        color: root.currentTab === index
+                                               ? ColorPalette.onPrimary
+                                               : ColorPalette.onSurfaceMuted
+                                        font.pixelSize: 14
+                                        elide: Text.ElideRight
+                                    }
                                 }
                             }
                         }
-                    }
                     }
                 }
 

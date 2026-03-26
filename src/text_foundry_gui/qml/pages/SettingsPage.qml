@@ -48,12 +48,42 @@ Page {
                 onToggled: SessionVm.strictMode = checked
             }
 
+            CheckBox {
+                text: "New compositions: newline delimiter"
+                checked: SessionVm.compositionNewlineDelimiter
+                onToggled: SessionVm.compositionNewlineDelimiter = checked
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: General.spacingMedium
+
+                Label {
+                    text: "Preview font size"
+                    font.bold: true
+                }
+
+                SpinBox {
+                    from: 11
+                    to: 24
+                    value: SessionVm.previewFontSize
+                    editable: true
+                    onValueModified: SessionVm.previewFontSize = value
+                }
+
+                Label {
+                    text: SessionVm.previewFontSize + " px"
+                    opacity: 0.72
+                }
+            }
+
             Item {
                 Layout.fillHeight: true
             }
 
-            Button {
-                text: "Reload engine"
+            SvgToolButton {
+                iconSource: Icons.reloadSvg
+                labelText: "Reload engine"
                 onClicked: SessionVm.reload()
             }
         }

@@ -37,8 +37,10 @@ Page {
 
                     Item { Layout.fillWidth: true }
 
-                    Button {
-                        text: "Reload"
+                    SvgToolButton {
+                        compact: true
+                        iconSource: Icons.reloadSvg
+                        labelText: "Reload"
                         onClicked: RenderVm.reload()
                     }
                 }
@@ -149,34 +151,48 @@ Page {
                         RowLayout {
                             Layout.fillWidth: true
 
-                            Button {
-                                text: "Render"
+                            SvgToolButton {
+                                iconSource: Icons.renderSvg
+                                labelText: "Render"
                                 onClicked: RenderVm.render()
                             }
 
-                            Button {
-                                text: "Copy Render"
+                            SvgToolButton {
+                                iconSource: Icons.copySvg
+                                labelText: "Copy Render"
                                 onClicked: RenderVm.copyRender()
                             }
 
-                            Button {
-                                text: "Copy Raw"
+                            SvgToolButton {
+                                iconSource: Icons.copySvg
+                                labelText: "Copy Raw"
                                 onClicked: RenderVm.copyRaw()
                             }
 
-                            Button {
-                                text: "Clear"
+                            SvgToolButton {
+                                iconSource: Icons.clearSvg
+                                labelText: "Clear"
                                 onClicked: RenderVm.clear()
                             }
 
                             Item { Layout.fillWidth: true }
                         }
 
-                        Label {
-                            text: RenderVm.statusText
+                        RowLayout {
                             Layout.fillWidth: true
-                            wrapMode: Text.WordWrap
-                            opacity: 0.72
+                            spacing: General.spacingSmall
+
+                            Label {
+                                text: "Status"
+                                font.bold: true
+                            }
+
+                            Label {
+                                text: RenderVm.statusText
+                                Layout.fillWidth: true
+                                wrapMode: Text.WordWrap
+                                opacity: 0.72
+                            }
                         }
 
                         ColumnLayout {
@@ -185,14 +201,14 @@ Page {
                             spacing: 4
 
                             Label {
-                                text: "Output"
+                                text: "Preview"
                                 font.bold: true
                             }
 
                             CodePreview {
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
-                                text: RenderVm.outputText
+                                text: RenderVm.displayedOutputText
                                 definition: "Markdown"
                             }
                         }

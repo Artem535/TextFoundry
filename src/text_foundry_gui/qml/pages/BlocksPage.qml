@@ -38,13 +38,17 @@ Page {
 
                     Item { Layout.fillWidth: true }
 
-                    Button {
-                        text: "New"
+                    SvgToolButton {
+                        compact: true
+                        iconSource: Icons.addSvg
+                        labelText: "New"
                         onClicked: BlockEditorVm.openCreateEditor()
                     }
 
-                    Button {
-                        text: "Reload"
+                    SvgToolButton {
+                        compact: true
+                        iconSource: Icons.reloadSvg
+                        labelText: "Reload"
                         onClicked: BlocksModel.reload()
                     }
                 }
@@ -133,10 +137,20 @@ Page {
 
                     Item { Layout.fillWidth: true }
 
-                    Button {
-                        text: "Edit"
+                    SvgToolButton {
+                        compact: true
+                        iconSource: Icons.editSvg
+                        labelText: "Edit"
                         enabled: BlocksModel.selectedBlockId.length > 0
                         onClicked: BlockEditorVm.openEditor()
+                    }
+
+                    SvgToolButton {
+                        compact: true
+                        iconSource: Icons.deprecateSvg
+                        labelText: "Deprecate"
+                        enabled: BlocksModel.selectedBlockId.length > 0
+                        onClicked: BlocksModel.deprecateSelected()
                     }
                 }
 
@@ -491,6 +505,8 @@ Page {
                                 text: BlockEditorVm.templateText
                                 wrapMode: TextEdit.Wrap
                                 selectByMouse: true
+                                font.family: General.monospaceFamily
+                                font.pixelSize: SessionVm.previewFontSize
                                 color: templateEditorFrame.palette.windowText
                                 selectedTextColor: templateEditorFrame.palette.highlightedText
                                 selectionColor: templateEditorFrame.palette.highlight
@@ -521,13 +537,15 @@ Page {
 
                 Item { Layout.fillWidth: true }
 
-                Button {
-                    text: "Cancel"
+                SvgToolButton {
+                    iconSource: Icons.closeSvg
+                    labelText: "Cancel"
                     onClicked: editBlockDialog.close()
                 }
 
-                Button {
-                    text: BlockEditorVm.saving ? "Saving..." : BlockEditorVm.saveButtonText
+                SvgToolButton {
+                    iconSource: Icons.saveSvg
+                    labelText: BlockEditorVm.saving ? "Saving..." : BlockEditorVm.saveButtonText
                     enabled: !BlockEditorVm.saving
                     onClicked: BlockEditorVm.save()
                 }

@@ -1,7 +1,11 @@
 pragma Singleton
 import QtQuick
 
-QtObject {
+Item {
+    visible: false
+
+    readonly property string monospaceFamily: firaCodeLoader.name
+
     property int windowWidth: 1440
     property int windowHeight: 920
 
@@ -24,10 +28,16 @@ QtObject {
     property int radiusMedium: 10
 
     property int fontSmall: 18
+    property int fontBody: 16
     property int fontMedium: 20
     property int fontLarge: 26
 
     property int blocksTreeWidth: 420
     property int sidebarWidth: 208
     property int treeIndent: 18
+
+    FontLoader {
+        id: firaCodeLoader
+        source: "qrc:/qt/qml/TextFoundry/resource/font/FiraCodeNerdFont-Regular.ttf"
+    }
 }

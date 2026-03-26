@@ -1,5 +1,6 @@
 #include "app/session_view_model.h"
 
+#include <algorithm>
 #include <QCoreApplication>
 #include <sago/platform_folders.h>
 
@@ -36,6 +37,12 @@ QString SessionViewModel::dataPath() const { return data_path_; }
 
 bool SessionViewModel::strictMode() const { return strict_mode_; }
 
+bool SessionViewModel::compositionNewlineDelimiter() const {
+  return composition_newline_delimiter_;
+}
+
+int SessionViewModel::previewFontSize() const { return preview_font_size_; }
+
 QString SessionViewModel::statusText() const { return status_text_; }
 
 void SessionViewModel::setProjectKey(const QString& value) {
@@ -57,6 +64,21 @@ void SessionViewModel::setStrictMode(const bool value) {
   strict_mode_ = value;
   emit strictModeChanged();
   rebuildEngine();
+}
+
+void SessionViewModel::setCompositionNewlineDelimiter(const bool value) {
+  if (composition_newline_delimiter_ == value) return;
+  composition_newline_delimiter_ = value;
+  emit compositionNewlineDelimiterChanged();
+  setStatusText(QStringLiteral("Composition creation setting updated."));
+}
+
+void SessionViewModel::setPreviewFontSize(const int value) {
+  const int clamped = std::clamp(value, 11, 24);
+  if (preview_font_size_ == clamped) return;
+  preview_font_size_ = clamped;
+  emit previewFontSizeChanged();
+  setStatusText(QString("Preview font size set to %1.").arg(preview_font_size_));
 }
 
 void SessionViewModel::reload() { rebuildEngine(); }

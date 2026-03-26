@@ -194,18 +194,35 @@ QString RenderViewModel::paramsText() const { return params_text_; }
 
 QString RenderViewModel::outputText() const { return output_text_; }
 
+QString RenderViewModel::rawOutputText() const { return raw_output_text_; }
+
+QString RenderViewModel::previewMode() const { return preview_mode_; }
+
+QStringList RenderViewModel::previewModes() const {
+  return {QStringLiteral("Raw"), QStringLiteral("Rendered")};
+}
+
+QString RenderViewModel::displayedOutputText() const {
+  if (output_text_ != QStringLiteral("Select a composition and click Render.")) {
+    return output_text_;
+  }
+  return raw_output_text_;
+}
+
 QString RenderViewModel::statusText() const { return status_text_; }
 
 void RenderViewModel::setSelectedCompositionId(const QString& value) {
   if (selected_composition_id_ == value) return;
   selected_composition_id_ = value;
   emit selectedCompositionIdChanged();
+  refreshRawPreview();
 }
 
 void RenderViewModel::setVersionText(const QString& value) {
   if (version_text_ == value) return;
   version_text_ = value;
   emit versionTextChanged();
+  refreshRawPreview();
 }
 
 void RenderViewModel::setParamsText(const QString& value) {
@@ -214,14 +231,23 @@ void RenderViewModel::setParamsText(const QString& value) {
   emit paramsTextChanged();
 }
 
+void RenderViewModel::setPreviewMode(const QString& value) {
+  if (preview_mode_ == value) return;
+  preview_mode_ = value;
+  emit previewModeChanged();
+  emit displayedOutputTextChanged();
+}
+
 void RenderViewModel::reload() {
   syncCompositions();
+  refreshRawPreview();
   setStatusText(QStringLiteral("Compositions list refreshed."));
 }
 
 void RenderViewModel::render() {
   if (selected_composition_id_.trimmed().isEmpty()) {
     setOutputText(QStringLiteral("Error: Composition ID is required."));
+    setRawOutputText(QStringLiteral("Error: Composition ID is required."));
     setStatusText(QStringLiteral("Select a composition before rendering."));
     return;
   }
@@ -231,6 +257,7 @@ void RenderViewModel::render() {
           ParseRuntimeParams(params_text_.toStdString(), context.params);
       parse_err.has_value()) {
     setOutputText(QString("Error: %1").arg(QString::fromStdString(*parse_err)));
+    setRawOutputText(QString("Error: %1").arg(QString::fromStdString(*parse_err)));
     setStatusText(QStringLiteral("Runtime params are invalid."));
     return;
   }
@@ -240,6 +267,7 @@ void RenderViewModel::render() {
           ParseVersion(version_text_.toStdString(), version);
       parse_err.has_value()) {
     setOutputText(QString("Error: %1").arg(QString::fromStdString(*parse_err)));
+    setRawOutputText(QString("Error: %1").arg(QString::fromStdString(*parse_err)));
     setStatusText(QStringLiteral("Version format is invalid."));
     return;
   }
@@ -252,11 +280,21 @@ void RenderViewModel::render() {
   if (result.HasError()) {
     setOutputText(
         QString("Error: %1").arg(QString::fromStdString(result.error().message)));
+    setRawOutputText(
+        QString("Error: %1").arg(QString::fromStdString(result.error().message)));
     setStatusText(QStringLiteral("Render failed."));
     return;
   }
 
   setOutputText(QString::fromStdString(result.value().text));
+  auto raw_result = buildRawOutput();
+  if (raw_result.HasError()) {
+    setRawOutputText(
+        QString("Error: %1").arg(QString::fromStdString(raw_result.error().message)));
+    setStatusText(QStringLiteral("Rendered successfully, raw preview failed."));
+    return;
+  }
+  setRawOutputText(raw_result.value());
   setStatusText(QStringLiteral("Rendered successfully."));
 }
 
@@ -277,39 +315,14 @@ void RenderViewModel::copyRender() {
 }
 
 void RenderViewModel::copyRaw() {
-  if (selected_composition_id_.trimmed().isEmpty()) {
-    setStatusText(QStringLiteral("Composition ID is required for raw copy."));
-    return;
-  }
-
-  Version version;
-  if (const auto parse_err =
-          ParseVersion(version_text_.toStdString(), version);
-      parse_err.has_value()) {
-    setStatusText(QString("Error: %1").arg(QString::fromStdString(*parse_err)));
-    return;
-  }
-
-  auto composition_result =
-      version_text_.trimmed().isEmpty()
-          ? session_->engine().LoadComposition(selected_composition_id_.toStdString())
-          : session_->engine().LoadComposition(selected_composition_id_.toStdString(),
-                                               version);
-  if (composition_result.HasError()) {
-    setStatusText(QString("Error: %1")
-                      .arg(QString::fromStdString(composition_result.error().message)));
-    return;
-  }
-
-  auto raw_result = BuildRawRender(session_->engine(), composition_result.value());
-  if (raw_result.HasError()) {
-    setStatusText(
-        QString("Error: %1").arg(QString::fromStdString(raw_result.error().message)));
+  if (raw_output_text_.isEmpty() || raw_output_text_.startsWith(QStringLiteral("Error:")) ||
+      raw_output_text_ == QStringLiteral("Select a composition and click Render.")) {
+    setStatusText(QStringLiteral("Nothing to copy from raw output."));
     return;
   }
 
   if (auto* clipboard = QGuiApplication::clipboard(); clipboard != nullptr) {
-    clipboard->setText(QString::fromStdString(raw_result.value()));
+    clipboard->setText(raw_output_text_);
     setStatusText(QStringLiteral("Copied raw composition render to clipboard."));
     return;
   }
@@ -321,6 +334,7 @@ void RenderViewModel::clear() {
   setParamsText(QString());
   setVersionText(QString());
   setOutputText(QStringLiteral("Select a composition and click Render."));
+  refreshRawPreview();
   setStatusText(QStringLiteral("Render state cleared."));
 }
 
@@ -328,12 +342,59 @@ void RenderViewModel::setOutputText(QString value) {
   if (output_text_ == value) return;
   output_text_ = std::move(value);
   emit outputTextChanged();
+  emit displayedOutputTextChanged();
+}
+
+void RenderViewModel::setRawOutputText(QString value) {
+  if (raw_output_text_ == value) return;
+  raw_output_text_ = std::move(value);
+  emit rawOutputTextChanged();
+  emit displayedOutputTextChanged();
 }
 
 void RenderViewModel::setStatusText(QString value) {
   if (status_text_ == value) return;
   status_text_ = std::move(value);
   emit statusTextChanged();
+}
+
+Result<QString> RenderViewModel::buildRawOutput() const {
+  if (selected_composition_id_.trimmed().isEmpty()) {
+    return Result<QString>(QStringLiteral("Select a composition to preview raw output."));
+  }
+
+  Version version;
+  if (const auto parse_err = ParseVersion(version_text_.toStdString(), version);
+      parse_err.has_value()) {
+    return Result<QString>(
+        Error{ErrorCode::InvalidVersion, *parse_err});
+  }
+
+  auto composition_result =
+      version_text_.trimmed().isEmpty()
+          ? session_->engine().LoadComposition(selected_composition_id_.toStdString())
+          : session_->engine().LoadComposition(selected_composition_id_.toStdString(),
+                                               version);
+  if (composition_result.HasError()) {
+    return Result<QString>(composition_result.error());
+  }
+
+  auto raw_result = BuildRawRender(session_->engine(), composition_result.value());
+  if (raw_result.HasError()) {
+    return Result<QString>(raw_result.error());
+  }
+
+  return Result<QString>(QString::fromStdString(raw_result.value()));
+}
+
+void RenderViewModel::refreshRawPreview() {
+  auto raw_result = buildRawOutput();
+  if (raw_result.HasError()) {
+    setRawOutputText(
+        QString("Error: %1").arg(QString::fromStdString(raw_result.error().message)));
+    return;
+  }
+  setRawOutputText(raw_result.value());
 }
 
 void RenderViewModel::syncCompositions() {

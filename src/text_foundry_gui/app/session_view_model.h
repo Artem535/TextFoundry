@@ -17,6 +17,8 @@ class SessionViewModel : public QObject {
   Q_PROPERTY(QString projectKey READ projectKey WRITE setProjectKey NOTIFY projectKeyChanged)
   Q_PROPERTY(QString dataPath READ dataPath WRITE setDataPath NOTIFY dataPathChanged)
   Q_PROPERTY(bool strictMode READ strictMode WRITE setStrictMode NOTIFY strictModeChanged)
+  Q_PROPERTY(bool compositionNewlineDelimiter READ compositionNewlineDelimiter WRITE setCompositionNewlineDelimiter NOTIFY compositionNewlineDelimiterChanged)
+  Q_PROPERTY(int previewFontSize READ previewFontSize WRITE setPreviewFontSize NOTIFY previewFontSizeChanged)
   Q_PROPERTY(QString statusText READ statusText NOTIFY statusTextChanged)
 
  public:
@@ -26,11 +28,15 @@ class SessionViewModel : public QObject {
   QString projectKey() const;
   QString dataPath() const;
   bool strictMode() const;
+  bool compositionNewlineDelimiter() const;
+  int previewFontSize() const;
   QString statusText() const;
 
   void setProjectKey(const QString& value);
   void setDataPath(const QString& value);
   void setStrictMode(bool value);
+  void setCompositionNewlineDelimiter(bool value);
+  void setPreviewFontSize(int value);
 
   Q_INVOKABLE void reload();
 
@@ -41,6 +47,8 @@ class SessionViewModel : public QObject {
   void projectKeyChanged();
   void dataPathChanged();
   void strictModeChanged();
+  void compositionNewlineDelimiterChanged();
+  void previewFontSizeChanged();
   void statusTextChanged();
   void engineReset();
 
@@ -52,6 +60,8 @@ class SessionViewModel : public QObject {
   QString project_key_;
   QString data_path_;
   bool strict_mode_ = false;
+  bool composition_newline_delimiter_ = true;
+  int preview_font_size_ = 15;
   QString status_text_;
   std::unique_ptr<tf::Engine> engine_;
 };

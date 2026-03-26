@@ -7,6 +7,29 @@
 #include "app/session_view_model.h"
 
 namespace tf::gui {
+namespace {
+
+std::optional<std::string> ParseVersionText(const QString& input, Version& out) {
+  const QString trimmed = input.trimmed();
+  const auto parts = trimmed.split('.');
+  if (parts.size() != 2) {
+    return "Version must be major.minor";
+  }
+
+  bool major_ok = false;
+  bool minor_ok = false;
+  const int major = parts[0].toInt(&major_ok);
+  const int minor = parts[1].toInt(&minor_ok);
+  if (!major_ok || !minor_ok || major < 0 || major > 65535 || minor < 0 ||
+      minor > 65535) {
+    return "Version must be major.minor in range 0..65535";
+  }
+
+  out = Version{static_cast<uint16_t>(major), static_cast<uint16_t>(minor)};
+  return std::nullopt;
+}
+
+}  // namespace
 
 BlocksModel::BlocksModel(SessionViewModel* session, QObject* parent)
     : QAbstractItemModel(parent),
@@ -145,6 +168,34 @@ void BlocksModel::reload() {
 }
 
 void BlocksModel::selectBlock(const QString& block_id) { setSelectedBlockId(block_id); }
+
+void BlocksModel::deprecateSelected() {
+  if (selected_block_id_.isEmpty()) {
+    details_text_ = "Select a block first.";
+    emit detailsTextChanged();
+    return;
+  }
+
+  Version version;
+  if (const auto parse_error = ParseVersionText(selected_block_version_, version);
+      parse_error.has_value()) {
+    details_text_ = QString("Error: %1").arg(QString::fromStdString(*parse_error));
+    emit detailsTextChanged();
+    return;
+  }
+
+  const auto error =
+      session_->engine().DeprecateBlock(selected_block_id_.toStdString(), version);
+  if (error.is_error()) {
+    details_text_ =
+        QString("Error: %1").arg(QString::fromStdString(error.message));
+    emit detailsTextChanged();
+    return;
+  }
+
+  refreshTree();
+  refreshDetails();
+}
 
 void BlocksModel::refreshTree() {
   beginResetModel();
