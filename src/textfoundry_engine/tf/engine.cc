@@ -276,6 +276,30 @@ Result<PublishedComposition> Engine::PublishComposition(
   return PublishCompositionInternal(std::move(comp), explicit_version);
 }
 
+Result<PublishedComposition> Engine::UpdateComposition(CompositionDraft draft,
+                                                       VersionBump bump) {
+  if (!compRepo_) {
+    TF_LOG_ERROR("Cannot update composition: no composition repository configured");
+    return Result<PublishedComposition>(
+        Error{ErrorCode::StorageError, "No composition repository configured"});
+  }
+
+  Composition& comp = draft.internal_;
+  if (comp.state() != BlockState::Draft) {
+    return Result<PublishedComposition>(
+        Error{ErrorCode::InvalidStateTransition,
+              "Only Draft compositions can be published"});
+  }
+
+  auto existing = compRepo_->LoadLatest(comp.id());
+  if (existing.HasError()) {
+    TF_LOG_WARN("Cannot update non-existing composition [id={}]", comp.id());
+    return Result<PublishedComposition>(Error::CompositionNotFound(comp.id()));
+  }
+
+  return PublishComposition(std::move(draft), bump);
+}
+
 Result<PublishedComposition> Engine::PublishCompositionInternal(
     Composition comp, Version version) {
   auto err = comp.publish(version);

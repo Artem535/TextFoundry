@@ -126,6 +126,13 @@ class Engine {
   [[nodiscard]] Result<PublishedComposition> PublishComposition(
       CompositionDraft draft, Version explicit_version);
 
+  /**
+   * Publish a new version of an existing composition (edit workflow).
+   * Returns CompositionNotFound when the target composition does not exist yet.
+   */
+  [[nodiscard]] Result<PublishedComposition> UpdateComposition(
+      CompositionDraft draft, VersionBump bump = VersionBump::Minor);
+
   Result<Version> GetLatestCompositionVersion(const CompositionId& id);
 
   /**
