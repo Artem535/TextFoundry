@@ -17,6 +17,23 @@ qt_add_executable(textfoundry_gui
     main.cc
 )
 
+if(KF6SyntaxHighlighting_FOUND AND NOT TARGET kquicksyntaxhighlightingplugin)
+    find_library(KQUICKSYNTAXHIGHLIGHTINGPLUGIN_LIBRARY
+        NAMES kquicksyntaxhighlightingplugin libkquicksyntaxhighlightingplugin
+        HINTS
+            /usr/lib64/qt6/qml/org/kde/syntaxhighlighting
+            /usr/lib/qt6/qml/org/kde/syntaxhighlighting
+    )
+
+    if(KQUICKSYNTAXHIGHLIGHTINGPLUGIN_LIBRARY)
+        add_library(kquicksyntaxhighlightingplugin SHARED IMPORTED)
+        set_target_properties(kquicksyntaxhighlightingplugin PROPERTIES
+            IMPORTED_LOCATION "${KQUICKSYNTAXHIGHLIGHTINGPLUGIN_LIBRARY}"
+            INTERFACE_LINK_LIBRARIES "KF6::SyntaxHighlighting"
+        )
+    endif()
+endif()
+
 set(TEXTFOUNDRY_GUI_RESOURCES
     "resource/font/Font Awesome 7 Brands-Regular-400.otf"
     "resource/font/Font Awesome 7 Free-Regular-400.otf"

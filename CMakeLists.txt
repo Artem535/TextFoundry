@@ -21,6 +21,7 @@ set(FTXUI_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(ftxui)
 
 add_subdirectory(src/textfoundry_engine)
+add_subdirectory(src/textfoundry_ai)
 add_subdirectory(src/text_foundry_cli)
 option(TEXTFOUNDRY_BUILD_GUI "Build Qt/QML GUI frontend" ON)
 if(TEXTFOUNDRY_BUILD_GUI)

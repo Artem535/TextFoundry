@@ -17,6 +17,7 @@ struct LoggerSetup {
 } loggerSetup;
 
 #include "../src/textfoundry_engine/tf/block.h"
+#include "../src/textfoundry_engine/tf/block_generation.h"
 #include "../src/textfoundry_engine/tf/block_ref.h"
 #include "../src/textfoundry_engine/tf/block_type.hpp"
 #include "../src/textfoundry_engine/tf/composition.h"
@@ -86,6 +87,27 @@ class EngineTestFixture {
 
 int EngineTestFixture::testIdCounter = 0;
 
+namespace {
+
+class FakeBlockGenerator final : public IBlockGenerator {
+ public:
+  explicit FakeBlockGenerator(Result<GeneratedBlockData> result)
+      : result_(std::move(result)) {}
+
+  [[nodiscard]] Result<GeneratedBlockData> GenerateBlock(
+      const BlockGenerationRequest&) const override {
+    if (result_.HasError()) {
+      return Result<GeneratedBlockData>(result_.error());
+    }
+    return Result<GeneratedBlockData>(result_.value());
+  }
+
+ private:
+  Result<GeneratedBlockData> result_;
+};
+
+}  // namespace
+
 // ==================== Version Tests ====================
 
 TEST_SUITE("Version") {
@@ -152,6 +174,74 @@ TEST_SUITE("Result") {
     CHECK_FALSE(r.HasValue());
     CHECK(r.HasError());
     CHECK(r.error().code == ErrorCode::MissingParam);
+  }
+}
+
+TEST_SUITE("BlockGeneration") {
+  TEST_CASE("engine generates block draft through configured generator") {
+    EngineTestFixture fixture;
+
+    GeneratedBlockData data{
+        .id = "role.reviewer",
+        .type = BlockType::Role,
+        .language = "en",
+        .description = "Review instructions",
+        .templ = "Review {{subject}} for {{focus}}.",
+        .defaults = {{"focus", "correctness"}},
+        .tags = {"review", "quality", "review"},
+    };
+    fixture.engine.SetBlockGenerator(
+        std::make_shared<FakeBlockGenerator>(Result<GeneratedBlockData>(data)));
+
+    BlockGenerationRequest request{
+        .prompt = "Create a code review block",
+        .preferred_type = BlockType::Role,
+    };
+
+    auto result = fixture.engine.GenerateBlockDraft(request);
+    REQUIRE(result.HasValue());
+
+    auto publish_result =
+        fixture.engine.PublishBlock(std::move(result).value(),
+                                    Engine::VersionBump::Minor);
+    REQUIRE(publish_result.HasValue());
+
+    auto block = fixture.engine.LoadBlock("role.reviewer");
+    REQUIRE(block.HasValue());
+    CHECK(block.value().type() == BlockType::Role);
+    CHECK(block.value().templ().Content() == "Review {{subject}} for {{focus}}.");
+    CHECK(block.value().defaults().at("focus") == "correctness");
+    CHECK(block.value().tags().contains("review"));
+    CHECK(block.value().tags().contains("quality"));
+  }
+
+  TEST_CASE("engine returns error when block generator is missing") {
+    EngineTestFixture fixture;
+
+    auto result = fixture.engine.GenerateBlockDraft(
+        BlockGenerationRequest{.prompt = "Create a role block"});
+    REQUIRE(result.HasError());
+    CHECK(result.error().code == ErrorCode::StorageError);
+  }
+
+  TEST_CASE("engine rejects duplicate generated block id") {
+    EngineTestFixture fixture;
+    fixture.createAndPublishBlock("role.reviewer", "Existing {{subject}}");
+
+    GeneratedBlockData data{
+        .id = "role.reviewer",
+        .type = BlockType::Role,
+        .language = "en",
+        .description = "Review instructions",
+        .templ = "Review {{subject}}.",
+    };
+    fixture.engine.SetBlockGenerator(
+        std::make_shared<FakeBlockGenerator>(Result<GeneratedBlockData>(data)));
+
+    auto result = fixture.engine.GenerateBlockDraft(
+        BlockGenerationRequest{.prompt = "Create a role block"});
+    REQUIRE(result.HasError());
+    CHECK(result.error().code == ErrorCode::DuplicateId);
   }
 }
 

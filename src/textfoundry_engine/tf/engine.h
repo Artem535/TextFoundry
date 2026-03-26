@@ -10,6 +10,7 @@
 #include <vector>
 
 #include "block.h"
+#include "block_generation.h"
 #include "composition.h"
 #include "error.h"
 #include "renderer.h"
@@ -81,6 +82,11 @@ class Engine {
    */
   void SetNormalizer(std::shared_ptr<INormalizer> normalizer);
 
+  /**
+   * Set AI-assisted block generator for explicit authoring workflows.
+   */
+  void SetBlockGenerator(std::shared_ptr<IBlockGenerator> generator);
+
   // ==================== Block Operations ====================
 
   /**
@@ -117,6 +123,15 @@ class Engine {
    */
   [[nodiscard]] Result<PublishedBlock> UpdateBlock(
       BlockDraft draft, VersionBump bump = VersionBump::Minor);
+
+  /**
+   * Generate a block draft through the configured block generator.
+   *
+   * This never publishes automatically. Callers are expected to review and
+   * publish the returned draft explicitly.
+   */
+  [[nodiscard]] Result<BlockDraft> GenerateBlockDraft(
+      const BlockGenerationRequest& request) const;
 
   // ==================== Composition Operations ====================
 
@@ -207,6 +222,11 @@ class Engine {
    */
   [[nodiscard]] bool HasNormalizer() const noexcept;
 
+  /**
+   * Check if a block generator is configured.
+   */
+  [[nodiscard]] bool HasBlockGenerator() const noexcept;
+
   // ==================== Full Initialization ====================
 
   /**
@@ -232,6 +252,7 @@ class Engine {
   std::shared_ptr<IBlockRepository> blockRepo_;
   std::shared_ptr<ICompositionRepository> compRepo_;
   std::shared_ptr<INormalizer> normalizer_;
+  std::shared_ptr<IBlockGenerator> blockGenerator_;
   std::unique_ptr<Renderer> renderer_;
 
   Result<PublishedComposition> PublishCompositionInternal(Composition comp,

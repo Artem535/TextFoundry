@@ -12,6 +12,15 @@
 #include "repository_block_cache.h"
 
 namespace tf {
+namespace {
+
+std::unordered_set<std::string> DeduplicateTags(
+    const std::vector<std::string>& tags) {
+  return std::unordered_set<std::string>(tags.begin(), tags.end());
+}
+
+}  // namespace
+
 // Engine implementation
 
 Engine::Engine() : config_{}, renderer_(std::make_unique<Renderer>()) {
@@ -47,6 +56,11 @@ void Engine::SetCompositionRepository(
 void Engine::SetNormalizer(std::shared_ptr<INormalizer> normalizer) {
   normalizer_ = std::move(normalizer);
   TF_LOG_DEBUG("Normalizer set");
+}
+
+void Engine::SetBlockGenerator(std::shared_ptr<IBlockGenerator> generator) {
+  blockGenerator_ = std::move(generator);
+  TF_LOG_DEBUG("Block generator set");
 }
 
 // ==================== Block Operations ====================
@@ -184,6 +198,62 @@ Result<PublishedBlock> Engine::UpdateBlock(BlockDraft draft, VersionBump bump) {
   }
 
   return PublishBlock(std::move(draft), bump);
+}
+
+Result<BlockDraft> Engine::GenerateBlockDraft(
+    const BlockGenerationRequest& request) const {
+  if (!blockGenerator_) {
+    TF_LOG_ERROR("Cannot generate block draft: no block generator configured");
+    return Result<BlockDraft>(
+        Error{ErrorCode::StorageError, "No block generator configured"});
+  }
+
+  auto generated = blockGenerator_->GenerateBlock(request);
+  if (generated.HasError()) {
+    TF_LOG_WARN("Block generator failed: {}", generated.error().message);
+    return Result<BlockDraft>(generated.error());
+  }
+
+  auto data = std::move(generated).value();
+  if (data.id.empty()) {
+    return Result<BlockDraft>(
+        Error{ErrorCode::InvalidParamType, "Generated block id is empty"});
+  }
+  if (data.templ.empty()) {
+    return Result<BlockDraft>(Error{ErrorCode::InvalidParamType,
+                                    "Generated block template is empty"});
+  }
+
+  const bool duplicate_in_request =
+      !request.allow_id_collision &&
+      std::ranges::find(request.existing_block_ids, data.id) !=
+          request.existing_block_ids.end();
+  if (duplicate_in_request) {
+    return Result<BlockDraft>(
+        Error{ErrorCode::DuplicateId, "Generated block id already exists"});
+  }
+
+  if (!request.allow_id_collision && blockRepo_) {
+    auto existing = blockRepo_->LoadLatest(data.id);
+    if (!existing.HasError()) {
+      return Result<BlockDraft>(
+          Error{ErrorCode::DuplicateId, "Generated block id already exists"});
+    }
+  }
+
+  BlockDraftBuilder builder(data.id);
+  builder.WithType(data.type)
+      .WithLanguage(data.language.empty() ? "en" : data.language)
+      .WithDescription(std::move(data.description))
+      .WithTemplate(Template(std::move(data.templ)))
+      .WithDefaults(std::move(data.defaults));
+
+  for (const auto& tag : DeduplicateTags(data.tags)) {
+    builder.WithTag(tag);
+  }
+
+  TF_LOG_INFO("Generated block draft [id={}]", data.id);
+  return Result<BlockDraft>(builder.build());
 }
 
 Result<PublishedBlock> Engine::PublishBlockInternal(Block block,
@@ -468,6 +538,10 @@ Result<std::string> Engine::Normalize(const std::string& text,
 }
 
 bool Engine::HasNormalizer() const noexcept { return normalizer_ != nullptr; }
+
+bool Engine::HasBlockGenerator() const noexcept {
+  return blockGenerator_ != nullptr;
+}
 
 // ==================== Validation ====================
 

@@ -19,6 +19,7 @@ find_package(reflectcpp CONFIG REQUIRED)
 add_library(textfoundry_core STATIC
         tf/engine.cc
         tf/engine.h
+        tf/block_generation.h
         tf/block.cc
         tf/block.h
         tf/block_ref.cc
