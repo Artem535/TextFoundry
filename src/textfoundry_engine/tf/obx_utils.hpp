@@ -27,17 +27,24 @@ namespace tf::utils {
  * Convert ObxBlock type (int8_t) to BlockType enum
  */
 inline BlockType ObxTypeToBlockType(int8_t type) {
-  // BlockType enum: Role=0, Constraint=1, Style=2, Domain=3, Meta=4
+  // BlockType enum:
+  // Role=0, System=1, Mission=2, Safety=3, Constraint=4, Style=5, Domain=6, Meta=7
   switch (type) {
     case 0:
       return BlockType::Role;
     case 1:
-      return BlockType::Constraint;
+      return BlockType::System;
     case 2:
-      return BlockType::Style;
+      return BlockType::Mission;
     case 3:
-      return BlockType::Domain;
+      return BlockType::Safety;
     case 4:
+      return BlockType::Constraint;
+    case 5:
+      return BlockType::Style;
+    case 6:
+      return BlockType::Domain;
+    case 7:
       return BlockType::Meta;
     default:
       return BlockType::Domain;  // default fallback
@@ -58,16 +65,22 @@ inline int8_t BlockTypeToObxType(BlockType type) {
   switch (type) {
     case BlockType::Role:
       return 0;
-    case BlockType::Constraint:
+    case BlockType::System:
       return 1;
-    case BlockType::Style:
+    case BlockType::Mission:
       return 2;
-    case BlockType::Domain:
+    case BlockType::Safety:
       return 3;
-    case BlockType::Meta:
+    case BlockType::Constraint:
       return 4;
+    case BlockType::Style:
+      return 5;
+    case BlockType::Domain:
+      return 6;
+    case BlockType::Meta:
+      return 7;
   }
-  return 3;  // Domain as default
+  return 6;  // Domain as default
 }
 
 /**

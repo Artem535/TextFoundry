@@ -26,6 +26,20 @@ struct BlockGenerationRequest {
 };
 
 /**
+ * User-authored request for AI-assisted prompt decomposition into blocks.
+ *
+ * This is an explicit authoring operation. The source prompt is treated as
+ * content to decompose into reusable block candidates for later review.
+ */
+struct PromptSlicingRequest {
+  std::string source_text;
+  std::optional<std::string> preferred_language;
+  std::optional<std::string> namespace_prefix;
+  std::vector<BlockId> existing_block_ids;
+  bool allow_id_collision = false;
+};
+
+/**
  * Structured block suggestion returned by an external generator.
  */
 struct GeneratedBlockData {
@@ -36,6 +50,10 @@ struct GeneratedBlockData {
   std::string templ;
   Params defaults;
   std::vector<std::string> tags;
+};
+
+struct GeneratedBlockBatch {
+  std::vector<GeneratedBlockData> blocks;
 };
 
 /**
@@ -50,6 +68,9 @@ class IBlockGenerator {
 
   [[nodiscard]] virtual Result<GeneratedBlockData> GenerateBlock(
       const BlockGenerationRequest& request) const = 0;
+
+  [[nodiscard]] virtual Result<GeneratedBlockBatch> GenerateBlocks(
+      const PromptSlicingRequest& request) const = 0;
 };
 
 }  // namespace tf

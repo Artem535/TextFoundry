@@ -68,6 +68,12 @@ struct SemanticStyle {
   std::optional<std::string> tense;           ///< e.g., "past", "present"
   std::optional<std::string> targetLanguage;  ///< e.g., "en", "ru"
   std::optional<std::string> person;          ///< e.g., "first", "third"
+  std::optional<std::string> rewriteStrength;  ///< e.g., "light", "medium", "strong"
+  std::optional<std::string> audience;         ///< e.g., "developer", "end-user"
+  std::optional<std::string> locale;           ///< e.g., "en-US", "ru-RU"
+  std::optional<std::string> terminologyRigidity;  ///< e.g., "strict", "flexible"
+  std::optional<bool> preserveFormatting;      ///< Keep line/layout structure
+  std::optional<bool> preserveExamples;        ///< Keep examples mostly verbatim
 
   [[nodiscard]] bool isEmpty() const noexcept;
 };

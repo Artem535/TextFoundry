@@ -201,6 +201,8 @@ class BlockDraftBuilder {
 
   BlockDraftBuilder& WithDefaults(Params defaults);
 
+  BlockDraftBuilder& WithParamSchema(std::vector<ParamSchema> schema);
+
   BlockDraftBuilder& WithTag(const std::string& tag);
 
   BlockDraftBuilder& WithLanguage(std::string lang);

@@ -24,8 +24,10 @@ void ClampIndex(int& idx, int size) {
 }
 
 const std::vector<std::string>& BlockTypeLabels() {
-  static const std::vector<std::string> labels = {"role", "constraint", "style",
-                                                  "domain", "meta"};
+  static const std::vector<std::string> labels = {"role",     "system",
+                                                  "mission",  "safety",
+                                                  "constraint","style",
+                                                  "domain",   "meta"};
   return labels;
 }
 

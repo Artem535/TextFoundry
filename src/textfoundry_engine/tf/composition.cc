@@ -25,7 +25,10 @@ RenderContext& RenderContext::with_strict_mode(bool strict) {
 // SemanticStyle implementation
 bool SemanticStyle::isEmpty() const noexcept {
   return !tone.has_value() && !tense.has_value() &&
-         !targetLanguage.has_value() && !person.has_value();
+         !targetLanguage.has_value() && !person.has_value() &&
+         !rewriteStrength.has_value() && !audience.has_value() &&
+         !locale.has_value() && !terminologyRigidity.has_value() &&
+         !preserveFormatting.has_value() && !preserveExamples.has_value();
 }
 
 // StyleProfile implementation

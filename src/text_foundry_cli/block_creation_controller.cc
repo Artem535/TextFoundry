@@ -76,8 +76,10 @@ std::vector<std::string> ParseTagsRaw(const std::string& raw) {
 
 const std::vector<BlockType>& BlockTypes() {
   static const std::vector<BlockType> values = {
-      BlockType::Role, BlockType::Constraint, BlockType::Style,
-      BlockType::Domain, BlockType::Meta};
+      BlockType::Role,       BlockType::System, BlockType::Mission,
+      BlockType::Safety,     BlockType::Constraint,
+      BlockType::Style,      BlockType::Domain,
+      BlockType::Meta};
   return values;
 }
 

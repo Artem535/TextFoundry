@@ -114,6 +114,26 @@ Result<Version> BlockRepository::GetLatestVersion(const BlockId& id) {
   return Result{version};
 }
 
+Result<std::vector<Version>> BlockRepository::ListVersions(const BlockId& id) {
+  auto query = box_block_->query(ObxBlock_::blockId.equals(id)).build();
+  auto blocks = query.find();
+
+  if (blocks.empty()) {
+    TF_LOG_ERROR("BlockRepository::listVersions| Block not found: {}", id);
+    return Result<std::vector<Version>>(
+        Error{ErrorCode::StorageError, "Block not found"});
+  }
+
+  std::vector<Version> versions;
+  versions.reserve(blocks.size());
+  for (const auto& block : blocks) {
+    versions.push_back(Version{block.versionMajor, block.versionMinor});
+  }
+  std::ranges::sort(versions, std::greater{});
+  versions.erase(std::unique(versions.begin(), versions.end()), versions.end());
+  return Result<std::vector<Version>>(std::move(versions));
+}
+
 Error BlockRepository::deprecate(const BlockId& id, Version version) {
   auto query = box_block_
                    ->query(ObxBlock_::blockId.equals(id) &&
@@ -276,6 +296,29 @@ Result<Version> CompositionRepository::GetLatestVersion(
 
   const auto max_version = *std::ranges::max_element(versions);
   return Result{max_version};
+}
+
+Result<std::vector<Version>> CompositionRepository::ListVersions(
+    const CompositionId& id) {
+  auto query =
+      box_composition_->query(ObxComposition_::compositionId.equals(id)).build();
+  auto compositions = query.find();
+
+  if (compositions.empty()) {
+    TF_LOG_ERROR(
+        "CompositionRepository::listVersions| Composition not found: {}", id);
+    return Result<std::vector<Version>>(
+        Error{ErrorCode::StorageError, "Composition not found"});
+  }
+
+  std::vector<Version> versions;
+  versions.reserve(compositions.size());
+  for (const auto& comp : compositions) {
+    versions.push_back(Version{comp.versionMajor, comp.versionMinor});
+  }
+  std::ranges::sort(versions, std::greater{});
+  versions.erase(std::unique(versions.begin(), versions.end()), versions.end());
+  return Result<std::vector<Version>>(std::move(versions));
 }
 
 Error CompositionRepository::deprecate(const CompositionId& id,

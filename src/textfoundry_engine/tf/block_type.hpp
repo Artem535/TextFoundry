@@ -17,6 +17,9 @@ namespace tf {
  */
 enum class BlockType {
   Role,        ///< Role/instructions for LLM
+  System,      ///< System-level instructions and framing
+  Mission,     ///< Goals, tasks, and objectives
+  Safety,      ///< Safety rules and guardrails
   Constraint,  ///< Numeric constraints, requirements
   Style,       ///< Stylistic parameters
   Domain,      ///< Domain-specific blocks
@@ -30,6 +33,12 @@ constexpr std::string_view BlockTypeToString(const BlockType& type) noexcept {
   switch (type) {
     case BlockType::Role:
       return "role";
+    case BlockType::System:
+      return "system";
+    case BlockType::Mission:
+      return "mission";
+    case BlockType::Safety:
+      return "safety";
     case BlockType::Constraint:
       return "constraint";
     case BlockType::Style:
@@ -48,6 +57,9 @@ constexpr std::string_view BlockTypeToString(const BlockType& type) noexcept {
  */
 inline BlockType BlockTypeFromString(const std::string_view& str) {
   if (str == "role") return BlockType::Role;
+  if (str == "system") return BlockType::System;
+  if (str == "mission") return BlockType::Mission;
+  if (str == "safety") return BlockType::Safety;
   if (str == "constraint") return BlockType::Constraint;
   if (str == "style") return BlockType::Style;
   if (str == "domain") return BlockType::Domain;

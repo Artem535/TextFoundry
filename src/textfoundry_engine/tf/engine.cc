@@ -5,6 +5,8 @@
 #include "engine.h"
 
 #include <filesystem>
+#include <set>
+#include <sstream>
 
 #include "logger.h"
 #include "objectbox-model.h"
@@ -17,6 +19,120 @@ namespace {
 std::unordered_set<std::string> DeduplicateTags(
     const std::vector<std::string>& tags) {
   return std::unordered_set<std::string>(tags.begin(), tags.end());
+}
+
+Result<GeneratedBlockData> ValidateGeneratedBlockData(
+    GeneratedBlockData data, const std::vector<BlockId>& existing_block_ids,
+    IBlockRepository* block_repo, bool allow_id_collision) {
+  if (data.id.empty()) {
+    return Result<GeneratedBlockData>(
+        Error{ErrorCode::InvalidParamType, "Generated block id is empty"});
+  }
+  if (data.templ.empty()) {
+    return Result<GeneratedBlockData>(Error{ErrorCode::InvalidParamType,
+                                            "Generated block template is empty"});
+  }
+
+  const bool duplicate_in_request =
+      !allow_id_collision &&
+      std::ranges::find(existing_block_ids, data.id) != existing_block_ids.end();
+  if (duplicate_in_request) {
+    return Result<GeneratedBlockData>(
+        Error{ErrorCode::DuplicateId, "Generated block id already exists"});
+  }
+
+  if (!allow_id_collision && block_repo != nullptr) {
+    auto existing = block_repo->LoadLatest(data.id);
+    if (!existing.HasError()) {
+      return Result<GeneratedBlockData>(
+          Error{ErrorCode::DuplicateId, "Generated block id already exists"});
+    }
+  }
+
+  return Result<GeneratedBlockData>(std::move(data));
+}
+
+BlockDraft BuildGeneratedDraft(GeneratedBlockData data) {
+  BlockDraftBuilder builder(data.id);
+  builder.WithType(data.type)
+      .WithLanguage(data.language.empty() ? "en" : data.language)
+      .WithDescription(std::move(data.description))
+      .WithTemplate(Template(std::move(data.templ)))
+      .WithDefaults(std::move(data.defaults));
+
+  for (const auto& tag : DeduplicateTags(data.tags)) {
+    builder.WithTag(tag);
+  }
+
+  return builder.build();
+}
+
+std::string HashSuffix(const std::string& input) {
+  std::ostringstream stream;
+  stream << std::hex << std::hash<std::string>{}(input);
+  auto value = stream.str();
+  if (value.size() > 10) value.resize(10);
+  return value;
+}
+
+std::string StyleKey(const SemanticStyle& style) {
+  std::ostringstream stream;
+  if (style.tone.has_value()) stream << "tone=" << *style.tone << ";";
+  if (style.tense.has_value()) stream << "tense=" << *style.tense << ";";
+  if (style.targetLanguage.has_value()) {
+    stream << "lang=" << *style.targetLanguage << ";";
+  }
+  if (style.person.has_value()) stream << "person=" << *style.person << ";";
+  if (style.rewriteStrength.has_value()) {
+    stream << "rewrite=" << *style.rewriteStrength << ";";
+  }
+  if (style.audience.has_value()) stream << "audience=" << *style.audience << ";";
+  if (style.locale.has_value()) stream << "locale=" << *style.locale << ";";
+  if (style.terminologyRigidity.has_value()) {
+    stream << "terms=" << *style.terminologyRigidity << ";";
+  }
+  if (style.preserveFormatting.has_value()) {
+    stream << "formatting=" << (*style.preserveFormatting ? "true" : "false") << ";";
+  }
+  if (style.preserveExamples.has_value()) {
+    stream << "examples=" << (*style.preserveExamples ? "true" : "false") << ";";
+  }
+  return stream.str();
+}
+
+std::string NormalizationKey(const SemanticStyle& style,
+                             const std::string& fingerprint) {
+  return HashSuffix(StyleKey(style) + "|" + fingerprint);
+}
+
+std::string NormalizationKeyTag(const std::string& key) {
+  return "norm-key:" + key;
+}
+
+template <typename Container>
+bool HasTag(const Container& tags, const std::string& tag) {
+  return std::find(tags.begin(), tags.end(), tag) != tags.end();
+}
+
+std::set<std::string> PlaceholderSet(const Template& templ) {
+  const auto names = templ.ExtractParamNames();
+  return std::set<std::string>(names.begin(), names.end());
+}
+
+std::string DerivedNormalizedBlockId(const Block& source_block,
+                                     const SemanticStyle& style,
+                                     const std::string& fingerprint) {
+  (void)style;
+  (void)fingerprint;
+  return "norm." + source_block.Id();
+}
+
+std::string DerivedNormalizedCompositionId(const Composition& composition,
+                                           const SemanticStyle& style,
+                                           const std::string& fingerprint) {
+  (void)style;
+  (void)fingerprint;
+  return "norm." + composition.id();
 }
 
 }  // namespace
@@ -56,6 +172,11 @@ void Engine::SetCompositionRepository(
 void Engine::SetNormalizer(std::shared_ptr<INormalizer> normalizer) {
   normalizer_ = std::move(normalizer);
   TF_LOG_DEBUG("Normalizer set");
+}
+
+void Engine::SetBlockNormalizer(std::shared_ptr<IBlockNormalizer> normalizer) {
+  blockNormalizer_ = std::move(normalizer);
+  TF_LOG_DEBUG("Block normalizer set");
 }
 
 void Engine::SetBlockGenerator(std::shared_ptr<IBlockGenerator> generator) {
@@ -112,6 +233,16 @@ Result<Version> Engine::GetLatestBlockVersion(const BlockId& id) {
   }
   TF_LOG_DEBUG("Getting latest block version [id={}]", id);
   return blockRepo_->GetLatestVersion(id);
+}
+
+Result<std::vector<Version>> Engine::ListBlockVersions(const BlockId& id) {
+  if (!blockRepo_) {
+    TF_LOG_ERROR("Cannot list block versions: no block repository configured");
+    return Result<std::vector<Version>>(
+        Error{ErrorCode::StorageError, "No block repository configured"});
+  }
+  TF_LOG_DEBUG("Listing block versions [id={}]", id);
+  return blockRepo_->ListVersions(id);
 }
 
 std::vector<BlockId> Engine::ListBlocks(std::optional<BlockType> typeFilter) {
@@ -200,60 +331,91 @@ Result<PublishedBlock> Engine::UpdateBlock(BlockDraft draft, VersionBump bump) {
   return PublishBlock(std::move(draft), bump);
 }
 
-Result<BlockDraft> Engine::GenerateBlockDraft(
+Result<GeneratedBlockData> Engine::GenerateBlockData(
     const BlockGenerationRequest& request) const {
   if (!blockGenerator_) {
-    TF_LOG_ERROR("Cannot generate block draft: no block generator configured");
-    return Result<BlockDraft>(
+    TF_LOG_ERROR("Cannot generate block data: no block generator configured");
+    return Result<GeneratedBlockData>(
         Error{ErrorCode::StorageError, "No block generator configured"});
   }
 
   auto generated = blockGenerator_->GenerateBlock(request);
   if (generated.HasError()) {
     TF_LOG_WARN("Block generator failed: {}", generated.error().message);
+    return Result<GeneratedBlockData>(generated.error());
+  }
+
+  return ValidateGeneratedBlockData(std::move(generated).value(),
+                                    request.existing_block_ids,
+                                    blockRepo_.get(),
+                                    request.allow_id_collision);
+}
+
+Result<GeneratedBlockBatch> Engine::GenerateBlockBatchData(
+    const PromptSlicingRequest& request) const {
+  if (!blockGenerator_) {
+    TF_LOG_ERROR("Cannot generate block batch: no block generator configured");
+    return Result<GeneratedBlockBatch>(
+        Error{ErrorCode::StorageError, "No block generator configured"});
+  }
+
+  auto generated = blockGenerator_->GenerateBlocks(request);
+  if (generated.HasError()) {
+    TF_LOG_WARN("Block generator batch failed: {}", generated.error().message);
+    return Result<GeneratedBlockBatch>(generated.error());
+  }
+
+  auto batch = std::move(generated).value();
+  if (batch.blocks.empty()) {
+    return Result<GeneratedBlockBatch>(
+        Error{ErrorCode::InvalidParamType, "Generated block batch is empty"});
+  }
+
+  std::vector<BlockId> existing_ids = request.existing_block_ids;
+  std::vector<GeneratedBlockData> validated_blocks;
+  validated_blocks.reserve(batch.blocks.size());
+  for (auto& block : batch.blocks) {
+    auto validated =
+        ValidateGeneratedBlockData(std::move(block), existing_ids,
+                                   blockRepo_.get(), request.allow_id_collision);
+    if (validated.HasError()) {
+      return Result<GeneratedBlockBatch>(validated.error());
+    }
+    existing_ids.push_back(validated.value().id);
+    validated_blocks.push_back(std::move(validated).value());
+  }
+
+  return Result<GeneratedBlockBatch>(
+      GeneratedBlockBatch{.blocks = std::move(validated_blocks)});
+}
+
+Result<BlockDraft> Engine::GenerateBlockDraft(
+    const BlockGenerationRequest& request) const {
+  auto generated = GenerateBlockData(request);
+  if (generated.HasError()) {
     return Result<BlockDraft>(generated.error());
   }
 
   auto data = std::move(generated).value();
-  if (data.id.empty()) {
-    return Result<BlockDraft>(
-        Error{ErrorCode::InvalidParamType, "Generated block id is empty"});
-  }
-  if (data.templ.empty()) {
-    return Result<BlockDraft>(Error{ErrorCode::InvalidParamType,
-                                    "Generated block template is empty"});
-  }
-
-  const bool duplicate_in_request =
-      !request.allow_id_collision &&
-      std::ranges::find(request.existing_block_ids, data.id) !=
-          request.existing_block_ids.end();
-  if (duplicate_in_request) {
-    return Result<BlockDraft>(
-        Error{ErrorCode::DuplicateId, "Generated block id already exists"});
-  }
-
-  if (!request.allow_id_collision && blockRepo_) {
-    auto existing = blockRepo_->LoadLatest(data.id);
-    if (!existing.HasError()) {
-      return Result<BlockDraft>(
-          Error{ErrorCode::DuplicateId, "Generated block id already exists"});
-    }
-  }
-
-  BlockDraftBuilder builder(data.id);
-  builder.WithType(data.type)
-      .WithLanguage(data.language.empty() ? "en" : data.language)
-      .WithDescription(std::move(data.description))
-      .WithTemplate(Template(std::move(data.templ)))
-      .WithDefaults(std::move(data.defaults));
-
-  for (const auto& tag : DeduplicateTags(data.tags)) {
-    builder.WithTag(tag);
-  }
-
   TF_LOG_INFO("Generated block draft [id={}]", data.id);
-  return Result<BlockDraft>(builder.build());
+  return Result<BlockDraft>(BuildGeneratedDraft(std::move(data)));
+}
+
+Result<std::vector<BlockDraft>> Engine::GenerateBlockDrafts(
+    const PromptSlicingRequest& request) const {
+  auto generated = GenerateBlockBatchData(request);
+  if (generated.HasError()) {
+    return Result<std::vector<BlockDraft>>(generated.error());
+  }
+
+  std::vector<BlockDraft> drafts;
+  drafts.reserve(generated.value().blocks.size());
+  for (auto& data : generated.value().blocks) {
+    TF_LOG_INFO("Generated block draft [id={}]", data.id);
+    drafts.push_back(BuildGeneratedDraft(std::move(data)));
+  }
+
+  return Result<std::vector<BlockDraft>>(std::move(drafts));
 }
 
 Result<PublishedBlock> Engine::PublishBlockInternal(Block block,
@@ -285,6 +447,19 @@ Result<Version> Engine::GetLatestCompositionVersion(const CompositionId& id) {
   TF_LOG_DEBUG("Getting latest composition version [id={}]", id);
   const auto version = compRepo_->GetLatestVersion(id);
   return version;
+}
+
+Result<std::vector<Version>> Engine::ListCompositionVersions(
+    const CompositionId& id) {
+  if (!compRepo_) {
+    TF_LOG_ERROR(
+        "Cannot list composition versions: no composition repository configured");
+    return Result<std::vector<Version>>(
+        Error{ErrorCode::StorageError, "No composition repository configured"});
+  }
+
+  TF_LOG_DEBUG("Listing composition versions [id={}]", id);
+  return compRepo_->ListVersions(id);
 }
 
 Result<PublishedComposition> Engine::PublishComposition(CompositionDraft draft,
@@ -537,7 +712,174 @@ Result<std::string> Engine::Normalize(const std::string& text,
   return normalizer_->Normalize(text, style);
 }
 
+Result<NormalizedCompositionResult> Engine::NormalizeComposition(
+    const CompositionNormalizationRequest& request) {
+  TF_LOG_DEBUG("Normalizing composition [id={}]", request.source_composition_id);
+  if (!blockNormalizer_) {
+    TF_LOG_ERROR("Cannot normalize composition: no block normalizer configured");
+    return Result<NormalizedCompositionResult>(
+        Error{ErrorCode::StorageError, "No block normalizer configured"});
+  }
+  if (request.style.isEmpty()) {
+    return Result<NormalizedCompositionResult>(
+        Error{ErrorCode::InvalidParamType, "Semantic style is empty"});
+  }
+
+  auto composition_result =
+      request.source_version.has_value()
+          ? LoadComposition(request.source_composition_id, *request.source_version)
+          : LoadComposition(request.source_composition_id);
+  if (composition_result.HasError()) {
+    return Result<NormalizedCompositionResult>(composition_result.error());
+  }
+
+  const Composition source = composition_result.value();
+  const std::string normalization_key =
+      NormalizationKey(request.style, blockNormalizer_->Fingerprint());
+  const std::string derived_composition_id =
+      request.target_composition_id.value_or(
+          DerivedNormalizedCompositionId(source, request.style,
+                                         blockNormalizer_->Fingerprint()));
+
+  if (request.reuse_cached_blocks && compRepo_) {
+    auto existing = compRepo_->LoadLatest(derived_composition_id);
+    if (!existing.HasError() && existing.value().GetStyleProfile().has_value() &&
+        StyleKey(existing.value().GetStyleProfile()->semantic) ==
+            StyleKey(request.style)) {
+      return Result<NormalizedCompositionResult>(NormalizedCompositionResult{
+          .composition_id = derived_composition_id,
+          .composition_version = existing.value().version(),
+          .rewritten_blocks = {},
+      });
+    }
+  }
+
+  CompositionDraftBuilder builder(derived_composition_id);
+  builder.WithProjectKey(source.ProjectKey())
+      .WithDescription("Normalized derivative of " + source.id());
+  auto style_profile =
+      source.GetStyleProfile().value_or(StyleProfile::plain());
+  style_profile.semantic = request.style;
+  builder.WithStyleProfile(style_profile);
+
+  std::vector<std::pair<BlockId, BlockId>> rewritten_blocks;
+
+  for (const auto& fragment : source.fragments()) {
+    if (fragment.IsSeparator()) {
+      builder.AddSeparator(fragment.AsSeparator().type);
+      continue;
+    }
+
+    if (fragment.IsStaticText()) {
+      std::string text = fragment.AsStaticText().text();
+      if (request.normalize_static_text && normalizer_) {
+        auto normalized = normalizer_->Normalize(text, request.style);
+        if (normalized.HasError()) {
+          return Result<NormalizedCompositionResult>(normalized.error());
+        }
+        text = normalized.value();
+      }
+      builder.AddStaticText(std::move(text));
+      continue;
+    }
+
+    const auto& block_ref = fragment.AsBlockRef();
+    auto block_result = block_ref.version().has_value()
+                            ? LoadBlock(block_ref.GetBlockId(), *block_ref.version())
+                            : LoadBlock(block_ref.GetBlockId());
+    if (block_result.HasError()) {
+      return Result<NormalizedCompositionResult>(block_result.error());
+    }
+
+    const Block source_block = block_result.value();
+    const std::string derived_block_id = DerivedNormalizedBlockId(
+        source_block, request.style, blockNormalizer_->Fingerprint());
+    const std::string normalization_key_tag =
+        NormalizationKeyTag(normalization_key);
+
+    PublishedBlock published_block(derived_block_id, Version{1, 0});
+    bool reused_cached_block = false;
+    if (request.reuse_cached_blocks && blockRepo_) {
+      auto existing = blockRepo_->LoadLatest(derived_block_id);
+      if (!existing.HasError() &&
+          HasTag(existing.value().tags(), normalization_key_tag)) {
+        published_block = PublishedBlock(existing.value().Id(),
+                                         existing.value().version());
+        reused_cached_block = true;
+      }
+    }
+
+    if (!reused_cached_block) {
+      auto normalized =
+          blockNormalizer_->NormalizeBlock({.source_block = source_block,
+                                           .style = request.style});
+      if (normalized.HasError()) {
+        return Result<NormalizedCompositionResult>(normalized.error());
+      }
+
+      const Template normalized_template(normalized.value().templ);
+      if (PlaceholderSet(source_block.templ()) != PlaceholderSet(normalized_template)) {
+        return Result<NormalizedCompositionResult>(
+            Error{ErrorCode::InvalidParamType,
+                  "Normalized block changed required placeholders"});
+      }
+
+      BlockDraftBuilder block_builder(derived_block_id);
+      block_builder.WithType(source_block.type())
+          .WithLanguage(normalized.value().language.value_or(source_block.language()))
+          .WithDescription(
+              normalized.value().description.value_or(source_block.description()))
+          .WithTemplate(normalized_template)
+          .WithDefaults(source_block.defaults())
+          .WithParamSchema(source_block.param_schema());
+      for (const auto& tag : source_block.tags()) {
+        block_builder.WithTag(tag);
+      }
+      block_builder.WithTag("normalized");
+      block_builder.WithTag(normalization_key_tag);
+
+      Result<PublishedBlock> publish_result(Error{ErrorCode::StorageError, ""});
+      if (blockRepo_->LoadLatest(derived_block_id).HasError()) {
+        publish_result = PublishBlock(block_builder.build(), Version{1, 0});
+      } else {
+        publish_result = PublishBlock(block_builder.build(), VersionBump::Minor);
+      }
+      if (publish_result.HasError()) {
+        return Result<NormalizedCompositionResult>(publish_result.error());
+      }
+      published_block = publish_result.value();
+    }
+
+    builder.AddBlockRef(published_block.ref().GetBlockId(),
+                        published_block.version().major,
+                        published_block.version().minor,
+                        block_ref.LocalParams());
+    rewritten_blocks.emplace_back(source_block.Id(), published_block.id());
+  }
+
+  Result<PublishedComposition> publish_composition(
+      Error{ErrorCode::StorageError, ""});
+  if (compRepo_->LoadLatest(derived_composition_id).HasError()) {
+    publish_composition = PublishComposition(builder.build(), Version{1, 0});
+  } else {
+    publish_composition = PublishComposition(builder.build(), VersionBump::Minor);
+  }
+  if (publish_composition.HasError()) {
+    return Result<NormalizedCompositionResult>(publish_composition.error());
+  }
+
+  return Result<NormalizedCompositionResult>(NormalizedCompositionResult{
+      .composition_id = publish_composition.value().id(),
+      .composition_version = publish_composition.value().version(),
+      .rewritten_blocks = std::move(rewritten_blocks),
+  });
+}
+
 bool Engine::HasNormalizer() const noexcept { return normalizer_ != nullptr; }
+
+bool Engine::HasBlockNormalizer() const noexcept {
+  return blockNormalizer_ != nullptr;
+}
 
 bool Engine::HasBlockGenerator() const noexcept {
   return blockGenerator_ != nullptr;

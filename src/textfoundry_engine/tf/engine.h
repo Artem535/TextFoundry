@@ -49,6 +49,42 @@ class INormalizer {
       const std::string& text, const SemanticStyle& style) const = 0;
 };
 
+struct BlockNormalizationRequest {
+  Block source_block;
+  SemanticStyle style;
+};
+
+struct NormalizedBlockData {
+  std::string templ;
+  std::optional<std::string> description;
+  std::optional<std::string> language;
+};
+
+class IBlockNormalizer {
+ public:
+  virtual ~IBlockNormalizer() = default;
+
+  [[nodiscard]] virtual Result<NormalizedBlockData> NormalizeBlock(
+      const BlockNormalizationRequest& request) const = 0;
+
+  [[nodiscard]] virtual std::string Fingerprint() const = 0;
+};
+
+struct CompositionNormalizationRequest {
+  CompositionId source_composition_id;
+  std::optional<Version> source_version;
+  SemanticStyle style;
+  std::optional<std::string> target_composition_id;
+  bool normalize_static_text = false;
+  bool reuse_cached_blocks = true;
+};
+
+struct NormalizedCompositionResult {
+  CompositionId composition_id;
+  Version composition_version;
+  std::vector<std::pair<BlockId, BlockId>> rewritten_blocks;
+};
+
 /**
  * TextEngine - main API class for TextFoundry
  *
@@ -83,6 +119,11 @@ class Engine {
   void SetNormalizer(std::shared_ptr<INormalizer> normalizer);
 
   /**
+   * Set block normalizer for structure-preserving block rewrites.
+   */
+  void SetBlockNormalizer(std::shared_ptr<IBlockNormalizer> normalizer);
+
+  /**
    * Set AI-assisted block generator for explicit authoring workflows.
    */
   void SetBlockGenerator(std::shared_ptr<IBlockGenerator> generator);
@@ -106,6 +147,12 @@ class Engine {
   [[nodiscard]] Result<Version> GetLatestBlockVersion(const BlockId& id);
 
   /**
+   * List all versions of a block, newest first.
+   */
+  [[nodiscard]] Result<std::vector<Version>> ListBlockVersions(
+      const BlockId& id);
+
+  /**
    * List all blocks (optionally filtered by type)
    */
   [[nodiscard]] std::vector<BlockId> ListBlocks(
@@ -125,6 +172,19 @@ class Engine {
       BlockDraft draft, VersionBump bump = VersionBump::Minor);
 
   /**
+   * Generate structured block data through the configured block generator.
+   */
+  [[nodiscard]] Result<GeneratedBlockData> GenerateBlockData(
+      const BlockGenerationRequest& request) const;
+
+  /**
+   * Generate multiple structured block candidates by decomposing a source
+   * prompt into reusable blocks.
+   */
+  [[nodiscard]] Result<GeneratedBlockBatch> GenerateBlockBatchData(
+      const PromptSlicingRequest& request) const;
+
+  /**
    * Generate a block draft through the configured block generator.
    *
    * This never publishes automatically. Callers are expected to review and
@@ -132,6 +192,12 @@ class Engine {
    */
   [[nodiscard]] Result<BlockDraft> GenerateBlockDraft(
       const BlockGenerationRequest& request) const;
+
+  /**
+   * Generate block drafts by decomposing a source prompt into reusable blocks.
+   */
+  [[nodiscard]] Result<std::vector<BlockDraft>> GenerateBlockDrafts(
+      const PromptSlicingRequest& request) const;
 
   // ==================== Composition Operations ====================
 
@@ -149,6 +215,9 @@ class Engine {
       CompositionDraft draft, VersionBump bump = VersionBump::Minor);
 
   Result<Version> GetLatestCompositionVersion(const CompositionId& id);
+
+  [[nodiscard]] Result<std::vector<Version>> ListCompositionVersions(
+      const CompositionId& id);
 
   /**
    * Load composition from storage
@@ -218,9 +287,23 @@ class Engine {
                                               const SemanticStyle& style) const;
 
   /**
+   * Create a derived composition by normalizing individual block templates.
+   *
+   * The original composition structure is preserved. Block refs are rewritten
+   * to newly published normalized block versions or cached derived blocks.
+   */
+  [[nodiscard]] Result<NormalizedCompositionResult> NormalizeComposition(
+      const CompositionNormalizationRequest& request);
+
+  /**
    * Check if normalizer is configured
    */
   [[nodiscard]] bool HasNormalizer() const noexcept;
+
+  /**
+   * Check if a block normalizer is configured.
+   */
+  [[nodiscard]] bool HasBlockNormalizer() const noexcept;
 
   /**
    * Check if a block generator is configured.
@@ -252,6 +335,7 @@ class Engine {
   std::shared_ptr<IBlockRepository> blockRepo_;
   std::shared_ptr<ICompositionRepository> compRepo_;
   std::shared_ptr<INormalizer> normalizer_;
+  std::shared_ptr<IBlockNormalizer> blockNormalizer_;
   std::shared_ptr<IBlockGenerator> blockGenerator_;
   std::unique_ptr<Renderer> renderer_;
 
@@ -296,6 +380,9 @@ class IBlockRepository {
 
   [[nodiscard]] virtual Result<Version> GetLatestVersion(const BlockId& id) = 0;
 
+  [[nodiscard]] virtual Result<std::vector<Version>> ListVersions(
+      const BlockId& id) = 0;
+
   [[nodiscard]] virtual Error deprecate(const BlockId& id, Version version) = 0;
 };
 
@@ -318,6 +405,9 @@ class ICompositionRepository {
   [[nodiscard]] virtual std::vector<CompositionId> list() = 0;
 
   [[nodiscard]] virtual Result<Version> GetLatestVersion(
+      const CompositionId& id) = 0;
+
+  [[nodiscard]] virtual Result<std::vector<Version>> ListVersions(
       const CompositionId& id) = 0;
 
   [[nodiscard]] virtual Error deprecate(const CompositionId& id,

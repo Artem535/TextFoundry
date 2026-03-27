@@ -211,6 +211,12 @@ BlockDraftBuilder& BlockDraftBuilder::WithDefaults(Params defaults) {
   return *this;
 }
 
+BlockDraftBuilder& BlockDraftBuilder::WithParamSchema(
+    std::vector<ParamSchema> schema) {
+  block_.SetParamSchema(std::move(schema));
+  return *this;
+}
+
 BlockDraftBuilder& BlockDraftBuilder::WithTag(const std::string& tag) {
   auto tags = block_.tags();
   tags.insert(tag);

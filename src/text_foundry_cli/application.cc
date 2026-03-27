@@ -510,7 +510,7 @@ void Application::SetupBlockCommands(CLI::App& app) {
                     "Default param (repeatable): name=value")
         ->take_all();
     cmd->add_option("--type", block_type,
-                    "Block type: role|constraint|style|domain|meta")
+                    "Block type: role|system|mission|safety|constraint|style|domain|meta")
         ->default_val(tf::BlockType::Domain);
     cmd->add_option("--tag", block_tags_list, "Tag (repeatable)")->take_all();
     cmd->add_option("--desc", block_description, "Block description");
@@ -549,7 +549,7 @@ void Application::SetupBlockCommands(CLI::App& app) {
 
     auto cmd = block_cmd->add_subcommand("list", "List all blocks");
     cmd->add_option("--type", type_filter,
-                    "Filter by type: role|constraint|style|domain|meta");
+                    "Filter by type: role|system|mission|safety|constraint|style|domain|meta");
     cmd->add_flag("--deprecated", show_deprecated, "Include deprecated blocks");
 
     cmd->callback([this, &type_filter]() { HandleBlockList(type_filter); });

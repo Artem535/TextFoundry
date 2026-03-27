@@ -89,6 +89,9 @@ class BlockRepository final : public IBlockRepository {
    */
   [[nodiscard]] Result<Version> GetLatestVersion(const BlockId& id) override;
 
+  [[nodiscard]] Result<std::vector<Version>> ListVersions(
+      const BlockId& id) override;
+
   /**
    * @brief Marks a specific block version as deprecated
    * @param id The block identifier
@@ -184,6 +187,9 @@ class CompositionRepository final : public ICompositionRepository {
    * version number (comparing major first, then minor).
    */
   [[nodiscard]] Result<Version> GetLatestVersion(
+      const CompositionId& id) override;
+
+  [[nodiscard]] Result<std::vector<Version>> ListVersions(
       const CompositionId& id) override;
 
   /**

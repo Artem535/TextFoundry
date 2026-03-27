@@ -26,6 +26,7 @@ struct LoggerSetup {
 #include "../src/textfoundry_engine/tf/fragment.h"
 #include "../src/textfoundry_engine/tf/renderer.h"
 #include "../src/textfoundry_engine/tf/version.h"
+#include "../src/textfoundry_ai/openai_compatible_block_generator.h"
 
 using namespace tf;
 
@@ -93,17 +94,77 @@ class FakeBlockGenerator final : public IBlockGenerator {
  public:
   explicit FakeBlockGenerator(Result<GeneratedBlockData> result)
       : result_(std::move(result)) {}
+  explicit FakeBlockGenerator(Result<GeneratedBlockBatch> batch_result)
+      : batch_result_(std::move(batch_result)) {}
 
   [[nodiscard]] Result<GeneratedBlockData> GenerateBlock(
       const BlockGenerationRequest&) const override {
-    if (result_.HasError()) {
-      return Result<GeneratedBlockData>(result_.error());
+    if (!result_.has_value()) {
+      return Result<GeneratedBlockData>(
+          Error{ErrorCode::StorageError, "Fake block generator has no single result"});
     }
-    return Result<GeneratedBlockData>(result_.value());
+    if (result_->HasError()) {
+      return Result<GeneratedBlockData>(result_->error());
+    }
+    return Result<GeneratedBlockData>(result_->value());
+  }
+
+  [[nodiscard]] Result<GeneratedBlockBatch> GenerateBlocks(
+      const PromptSlicingRequest&) const override {
+    if (!batch_result_.has_value()) {
+      return Result<GeneratedBlockBatch>(
+          Error{ErrorCode::StorageError, "Fake block generator has no batch result"});
+    }
+    if (batch_result_->HasError()) {
+      return Result<GeneratedBlockBatch>(batch_result_->error());
+    }
+    return Result<GeneratedBlockBatch>(batch_result_->value());
   }
 
  private:
-  Result<GeneratedBlockData> result_;
+  std::optional<Result<GeneratedBlockData>> result_;
+  std::optional<Result<GeneratedBlockBatch>> batch_result_;
+};
+
+class FakeHttpTransport final : public tf::ai::IHttpTransport {
+ public:
+  explicit FakeHttpTransport(Result<tf::ai::HttpResponse> response)
+      : response_(std::move(response)) {}
+
+  [[nodiscard]] Result<tf::ai::HttpResponse> PostJson(
+      const tf::ai::HttpRequest& request) const override {
+    last_request = request;
+    if (response_.HasError()) {
+      return Result<tf::ai::HttpResponse>(response_.error());
+    }
+    return Result<tf::ai::HttpResponse>(response_.value());
+  }
+
+  mutable std::optional<tf::ai::HttpRequest> last_request;
+
+ private:
+  Result<tf::ai::HttpResponse> response_;
+};
+
+class FakeBlockNormalizer final : public IBlockNormalizer {
+ public:
+  explicit FakeBlockNormalizer(Result<NormalizedBlockData> result,
+                               std::string fingerprint = "fake-block-normalizer")
+      : result_(std::move(result)), fingerprint_(std::move(fingerprint)) {}
+
+  [[nodiscard]] Result<NormalizedBlockData> NormalizeBlock(
+      const BlockNormalizationRequest&) const override {
+    if (result_.HasError()) {
+      return Result<NormalizedBlockData>(result_.error());
+    }
+    return Result<NormalizedBlockData>(result_.value());
+  }
+
+  [[nodiscard]] std::string Fingerprint() const override { return fingerprint_; }
+
+ private:
+  Result<NormalizedBlockData> result_;
+  std::string fingerprint_;
 };
 
 }  // namespace
@@ -243,6 +304,218 @@ TEST_SUITE("BlockGeneration") {
     REQUIRE(result.HasError());
     CHECK(result.error().code == ErrorCode::DuplicateId);
   }
+
+  TEST_CASE("engine generates multiple block drafts from prompt slicing") {
+    EngineTestFixture fixture;
+
+    GeneratedBlockBatch batch{
+        .blocks =
+            {
+                GeneratedBlockData{
+                    .id = "team.role.system",
+                    .type = BlockType::Role,
+                    .language = "en",
+                    .description = "System role",
+                    .templ = "You are {{assistant_name}}.",
+                },
+                GeneratedBlockData{
+                    .id = "team.constraint.style",
+                    .type = BlockType::Constraint,
+                    .language = "en",
+                    .description = "Style constraints",
+                    .templ = "Be concise and structured.",
+                },
+            },
+    };
+    fixture.engine.SetBlockGenerator(
+        std::make_shared<FakeBlockGenerator>(Result<GeneratedBlockBatch>(batch)));
+
+    auto result = fixture.engine.GenerateBlockDrafts(
+        PromptSlicingRequest{.source_text = "Long prompt to decompose"});
+    REQUIRE(result.HasValue());
+    CHECK(result.value().size() == 2);
+  }
+}
+
+TEST_SUITE("CompositionNormalization") {
+  TEST_CASE("engine creates normalized composition with rewritten block refs") {
+    EngineTestFixture fixture;
+
+    auto published = fixture.engine.PublishBlock(
+        BlockDraftBuilder("prompt.system")
+            .WithType(BlockType::System)
+            .WithTemplate(Template("<SYSTEM>\nYou are {{name}}.\n</SYSTEM>"))
+            .WithDefault("name", "Jane")
+            .build(),
+        Version{1, 0});
+    REQUIRE(published.HasValue());
+
+    CompositionDraftBuilder composition_builder("prompt.base");
+    composition_builder.AddBlockRef(published.value());
+    auto composition =
+        fixture.engine.PublishComposition(composition_builder.build(),
+                                         Version{1, 0});
+    REQUIRE(composition.HasValue());
+
+    fixture.engine.SetBlockNormalizer(std::make_shared<FakeBlockNormalizer>(
+        Result<NormalizedBlockData>(NormalizedBlockData{
+            .templ = "<SYSTEM>\nYou are {{name}}, a thoughtful assistant.\n</SYSTEM>",
+            .description = std::nullopt,
+            .language = std::nullopt,
+        })));
+
+    auto result = fixture.engine.NormalizeComposition(
+        CompositionNormalizationRequest{
+            .source_composition_id = "prompt.base",
+            .style = SemanticStyle{.tone = std::string("warm")},
+        });
+    REQUIRE(result.HasValue());
+    CHECK(result.value().composition_id == "norm.prompt.base");
+
+    auto normalized_comp =
+        fixture.engine.LoadComposition(result.value().composition_id);
+    REQUIRE(normalized_comp.HasValue());
+    REQUIRE(normalized_comp.value().fragmentCount() == 1);
+    REQUIRE(normalized_comp.value().fragment(0).IsBlockRef());
+
+    const auto& new_ref = normalized_comp.value().fragment(0).AsBlockRef();
+    auto normalized_block =
+        fixture.engine.LoadBlock(new_ref.GetBlockId(), *new_ref.version());
+    REQUIRE(normalized_block.HasValue());
+    CHECK(normalized_block.value().templ().Content().find("{{name}}") !=
+          std::string::npos);
+  }
+
+  TEST_CASE("engine rejects normalized block when placeholders change") {
+    EngineTestFixture fixture;
+
+    auto published = fixture.engine.PublishBlock(
+        BlockDraftBuilder("prompt.system")
+            .WithType(BlockType::System)
+            .WithTemplate(Template("You are {{name}}."))
+            .build(),
+        Version{1, 0});
+    REQUIRE(published.HasValue());
+
+    CompositionDraftBuilder composition_builder("prompt.base");
+    composition_builder.AddBlockRef(published.value());
+    auto composition =
+        fixture.engine.PublishComposition(composition_builder.build(),
+                                         Version{1, 0});
+    REQUIRE(composition.HasValue());
+
+    fixture.engine.SetBlockNormalizer(std::make_shared<FakeBlockNormalizer>(
+        Result<NormalizedBlockData>(NormalizedBlockData{
+            .templ = "You are helpful.",
+            .description = std::nullopt,
+            .language = std::nullopt,
+        })));
+
+    auto result = fixture.engine.NormalizeComposition(
+        CompositionNormalizationRequest{
+            .source_composition_id = "prompt.base",
+            .style = SemanticStyle{.tone = std::string("warm")},
+        });
+    REQUIRE(result.HasError());
+    CHECK(result.error().code == ErrorCode::InvalidParamType);
+  }
+}
+
+TEST_SUITE("OpenAiCompatibleBlockGenerator") {
+  TEST_CASE("builds chat completions request and parses structured response") {
+    auto transport = std::make_shared<FakeHttpTransport>(
+        Result<tf::ai::HttpResponse>(tf::ai::HttpResponse{
+            .status_code = 200,
+            .body =
+                R"({"choices":[{"message":{"role":"assistant","content":"{\"id\":\"role.code_reviewer\",\"type\":\"role\",\"language\":\"en\",\"description\":\"Reviews code changes\",\"templ\":\"Review {{subject}} for {{focus}}.\",\"defaults\":{\"focus\":\"correctness\"},\"tags\":[\"review\",\"quality\"]}"}}]})",
+        }));
+
+    tf::ai::OpenAiCompatibleBlockGenerator generator(
+        {.base_url = "https://example.test/v1",
+         .model = "gpt-4.1-mini",
+         .api_key = "secret"},
+        transport);
+
+    auto result = generator.GenerateBlock(
+        {.prompt = "Create a code reviewer block",
+         .preferred_type = BlockType::Role,
+         .existing_block_ids = {"role.existing"}});
+    REQUIRE(result.HasValue());
+    REQUIRE(transport->last_request.has_value());
+
+    CHECK(transport->last_request->url ==
+          "https://example.test/v1/chat/completions");
+    CHECK(transport->last_request->headers.at("Authorization") ==
+          "Bearer secret");
+    CHECK(transport->last_request->body.find("\"response_format\"") !=
+          std::string::npos);
+    CHECK(transport->last_request->body.find("\"json_schema\"") !=
+          std::string::npos);
+    CHECK(result.value().id == "role.code_reviewer");
+    CHECK(result.value().type == BlockType::Role);
+    CHECK(result.value().templ == "Review {{subject}} for {{focus}}.");
+    CHECK(result.value().defaults.at("focus") == "correctness");
+    CHECK(result.value().tags.size() == 2);
+  }
+
+  TEST_CASE("returns error on non-success HTTP status") {
+    auto transport = std::make_shared<FakeHttpTransport>(
+        Result<tf::ai::HttpResponse>(
+            tf::ai::HttpResponse{.status_code = 401, .body = "{}"}));
+
+    tf::ai::OpenAiCompatibleBlockGenerator generator(
+        {.base_url = "https://example.test/v1",
+         .model = "gpt-4.1-mini",
+         .api_key = "secret"},
+        transport);
+
+    auto result = generator.GenerateBlock({.prompt = "Create a block"});
+    REQUIRE(result.HasError());
+    CHECK(result.error().code == ErrorCode::StorageError);
+  }
+
+  TEST_CASE("builds batch request and parses structured block array response") {
+    auto transport = std::make_shared<FakeHttpTransport>(
+        Result<tf::ai::HttpResponse>(tf::ai::HttpResponse{
+            .status_code = 200,
+            .body =
+                R"({"choices":[{"message":{"role":"assistant","content":"{\"blocks\":[{\"id\":\"team.role.system\",\"type\":\"role\",\"language\":\"en\",\"description\":\"System role\",\"templ\":\"You are {{assistant_name}}.\",\"defaults\":{},\"tags\":[\"system\"]},{\"id\":\"team.constraint.style\",\"type\":\"constraint\",\"language\":\"en\",\"description\":\"Style constraints\",\"templ\":\"Be concise.\",\"defaults\":{},\"tags\":[\"style\"]}]}"}}]})",
+        }));
+
+    tf::ai::OpenAiCompatibleBlockGenerator generator(
+        {.base_url = "https://example.test/v1",
+         .model = "gpt-4.1-mini",
+         .api_key = "secret"},
+        transport);
+
+    auto result = generator.GenerateBlocks(
+        {.source_text = "Long prompt",
+         .preferred_language = "en",
+         .namespace_prefix = "team"});
+    REQUIRE(result.HasValue());
+    REQUIRE(transport->last_request.has_value());
+
+    CHECK(transport->last_request->body.find("textfoundry_block_batch") !=
+          std::string::npos);
+    CHECK(result.value().blocks.size() == 2);
+    CHECK(result.value().blocks.at(0).id == "team.role.system");
+    CHECK(result.value().blocks.at(1).type == BlockType::Constraint);
+  }
+
+  TEST_CASE("returns config validation error before transport call") {
+    auto transport = std::make_shared<FakeHttpTransport>(
+        Result<tf::ai::HttpResponse>(
+            tf::ai::HttpResponse{.status_code = 200, .body = "{}"}));
+
+    tf::ai::OpenAiCompatibleBlockGenerator generator(
+        {.base_url = "", .model = "gpt-4.1-mini", .api_key = "secret"},
+        transport);
+
+    auto result = generator.GenerateBlock({.prompt = "Create a block"});
+    REQUIRE(result.HasError());
+    CHECK(result.error().code == ErrorCode::InvalidParamType);
+    CHECK_FALSE(transport->last_request.has_value());
+  }
 }
 
 // ==================== BlockType Tests ====================
@@ -250,6 +523,9 @@ TEST_SUITE("BlockGeneration") {
 TEST_SUITE("BlockType") {
   TEST_CASE("BlockType to string") {
     CHECK(BlockTypeToString(BlockType::Role) == "role");
+    CHECK(BlockTypeToString(BlockType::System) == "system");
+    CHECK(BlockTypeToString(BlockType::Mission) == "mission");
+    CHECK(BlockTypeToString(BlockType::Safety) == "safety");
     CHECK(BlockTypeToString(BlockType::Constraint) == "constraint");
     CHECK(BlockTypeToString(BlockType::Style) == "style");
     CHECK(BlockTypeToString(BlockType::Domain) == "domain");
@@ -258,6 +534,9 @@ TEST_SUITE("BlockType") {
 
   TEST_CASE("BlockType from string") {
     CHECK(BlockTypeFromString("role") == BlockType::Role);
+    CHECK(BlockTypeFromString("system") == BlockType::System);
+    CHECK(BlockTypeFromString("mission") == BlockType::Mission);
+    CHECK(BlockTypeFromString("safety") == BlockType::Safety);
     CHECK(BlockTypeFromString("constraint") == BlockType::Constraint);
     CHECK(BlockTypeFromString("style") == BlockType::Style);
     CHECK(BlockTypeFromString("domain") == BlockType::Domain);
