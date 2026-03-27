@@ -82,6 +82,8 @@ BlockEditorViewModel::BlockEditorViewModel(SessionViewModel* session,
     : QObject(parent), session_(session), blocks_(blocks) {
   Q_ASSERT(session_ != nullptr);
   Q_ASSERT(blocks_ != nullptr);
+  connect(session_, &SessionViewModel::engineReset, this,
+          &BlockEditorViewModel::generationAvailabilityChanged);
 }
 
 BlockEditorViewModel* BlockEditorViewModel::create(QQmlEngine* qmlEngine,
@@ -127,12 +129,15 @@ QString BlockEditorViewModel::defaultsText() const { return defaults_text_; }
 
 QString BlockEditorViewModel::templateText() const { return template_text_; }
 
+QString BlockEditorViewModel::aiPromptText() const { return ai_prompt_text_; }
+
 QString BlockEditorViewModel::bumpMode() const { return bump_mode_; }
 
 QStringList BlockEditorViewModel::typeOptions() const {
-  return {QStringLiteral("role"), QStringLiteral("constraint"),
-          QStringLiteral("style"), QStringLiteral("domain"),
-          QStringLiteral("meta")};
+  return {QStringLiteral("role"), QStringLiteral("system"),
+          QStringLiteral("mission"), QStringLiteral("safety"),
+          QStringLiteral("constraint"), QStringLiteral("style"),
+          QStringLiteral("domain"), QStringLiteral("meta")};
 }
 
 QStringList BlockEditorViewModel::bumpOptions() const {
@@ -142,6 +147,12 @@ QStringList BlockEditorViewModel::bumpOptions() const {
 QString BlockEditorViewModel::statusText() const { return status_text_; }
 
 bool BlockEditorViewModel::saving() const { return saving_; }
+
+bool BlockEditorViewModel::generating() const { return generating_; }
+
+bool BlockEditorViewModel::aiGenerationAvailable() const {
+  return session_->engine().HasBlockGenerator();
+}
 
 void BlockEditorViewModel::setBlockId(const QString& value) {
   if (block_id_ == value) return;
@@ -182,6 +193,12 @@ void BlockEditorViewModel::setDefaultsText(const QString& value) {
 void BlockEditorViewModel::setTemplateText(const QString& value) {
   if (template_text_ == value) return;
   template_text_ = value;
+  emit formChanged();
+}
+
+void BlockEditorViewModel::setAiPromptText(const QString& value) {
+  if (ai_prompt_text_ == value) return;
+  ai_prompt_text_ = value;
   emit formChanged();
 }
 
@@ -267,6 +284,70 @@ void BlockEditorViewModel::save() {
   closeEditor();
 }
 
+void BlockEditorViewModel::generate() {
+  if (!session_->engine().HasBlockGenerator()) {
+    setStatusText(QStringLiteral("Configure AI settings first."));
+    return;
+  }
+  if (ai_prompt_text_.trimmed().isEmpty()) {
+    setStatusText(QStringLiteral("AI prompt is required."));
+    return;
+  }
+
+  generating_ = true;
+  emit generatingChanged();
+
+  BlockGenerationRequest request{
+      .prompt = ai_prompt_text_.trimmed().toStdString(),
+      .allow_id_collision = false,
+  };
+  if (!block_id_.trimmed().isEmpty()) {
+    request.preferred_id = block_id_.trimmed().toStdString();
+  }
+  if (!language_.trimmed().isEmpty()) {
+    request.preferred_language = language_.trimmed().toStdString();
+  }
+  request.preferred_type = ParseBlockType(type_);
+  request.existing_block_ids = session_->engine().ListBlocks();
+
+  auto result = session_->engine().GenerateBlockData(request);
+
+  generating_ = false;
+  emit generatingChanged();
+
+  if (result.HasError()) {
+    setStatusText(QString("Error: %1")
+                      .arg(QString::fromStdString(result.error().message)));
+    return;
+  }
+
+  const auto& generated = result.value();
+  block_id_ = QString::fromStdString(generated.id);
+  type_ = QString::fromUtf8(BlockTypeToString(generated.type).data(),
+                            static_cast<int>(BlockTypeToString(generated.type).size()));
+  language_ = QString::fromStdString(generated.language);
+  description_ = QString::fromStdString(generated.description);
+  template_text_ = QString::fromStdString(generated.templ);
+
+  QStringList tags;
+  for (const auto& tag : generated.tags) {
+    tags.push_back(QString::fromStdString(tag));
+  }
+  std::sort(tags.begin(), tags.end());
+  tags_text_ = tags.join(QStringLiteral("\n"));
+
+  QStringList defaults;
+  for (const auto& [key, value] : generated.defaults) {
+    defaults.push_back(QString::fromStdString(key + "=" + value));
+  }
+  std::sort(defaults.begin(), defaults.end());
+  defaults_text_ = defaults.join(QStringLiteral("\n"));
+
+  setStatusText(QStringLiteral("AI suggestion loaded into the form."));
+  emit blockLoaded();
+  emit formChanged();
+}
+
 void BlockEditorViewModel::setStatusText(QString value) {
   if (status_text_ == value) return;
   status_text_ = std::move(value);
@@ -282,6 +363,7 @@ void BlockEditorViewModel::resetForm() {
   tags_text_.clear();
   defaults_text_.clear();
   template_text_.clear();
+  ai_prompt_text_.clear();
   bump_mode_ = QStringLiteral("Minor");
 }
 

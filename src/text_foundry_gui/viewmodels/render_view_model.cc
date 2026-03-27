@@ -6,6 +6,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <functional>
 #include <optional>
 #include <sstream>
 #include <stdexcept>
@@ -196,17 +197,62 @@ QString RenderViewModel::outputText() const { return output_text_; }
 
 QString RenderViewModel::rawOutputText() const { return raw_output_text_; }
 
+QString RenderViewModel::normalizedOutputText() const {
+  return normalized_output_text_;
+}
+
 QString RenderViewModel::previewMode() const { return preview_mode_; }
 
 QStringList RenderViewModel::previewModes() const {
-  return {QStringLiteral("Raw"), QStringLiteral("Rendered")};
+  return {QStringLiteral("Raw"), QStringLiteral("Rendered"),
+          QStringLiteral("Normalized")};
 }
 
 QString RenderViewModel::displayedOutputText() const {
+  if (preview_mode_ == QStringLiteral("Raw")) {
+    return raw_output_text_;
+  }
+  if (preview_mode_ == QStringLiteral("Normalized")) {
+    return normalized_output_text_;
+  }
   if (output_text_ != QStringLiteral("Select a composition and click Render.")) {
     return output_text_;
   }
   return raw_output_text_;
+}
+
+QString RenderViewModel::tone() const { return tone_; }
+
+QString RenderViewModel::tense() const { return tense_; }
+
+QString RenderViewModel::targetLanguage() const { return target_language_; }
+
+QString RenderViewModel::person() const { return person_; }
+
+QString RenderViewModel::rewriteStrength() const { return rewrite_strength_; }
+
+QString RenderViewModel::audience() const { return audience_; }
+
+QString RenderViewModel::locale() const { return locale_; }
+
+QString RenderViewModel::terminologyRigidity() const {
+  return terminology_rigidity_;
+}
+
+bool RenderViewModel::preserveFormatting() const { return preserve_formatting_; }
+
+bool RenderViewModel::preserveExamples() const { return preserve_examples_; }
+
+bool RenderViewModel::normalizing() const { return normalizing_; }
+
+bool RenderViewModel::normalizationAvailable() const {
+  return session_->engine().HasNormalizer();
+}
+
+bool RenderViewModel::normalizationStale() const { return normalization_stale_; }
+
+QString RenderViewModel::normalizationStatusText() const {
+  return normalization_status_text_;
 }
 
 QString RenderViewModel::statusText() const { return status_text_; }
@@ -238,6 +284,66 @@ void RenderViewModel::setPreviewMode(const QString& value) {
   emit displayedOutputTextChanged();
 }
 
+void RenderViewModel::setTone(const QString& value) {
+  if (tone_ == value) return;
+  tone_ = value;
+  emit semanticStyleChanged();
+}
+
+void RenderViewModel::setTense(const QString& value) {
+  if (tense_ == value) return;
+  tense_ = value;
+  emit semanticStyleChanged();
+}
+
+void RenderViewModel::setTargetLanguage(const QString& value) {
+  if (target_language_ == value) return;
+  target_language_ = value;
+  emit semanticStyleChanged();
+}
+
+void RenderViewModel::setPerson(const QString& value) {
+  if (person_ == value) return;
+  person_ = value;
+  emit semanticStyleChanged();
+}
+
+void RenderViewModel::setRewriteStrength(const QString& value) {
+  if (rewrite_strength_ == value) return;
+  rewrite_strength_ = value;
+  emit semanticStyleChanged();
+}
+
+void RenderViewModel::setAudience(const QString& value) {
+  if (audience_ == value) return;
+  audience_ = value;
+  emit semanticStyleChanged();
+}
+
+void RenderViewModel::setLocale(const QString& value) {
+  if (locale_ == value) return;
+  locale_ = value;
+  emit semanticStyleChanged();
+}
+
+void RenderViewModel::setTerminologyRigidity(const QString& value) {
+  if (terminology_rigidity_ == value) return;
+  terminology_rigidity_ = value;
+  emit semanticStyleChanged();
+}
+
+void RenderViewModel::setPreserveFormatting(const bool value) {
+  if (preserve_formatting_ == value) return;
+  preserve_formatting_ = value;
+  emit semanticStyleChanged();
+}
+
+void RenderViewModel::setPreserveExamples(const bool value) {
+  if (preserve_examples_ == value) return;
+  preserve_examples_ = value;
+  emit semanticStyleChanged();
+}
+
 void RenderViewModel::reload() {
   syncCompositions();
   refreshRawPreview();
@@ -248,6 +354,7 @@ void RenderViewModel::render() {
   if (selected_composition_id_.trimmed().isEmpty()) {
     setOutputText(QStringLiteral("Error: Composition ID is required."));
     setRawOutputText(QStringLiteral("Error: Composition ID is required."));
+    updateNormalizationState(true);
     setStatusText(QStringLiteral("Select a composition before rendering."));
     return;
   }
@@ -258,6 +365,7 @@ void RenderViewModel::render() {
       parse_err.has_value()) {
     setOutputText(QString("Error: %1").arg(QString::fromStdString(*parse_err)));
     setRawOutputText(QString("Error: %1").arg(QString::fromStdString(*parse_err)));
+    updateNormalizationState(true);
     setStatusText(QStringLiteral("Runtime params are invalid."));
     return;
   }
@@ -268,6 +376,7 @@ void RenderViewModel::render() {
       parse_err.has_value()) {
     setOutputText(QString("Error: %1").arg(QString::fromStdString(*parse_err)));
     setRawOutputText(QString("Error: %1").arg(QString::fromStdString(*parse_err)));
+    updateNormalizationState(true);
     setStatusText(QStringLiteral("Version format is invalid."));
     return;
   }
@@ -282,6 +391,7 @@ void RenderViewModel::render() {
         QString("Error: %1").arg(QString::fromStdString(result.error().message)));
     setRawOutputText(
         QString("Error: %1").arg(QString::fromStdString(result.error().message)));
+    updateNormalizationState(true);
     setStatusText(QStringLiteral("Render failed."));
     return;
   }
@@ -291,12 +401,18 @@ void RenderViewModel::render() {
   if (raw_result.HasError()) {
     setRawOutputText(
         QString("Error: %1").arg(QString::fromStdString(raw_result.error().message)));
+    updateNormalizationState(true);
     setStatusText(QStringLiteral("Rendered successfully, raw preview failed."));
     return;
   }
   setRawOutputText(raw_result.value());
+  updateNormalizationState(true);
   setStatusText(QStringLiteral("Rendered successfully."));
 }
+
+void RenderViewModel::normalize() { runNormalization(false); }
+
+void RenderViewModel::renormalize() { runNormalization(true); }
 
 void RenderViewModel::copyRender() {
   if (output_text_.isEmpty() || output_text_.startsWith(QStringLiteral("Error:")) ||
@@ -335,6 +451,13 @@ void RenderViewModel::clear() {
   setVersionText(QString());
   setOutputText(QStringLiteral("Select a composition and click Render."));
   refreshRawPreview();
+  setNormalizedOutputText(
+      QStringLiteral("Click Normalize to rewrite the current raw text snapshot."));
+  last_normalized_raw_hash_.clear();
+  normalization_stale_ = false;
+  normalization_status_text_ =
+      QStringLiteral("Normalization here is a text rewrite utility over the current raw snapshot.");
+  emit normalizationStateChanged();
   setStatusText(QStringLiteral("Render state cleared."));
 }
 
@@ -349,6 +472,13 @@ void RenderViewModel::setRawOutputText(QString value) {
   if (raw_output_text_ == value) return;
   raw_output_text_ = std::move(value);
   emit rawOutputTextChanged();
+  emit displayedOutputTextChanged();
+}
+
+void RenderViewModel::setNormalizedOutputText(QString value) {
+  if (normalized_output_text_ == value) return;
+  normalized_output_text_ = std::move(value);
+  emit normalizedOutputTextChanged();
   emit displayedOutputTextChanged();
 }
 
@@ -388,13 +518,121 @@ Result<QString> RenderViewModel::buildRawOutput() const {
 }
 
 void RenderViewModel::refreshRawPreview() {
+  const auto previous = raw_output_text_;
   auto raw_result = buildRawOutput();
   if (raw_result.HasError()) {
     setRawOutputText(
         QString("Error: %1").arg(QString::fromStdString(raw_result.error().message)));
+    updateNormalizationState(previous != raw_output_text_);
     return;
   }
   setRawOutputText(raw_result.value());
+  updateNormalizationState(previous != raw_output_text_);
+}
+
+void RenderViewModel::updateNormalizationState(const bool raw_changed) {
+  const QString current_hash = currentRawHash();
+  normalization_stale_ = !last_normalized_raw_hash_.isEmpty() &&
+                         last_normalized_raw_hash_ != current_hash;
+  if (normalization_stale_ && raw_changed) {
+    normalization_status_text_ =
+        QStringLiteral("Normalized text is outdated because the source snapshot changed.");
+  } else if (last_normalized_raw_hash_.isEmpty()) {
+    normalization_status_text_ =
+        QStringLiteral("Click Normalize to rewrite the current raw text snapshot.");
+  } else {
+    normalization_status_text_ =
+        QStringLiteral("Normalized text matches the current source snapshot.");
+  }
+  emit normalizationStateChanged();
+}
+
+SemanticStyle RenderViewModel::currentSemanticStyle() const {
+  SemanticStyle style;
+  const auto trimmed_tone = tone_.trimmed();
+  const auto trimmed_tense = tense_.trimmed();
+  const auto trimmed_target_language = target_language_.trimmed();
+  const auto trimmed_person = person_.trimmed();
+  if (!trimmed_tone.isEmpty()) style.tone = trimmed_tone.toStdString();
+  if (!trimmed_tense.isEmpty()) style.tense = trimmed_tense.toStdString();
+  if (!trimmed_target_language.isEmpty()) {
+    style.targetLanguage = trimmed_target_language.toStdString();
+  }
+  if (!trimmed_person.isEmpty()) style.person = trimmed_person.toStdString();
+  if (!rewrite_strength_.trimmed().isEmpty()) {
+    style.rewriteStrength = rewrite_strength_.trimmed().toStdString();
+  }
+  if (!audience_.trimmed().isEmpty()) {
+    style.audience = audience_.trimmed().toStdString();
+  }
+  if (!locale_.trimmed().isEmpty()) {
+    style.locale = locale_.trimmed().toStdString();
+  }
+  if (!terminology_rigidity_.trimmed().isEmpty()) {
+    style.terminologyRigidity = terminology_rigidity_.trimmed().toStdString();
+  }
+  style.preserveFormatting = preserve_formatting_;
+  style.preserveExamples = preserve_examples_;
+  return style;
+}
+
+QString RenderViewModel::currentRawHash() const {
+  return QString::number(
+      static_cast<qulonglong>(std::hash<std::string>{}(raw_output_text_.toStdString())));
+}
+
+void RenderViewModel::runNormalization(const bool force) {
+  if (!session_->engine().HasNormalizer()) {
+    setStatusText(QStringLiteral("Configure AI settings first."));
+    return;
+  }
+  if (raw_output_text_.isEmpty() || raw_output_text_.startsWith(QStringLiteral("Error:")) ||
+      raw_output_text_ == QStringLiteral("Select a composition to preview raw output.")) {
+    setStatusText(QStringLiteral("Render or load a valid raw snapshot first."));
+    return;
+  }
+
+  const auto style = currentSemanticStyle();
+  if (style.isEmpty()) {
+    setStatusText(QStringLiteral("Specify at least one semantic style field."));
+    return;
+  }
+
+  const QString current_hash = currentRawHash();
+  if (!force && !last_normalized_raw_hash_.isEmpty() &&
+      last_normalized_raw_hash_ == current_hash && !normalized_output_text_.isEmpty()) {
+    normalization_stale_ = false;
+    normalization_status_text_ =
+        QStringLiteral("Normalized text already matches the current source snapshot.");
+    emit normalizationStateChanged();
+    setStatusText(QStringLiteral("Normalized text is already up to date."));
+    return;
+  }
+
+  normalizing_ = true;
+  emit normalizingChanged();
+
+  auto result = session_->engine().Normalize(raw_output_text_.toStdString(), style);
+
+  normalizing_ = false;
+  emit normalizingChanged();
+
+  if (result.HasError()) {
+    normalization_status_text_ =
+        QString("Error: %1").arg(QString::fromStdString(result.error().message));
+    emit normalizationStateChanged();
+    setStatusText(QStringLiteral("Normalization failed."));
+    return;
+  }
+
+  setNormalizedOutputText(QString::fromStdString(result.value()));
+  last_normalized_raw_hash_ = current_hash;
+  normalization_stale_ = false;
+  normalization_status_text_ =
+      QStringLiteral("Normalized text is up to date for the current source snapshot.");
+  emit normalizationStateChanged();
+  setPreviewMode(QStringLiteral("Normalized"));
+  setStatusText(QStringLiteral("Normalized text created from the current raw snapshot."));
 }
 
 void RenderViewModel::syncCompositions() {

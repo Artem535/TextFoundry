@@ -27,6 +27,18 @@ option(TEXTFOUNDRY_BUILD_GUI "Build Qt/QML GUI frontend" ON)
 if(TEXTFOUNDRY_BUILD_GUI)
   find_package(Qt6 6.8 QUIET COMPONENTS Core Qml Quick QuickControls2)
   if(Qt6_FOUND)
+    if(NOT TARGET qt6keychain)
+      set(BUILD_WITH_QT6 ON CACHE BOOL "" FORCE)
+      set(BUILD_TEST_APPLICATION OFF CACHE BOOL "" FORCE)
+      set(BUILD_TRANSLATIONS OFF CACHE BOOL "" FORCE)
+      set(LIBSECRET_SUPPORT OFF CACHE BOOL "" FORCE)
+      FetchContent_Declare(
+        qtkeychain
+        URL https://github.com/frankosterfeld/qtkeychain/archive/refs/tags/0.15.0.tar.gz
+        DOWNLOAD_EXTRACT_TIMESTAMP FALSE
+      )
+      FetchContent_MakeAvailable(qtkeychain)
+    endif()
     add_subdirectory(src/text_foundry_gui)
   else()
     message(STATUS "Qt6 not found: skipping text_foundry_gui target")

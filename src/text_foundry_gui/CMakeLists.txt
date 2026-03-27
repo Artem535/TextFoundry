@@ -35,6 +35,7 @@ if(KF6SyntaxHighlighting_FOUND AND NOT TARGET kquicksyntaxhighlightingplugin)
 endif()
 
 set(TEXTFOUNDRY_GUI_RESOURCES
+    "resource/app/textfoundry.svg"
     "resource/font/Font Awesome 7 Brands-Regular-400.otf"
     "resource/font/Font Awesome 7 Free-Regular-400.otf"
     "resource/font/Font Awesome 7 Free-Solid-900.otf"
@@ -59,6 +60,7 @@ set(TEXTFOUNDRY_GUI_RESOURCES
     "resource/icons/solid/paste.svg"
     "resource/icons/solid/trash.svg"
     "resource/icons/solid/broom.svg"
+    "resource/icons/solid/wand-magic-sparkles.svg"
 )
 
 qt_add_qml_module(textfoundry_gui
@@ -92,6 +94,8 @@ qt_add_qml_module(textfoundry_gui
         models/blocks_model.h
         viewmodels/block_editor_view_model.cc
         viewmodels/block_editor_view_model.h
+        viewmodels/block_slice_view_model.cc
+        viewmodels/block_slice_view_model.h
         viewmodels/composition_editor_view_model.cc
         viewmodels/composition_editor_view_model.h
         viewmodels/compositions_view_model.cc
@@ -115,6 +119,8 @@ target_link_libraries(textfoundry_gui PRIVATE
     Qt6::Quick
     Qt6::QuickControls2
     textfoundry_core
+    textfoundry_ai_openai
+    qt6keychain
     sago::platform_folders
 )
 
@@ -127,3 +133,21 @@ set_target_properties(textfoundry_gui PROPERTIES
 )
 
 install(TARGETS textfoundry_gui RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+
+if(UNIX AND NOT APPLE)
+    configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/dist/textfoundry.desktop.in
+        ${CMAKE_CURRENT_BINARY_DIR}/textfoundry.desktop
+        @ONLY
+    )
+
+    install(
+        FILES ${CMAKE_CURRENT_BINARY_DIR}/textfoundry.desktop
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/applications
+    )
+
+    install(
+        FILES ${CMAKE_CURRENT_SOURCE_DIR}/resource/app/textfoundry.svg
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps
+    )
+endif()

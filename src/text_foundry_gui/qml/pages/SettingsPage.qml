@@ -77,6 +77,57 @@ Page {
                 }
             }
 
+            Frame {
+                Layout.fillWidth: true
+                background: Rectangle {
+                    radius: General.radiusMedium
+                    color: ColorPalette.fieldBackground
+                    border.color: ColorPalette.borderStrong
+                }
+
+                ColumnLayout {
+                    anchors.fill: parent
+                    anchors.margins: General.paddingMedium
+                    spacing: General.spacingSmall
+
+                    Label {
+                        text: "AI Block Generation"
+                        font.bold: true
+                    }
+
+                    TextField {
+                        Layout.fillWidth: true
+                        text: SessionVm.aiBaseUrl
+                        placeholderText: "Base URL"
+                        onEditingFinished: SessionVm.aiBaseUrl = text
+                    }
+
+                    TextField {
+                        Layout.fillWidth: true
+                        text: SessionVm.aiModel
+                        placeholderText: "Model"
+                        onEditingFinished: SessionVm.aiModel = text
+                    }
+
+                    TextField {
+                        Layout.fillWidth: true
+                        text: SessionVm.aiApiKey
+                        placeholderText: "API key"
+                        echoMode: TextInput.Password
+                        onEditingFinished: SessionVm.aiApiKey = text
+                    }
+
+                    Label {
+                        Layout.fillWidth: true
+                        text: SessionVm.aiGenerationEnabled
+                              ? "AI generator configured"
+                              : "AI generator disabled until base URL, model, and API key are set"
+                        opacity: 0.72
+                        wrapMode: Text.WordWrap
+                    }
+                }
+            }
+
             Item {
                 Layout.fillHeight: true
             }

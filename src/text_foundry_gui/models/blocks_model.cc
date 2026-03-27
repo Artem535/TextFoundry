@@ -9,6 +9,10 @@
 namespace tf::gui {
 namespace {
 
+bool IsDerivedBlockId(const QString& block_id) {
+  return block_id.contains(QStringLiteral(".norm."));
+}
+
 std::optional<std::string> ParseVersionText(const QString& input, Version& out) {
   const QString trimmed = input.trimmed();
   const auto parts = trimmed.split('.');
@@ -139,6 +143,14 @@ QString BlocksModel::detailsText() const { return details_text_; }
 
 QString BlocksModel::selectedBlockVersion() const { return selected_block_version_; }
 
+QStringList BlocksModel::selectedBlockVersions() const {
+  return selected_block_versions_;
+}
+
+QStringList BlocksModel::selectedBlockVersionOptions() const {
+  return selected_block_version_options_;
+}
+
 QString BlocksModel::selectedBlockType() const { return selected_block_type_; }
 
 QString BlocksModel::selectedBlockLanguage() const { return selected_block_language_; }
@@ -155,11 +167,20 @@ QStringList BlocksModel::selectedBlockDefaults() const {
   return selected_block_defaults_;
 }
 
+bool BlocksModel::showDerivedBlocks() const { return show_derived_blocks_; }
+
 void BlocksModel::setSelectedBlockId(const QString& value) {
   if (selected_block_id_ == value) return;
   selected_block_id_ = value;
   emit selectedBlockIdChanged();
   refreshDetails();
+}
+
+void BlocksModel::setShowDerivedBlocks(const bool value) {
+  if (show_derived_blocks_ == value) return;
+  show_derived_blocks_ = value;
+  emit showDerivedBlocksChanged();
+  reload();
 }
 
 void BlocksModel::reload() {
@@ -168,6 +189,13 @@ void BlocksModel::reload() {
 }
 
 void BlocksModel::selectBlock(const QString& block_id) { setSelectedBlockId(block_id); }
+
+void BlocksModel::selectBlockVersion(const QString& version_text) {
+  if (version_text.isEmpty() || selected_block_version_ == version_text) return;
+  selected_block_version_ = version_text;
+  emit detailsTextChanged();
+  refreshDetails();
+}
 
 void BlocksModel::deprecateSelected() {
   if (selected_block_id_.isEmpty()) {
@@ -209,6 +237,9 @@ void BlocksModel::refreshTree() {
 
   for (const auto& raw_id : ids) {
     const auto block_id = QString::fromStdString(raw_id);
+    if (!show_derived_blocks_ && IsDerivedBlockId(block_id)) {
+      continue;
+    }
     const auto parts = block_id.split('.', Qt::SkipEmptyParts);
     Node* folder = root_.get();
     if (parts.size() > 1) {
@@ -233,7 +264,8 @@ void BlocksModel::refreshTree() {
       selected_block_id_ = first->block_id;
       emit selectedBlockIdChanged();
     }
-  } else if (findBlockNode(selected_block_id_, root_.get()) == nullptr) {
+  } else if ((!show_derived_blocks_ && IsDerivedBlockId(selected_block_id_)) ||
+             findBlockNode(selected_block_id_, root_.get()) == nullptr) {
     if (auto* first = firstBlockNode(root_.get())) {
       selected_block_id_ = first->block_id;
     } else {
@@ -247,6 +279,8 @@ void BlocksModel::refreshDetails() {
   if (selected_block_id_.isEmpty()) {
     const QString text = "No blocks found.";
     selected_block_version_.clear();
+    selected_block_versions_.clear();
+    selected_block_version_options_.clear();
     selected_block_type_.clear();
     selected_block_language_.clear();
     selected_block_description_.clear();
@@ -260,11 +294,78 @@ void BlocksModel::refreshDetails() {
     return;
   }
 
-  const auto result = session_->engine().LoadBlock(selected_block_id_.toStdString());
+  const auto versions_result =
+      session_->engine().ListBlockVersions(selected_block_id_.toStdString());
+  if (versions_result.HasError()) {
+    const auto text = QString("Error: %1")
+                          .arg(QString::fromStdString(versions_result.error().message));
+    selected_block_version_.clear();
+    selected_block_versions_.clear();
+    selected_block_version_options_.clear();
+    selected_block_type_.clear();
+    selected_block_language_.clear();
+    selected_block_description_.clear();
+    selected_block_template_.clear();
+    selected_block_tags_.clear();
+    selected_block_defaults_.clear();
+    if (details_text_ != text) {
+      details_text_ = text;
+      emit detailsTextChanged();
+    }
+    return;
+  }
+
+  selected_block_versions_.clear();
+  selected_block_version_options_.clear();
+  const auto& versions = versions_result.value();
+  for (int i = 0; i < static_cast<int>(versions.size()); ++i) {
+    const auto& version = versions[static_cast<size_t>(i)];
+    const QString version_text = QString::fromStdString(version.ToString());
+    selected_block_versions_.push_back(version_text);
+
+    auto block_result =
+        session_->engine().LoadBlock(selected_block_id_.toStdString(), version);
+    QString label = version_text;
+    QStringList markers;
+    if (i == 0) {
+      markers.push_back(QStringLiteral("latest"));
+    }
+    if (!block_result.HasError() &&
+        block_result.value().state() == BlockState::Deprecated) {
+      markers.push_back(QStringLiteral("deprecated"));
+    }
+    if (!markers.isEmpty()) {
+      label += QStringLiteral(" (%1)").arg(markers.join(QStringLiteral(", ")));
+    }
+    selected_block_version_options_.push_back(label);
+  }
+  if (selected_block_version_.isEmpty() ||
+      !selected_block_versions_.contains(selected_block_version_)) {
+    selected_block_version_ = selected_block_versions_.isEmpty()
+                                  ? QString()
+                                  : selected_block_versions_.front();
+  }
+
+  Version selected_version;
+  if (const auto parse_error =
+          ParseVersionText(selected_block_version_, selected_version);
+      parse_error.has_value()) {
+    const auto text = QString("Error: %1").arg(QString::fromStdString(*parse_error));
+    if (details_text_ != text) {
+      details_text_ = text;
+      emit detailsTextChanged();
+    }
+    return;
+  }
+
+  const auto result = session_->engine().LoadBlock(selected_block_id_.toStdString(),
+                                                   selected_version);
   if (result.HasError()) {
     const auto text = QString("Error: %1")
                           .arg(QString::fromStdString(result.error().message));
     selected_block_version_.clear();
+    selected_block_versions_.clear();
+    selected_block_version_options_.clear();
     selected_block_type_.clear();
     selected_block_language_.clear();
     selected_block_description_.clear();

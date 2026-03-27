@@ -145,9 +145,22 @@ Page {
                                 value: CompositionsVm.selectedCompositionId
                             }
 
-                            DetailField {
-                                label: "Version"
-                                value: CompositionsVm.selectedVersion
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 4
+
+                                Label {
+                                    text: "Version"
+                                    font.bold: true
+                                }
+
+                                ComboBox {
+                                    Layout.fillWidth: true
+                                    model: CompositionsVm.selectedVersionOptions
+                                    enabled: CompositionsVm.selectedVersions.length > 0
+                                    currentIndex: Math.max(0, CompositionsVm.selectedVersions.indexOf(CompositionsVm.selectedVersion))
+                                    onActivated: CompositionsVm.selectCompositionVersion(CompositionsVm.selectedVersions[currentIndex])
+                                }
                             }
 
                             DetailField {
@@ -165,6 +178,325 @@ Page {
                             label: "Description"
                             value: CompositionsVm.selectedDescription
                             placeholder: "No description"
+                        }
+
+                        ColumnLayout {
+                            Layout.fillWidth: true
+                            spacing: General.spacingSmall
+
+                            Label {
+                                text: "Normalization Presets"
+                                font.bold: true
+                            }
+
+                            Flow {
+                                Layout.fillWidth: true
+                                spacing: General.spacingSmall
+
+                                SvgToolButton {
+                                    compact: true
+                                    iconSource: Icons.aiAssistSvg
+                                    labelText: "Formal EN"
+                                    onClicked: {
+                                        CompositionsVm.tone = "formal"
+                                        CompositionsVm.tense = "present"
+                                        CompositionsVm.targetLanguage = "en"
+                                        CompositionsVm.person = "second"
+                                        CompositionsVm.rewriteStrength = "light"
+                                        CompositionsVm.terminologyRigidity = "strict"
+                                        CompositionsVm.preserveFormatting = true
+                                        CompositionsVm.preserveExamples = true
+                                    }
+                                }
+
+                                SvgToolButton {
+                                    compact: true
+                                    iconSource: Icons.aiAssistSvg
+                                    labelText: "Warm RU"
+                                    onClicked: {
+                                        CompositionsVm.tone = "warm"
+                                        CompositionsVm.tense = "present"
+                                        CompositionsVm.targetLanguage = "ru"
+                                        CompositionsVm.person = "second"
+                                        CompositionsVm.rewriteStrength = "light"
+                                        CompositionsVm.terminologyRigidity = "strict"
+                                        CompositionsVm.preserveFormatting = true
+                                        CompositionsVm.preserveExamples = true
+                                    }
+                                }
+
+                                SvgToolButton {
+                                    compact: true
+                                    iconSource: Icons.aiAssistSvg
+                                    labelText: "Neutral 3rd"
+                                    onClicked: {
+                                        CompositionsVm.tone = "neutral"
+                                        CompositionsVm.tense = "present"
+                                        CompositionsVm.person = "third"
+                                        CompositionsVm.rewriteStrength = "light"
+                                        CompositionsVm.terminologyRigidity = "strict"
+                                        CompositionsVm.preserveFormatting = true
+                                        CompositionsVm.preserveExamples = true
+                                    }
+                                }
+
+                                SvgToolButton {
+                                    compact: true
+                                    iconSource: Icons.clearSvg
+                                    labelText: "Clear Style"
+                                    onClicked: {
+                                        CompositionsVm.tone = ""
+                                        CompositionsVm.tense = ""
+                                        CompositionsVm.targetLanguage = ""
+                                        CompositionsVm.person = ""
+                                        CompositionsVm.rewriteStrength = "light"
+                                        CompositionsVm.audience = ""
+                                        CompositionsVm.locale = ""
+                                        CompositionsVm.terminologyRigidity = "strict"
+                                        CompositionsVm.preserveFormatting = true
+                                        CompositionsVm.preserveExamples = true
+                                    }
+                                }
+                            }
+                        }
+
+                        GridLayout {
+                            Layout.fillWidth: true
+                            columns: 2
+                            rowSpacing: General.spacingMedium
+                            columnSpacing: General.spacingLarge
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 4
+
+                                Label {
+                                    text: "Tone"
+                                    font.bold: true
+                                }
+
+                                TextField {
+                                    Layout.fillWidth: true
+                                    text: CompositionsVm.tone
+                                    placeholderText: "formal"
+                                    onTextEdited: CompositionsVm.tone = text
+                                }
+
+                                Label {
+                                    Layout.fillWidth: true
+                                    text: "How the text should sound: formal, warm, neutral, direct."
+                                    wrapMode: Text.WordWrap
+                                    opacity: 0.72
+                                }
+                            }
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 4
+
+                                Label {
+                                    text: "Tense"
+                                    font.bold: true
+                                }
+
+                                TextField {
+                                    Layout.fillWidth: true
+                                    text: CompositionsVm.tense
+                                    placeholderText: "present"
+                                    onTextEdited: CompositionsVm.tense = text
+                                }
+
+                                Label {
+                                    Layout.fillWidth: true
+                                    text: "Verb tense to prefer: present, past, or future."
+                                    wrapMode: Text.WordWrap
+                                    opacity: 0.72
+                                }
+                            }
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 4
+
+                                Label {
+                                    text: "Target Language"
+                                    font.bold: true
+                                }
+
+                                TextField {
+                                    Layout.fillWidth: true
+                                    text: CompositionsVm.targetLanguage
+                                    placeholderText: "en"
+                                    onTextEdited: CompositionsVm.targetLanguage = text
+                                }
+
+                                Label {
+                                    Layout.fillWidth: true
+                                    text: "Language for the derived normalized composition, for example en or ru."
+                                    wrapMode: Text.WordWrap
+                                    opacity: 0.72
+                                }
+                            }
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 4
+
+                                Label {
+                                    text: "Person"
+                                    font.bold: true
+                                }
+
+                                TextField {
+                                    Layout.fillWidth: true
+                                    text: CompositionsVm.person
+                                    placeholderText: "second"
+                                    onTextEdited: CompositionsVm.person = text
+                                }
+
+                                Label {
+                                    Layout.fillWidth: true
+                                    text: "Point of view to use: first, second, or third person."
+                                    wrapMode: Text.WordWrap
+                                    opacity: 0.72
+                                }
+                            }
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 4
+
+                                Label {
+                                    text: "Rewrite Strength"
+                                    font.bold: true
+                                }
+
+                                ComboBox {
+                                    Layout.fillWidth: true
+                                    model: ["light", "medium", "strong"]
+                                    currentIndex: Math.max(0, model.indexOf(CompositionsVm.rewriteStrength))
+                                    onActivated: CompositionsVm.rewriteStrength = currentText
+                                }
+
+                                Label {
+                                    Layout.fillWidth: true
+                                    text: "How far the rewrite may go. For prompts this should usually stay on light."
+                                    wrapMode: Text.WordWrap
+                                    opacity: 0.72
+                                }
+                            }
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 4
+
+                                Label {
+                                    text: "Audience"
+                                    font.bold: true
+                                }
+
+                                TextField {
+                                    Layout.fillWidth: true
+                                    text: CompositionsVm.audience
+                                    placeholderText: "end-user"
+                                    onTextEdited: CompositionsVm.audience = text
+                                }
+
+                                Label {
+                                    Layout.fillWidth: true
+                                    text: "Who the text is written for: end-user, developer, executive."
+                                    wrapMode: Text.WordWrap
+                                    opacity: 0.72
+                                }
+                            }
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 4
+
+                                Label {
+                                    text: "Locale"
+                                    font.bold: true
+                                }
+
+                                TextField {
+                                    Layout.fillWidth: true
+                                    text: CompositionsVm.locale
+                                    placeholderText: "en-US"
+                                    onTextEdited: CompositionsVm.locale = text
+                                }
+
+                                Label {
+                                    Layout.fillWidth: true
+                                    text: "Regional preference such as en-US, en-GB, or ru-RU."
+                                    wrapMode: Text.WordWrap
+                                    opacity: 0.72
+                                }
+                            }
+
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 4
+
+                                Label {
+                                    text: "Terminology"
+                                    font.bold: true
+                                }
+
+                                ComboBox {
+                                    Layout.fillWidth: true
+                                    model: ["strict", "balanced", "flexible"]
+                                    currentIndex: Math.max(0, model.indexOf(CompositionsVm.terminologyRigidity))
+                                    onActivated: CompositionsVm.terminologyRigidity = currentText
+                                }
+
+                                Label {
+                                    Layout.fillWidth: true
+                                    text: "How strictly key terms and names should be preserved."
+                                    wrapMode: Text.WordWrap
+                                    opacity: 0.72
+                                }
+                            }
+                        }
+
+                        GridLayout {
+                            Layout.fillWidth: true
+                            columns: 2
+                            rowSpacing: General.spacingMedium
+                            columnSpacing: General.spacingLarge
+
+                            CheckBox {
+                                text: "Preserve Formatting"
+                                checked: CompositionsVm.preserveFormatting
+                                onToggled: CompositionsVm.preserveFormatting = checked
+                            }
+
+                            CheckBox {
+                                text: "Preserve Examples"
+                                checked: CompositionsVm.preserveExamples
+                                onToggled: CompositionsVm.preserveExamples = checked
+                            }
+                        }
+
+                        Flow {
+                            Layout.fillWidth: true
+                            spacing: General.spacingSmall
+
+                            SvgToolButton {
+                                iconSource: Icons.aiAssistSvg
+                                labelText: CompositionsVm.normalizing ? "Normalizing..." : "Normalize Composition"
+                                enabled: !CompositionsVm.normalizing
+                                         && CompositionsVm.normalizationAvailable
+                                         && CompositionsVm.selectedCompositionId.length > 0
+                                onClicked: CompositionsVm.normalizeSelected()
+                            }
+                        }
+
+                        Label {
+                            Layout.fillWidth: true
+                            text: CompositionsVm.normalizationStatusText
+                            wrapMode: Text.WordWrap
+                            opacity: 0.72
                         }
 
                         ColumnLayout {

@@ -28,11 +28,14 @@ class BlockEditorViewModel : public QObject {
   Q_PROPERTY(QString tagsText READ tagsText WRITE setTagsText NOTIFY formChanged)
   Q_PROPERTY(QString defaultsText READ defaultsText WRITE setDefaultsText NOTIFY formChanged)
   Q_PROPERTY(QString templateText READ templateText WRITE setTemplateText NOTIFY formChanged)
+  Q_PROPERTY(QString aiPromptText READ aiPromptText WRITE setAiPromptText NOTIFY formChanged)
   Q_PROPERTY(QString bumpMode READ bumpMode WRITE setBumpMode NOTIFY formChanged)
   Q_PROPERTY(QStringList typeOptions READ typeOptions CONSTANT)
   Q_PROPERTY(QStringList bumpOptions READ bumpOptions CONSTANT)
   Q_PROPERTY(QString statusText READ statusText NOTIFY statusTextChanged)
   Q_PROPERTY(bool saving READ saving NOTIFY savingChanged)
+  Q_PROPERTY(bool generating READ generating NOTIFY generatingChanged)
+  Q_PROPERTY(bool aiGenerationAvailable READ aiGenerationAvailable NOTIFY generationAvailabilityChanged)
 
  public:
   explicit BlockEditorViewModel(SessionViewModel* session, BlocksModel* blocks,
@@ -52,11 +55,14 @@ class BlockEditorViewModel : public QObject {
   QString tagsText() const;
   QString defaultsText() const;
   QString templateText() const;
+  QString aiPromptText() const;
   QString bumpMode() const;
   QStringList typeOptions() const;
   QStringList bumpOptions() const;
   QString statusText() const;
   bool saving() const;
+  bool generating() const;
+  bool aiGenerationAvailable() const;
 
   void setBlockId(const QString& value);
   void setType(const QString& value);
@@ -65,12 +71,14 @@ class BlockEditorViewModel : public QObject {
   void setTagsText(const QString& value);
   void setDefaultsText(const QString& value);
   void setTemplateText(const QString& value);
+  void setAiPromptText(const QString& value);
   void setBumpMode(const QString& value);
 
   Q_INVOKABLE void openEditor();
   Q_INVOKABLE void openCreateEditor();
   Q_INVOKABLE void closeEditor();
   Q_INVOKABLE void save();
+  Q_INVOKABLE void generate();
 
  signals:
   void openChanged();
@@ -78,6 +86,8 @@ class BlockEditorViewModel : public QObject {
   void formChanged();
   void statusTextChanged();
   void savingChanged();
+  void generatingChanged();
+  void generationAvailabilityChanged();
   void saved();
 
  private:
@@ -90,6 +100,7 @@ class BlockEditorViewModel : public QObject {
   bool open_ = false;
   bool create_mode_ = false;
   bool saving_ = false;
+  bool generating_ = false;
   QString block_id_;
   QString current_version_;
   QString type_ = QStringLiteral("domain");
@@ -98,6 +109,7 @@ class BlockEditorViewModel : public QObject {
   QString tags_text_;
   QString defaults_text_;
   QString template_text_;
+  QString ai_prompt_text_;
   QString bump_mode_ = QStringLiteral("Minor");
   QString status_text_;
 };

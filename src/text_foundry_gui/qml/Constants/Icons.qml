@@ -30,6 +30,9 @@ Item {
     readonly property url pasteSvg: "qrc:/qt/qml/TextFoundry/resource/icons/solid/paste.svg"
     readonly property url removeSvg: "qrc:/qt/qml/TextFoundry/resource/icons/solid/trash.svg"
     readonly property url cleanSvg: "qrc:/qt/qml/TextFoundry/resource/icons/solid/broom.svg"
+    readonly property url broomSvg: cleanSvg
+    readonly property url aiAssistSvg: "qrc:/qt/qml/TextFoundry/resource/icons/solid/wand-magic-sparkles.svg"
+    readonly property url sliceSvg: "qrc:/qt/qml/TextFoundry/resource/icons/solid/scissors.svg"
 
     readonly property string blocks: "\uf1b3"
     readonly property string compositions: "\uf0e8"

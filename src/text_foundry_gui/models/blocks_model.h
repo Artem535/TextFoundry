@@ -17,8 +17,11 @@ class BlocksModel : public QAbstractItemModel {
   QML_SINGLETON
   QML_NAMED_ELEMENT(BlocksModel)
   Q_PROPERTY(QString selectedBlockId READ selectedBlockId WRITE setSelectedBlockId NOTIFY selectedBlockIdChanged)
+  Q_PROPERTY(bool showDerivedBlocks READ showDerivedBlocks WRITE setShowDerivedBlocks NOTIFY showDerivedBlocksChanged)
   Q_PROPERTY(QString detailsText READ detailsText NOTIFY detailsTextChanged)
   Q_PROPERTY(QString selectedBlockVersion READ selectedBlockVersion NOTIFY detailsTextChanged)
+  Q_PROPERTY(QStringList selectedBlockVersions READ selectedBlockVersions NOTIFY detailsTextChanged)
+  Q_PROPERTY(QStringList selectedBlockVersionOptions READ selectedBlockVersionOptions NOTIFY detailsTextChanged)
   Q_PROPERTY(QString selectedBlockType READ selectedBlockType NOTIFY detailsTextChanged)
   Q_PROPERTY(QString selectedBlockLanguage READ selectedBlockLanguage NOTIFY detailsTextChanged)
   Q_PROPERTY(QString selectedBlockDescription READ selectedBlockDescription NOTIFY detailsTextChanged)
@@ -52,21 +55,27 @@ class BlocksModel : public QAbstractItemModel {
   QString selectedBlockId() const;
   QString detailsText() const;
   QString selectedBlockVersion() const;
+  QStringList selectedBlockVersions() const;
+  QStringList selectedBlockVersionOptions() const;
   QString selectedBlockType() const;
   QString selectedBlockLanguage() const;
   QString selectedBlockDescription() const;
   QString selectedBlockTemplate() const;
   QStringList selectedBlockTags() const;
   QStringList selectedBlockDefaults() const;
+  bool showDerivedBlocks() const;
 
   void setSelectedBlockId(const QString& value);
+  void setShowDerivedBlocks(bool value);
 
   Q_INVOKABLE void reload();
   Q_INVOKABLE void selectBlock(const QString& block_id);
+  Q_INVOKABLE void selectBlockVersion(const QString& version_text);
   Q_INVOKABLE void deprecateSelected();
 
  signals:
   void selectedBlockIdChanged();
+  void showDerivedBlocksChanged();
   void detailsTextChanged();
 
  private:
@@ -96,12 +105,15 @@ class BlocksModel : public QAbstractItemModel {
   QString selected_block_id_;
   QString details_text_ = "Select a block to see details";
   QString selected_block_version_;
+  QStringList selected_block_versions_;
+  QStringList selected_block_version_options_;
   QString selected_block_type_;
   QString selected_block_language_;
   QString selected_block_description_;
   QString selected_block_template_;
   QStringList selected_block_tags_;
   QStringList selected_block_defaults_;
+  bool show_derived_blocks_ = false;
 };
 
 }  // namespace tf::gui

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=TextFoundry
+Comment=Prompt block and composition workbench
+Exec=tf-gui
+Icon=textfoundry
+Terminal=false
+Categories=Development;Utility;
+Keywords=prompt;llm;template;authoring;ai;
+StartupWMClass=tf-gui

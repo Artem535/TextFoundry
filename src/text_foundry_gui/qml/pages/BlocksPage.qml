@@ -47,9 +47,23 @@ Page {
 
                     SvgToolButton {
                         compact: true
+                        iconSource: Icons.aiAssistSvg
+                        labelText: "AI Slice"
+                        enabled: BlockSliceVm.aiGenerationAvailable
+                        onClicked: BlockSliceVm.openDialog()
+                    }
+
+                    SvgToolButton {
+                        compact: true
                         iconSource: Icons.reloadSvg
                         labelText: "Reload"
                         onClicked: BlocksModel.reload()
+                    }
+
+                    CheckBox {
+                        text: "Show Derived"
+                        checked: BlocksModel.showDerivedBlocks
+                        onToggled: BlocksModel.showDerivedBlocks = checked
                     }
                 }
 
@@ -176,9 +190,22 @@ Page {
                                 value: BlocksModel.selectedBlockId
                             }
 
-                            DetailField {
-                                label: "Version"
-                                value: BlocksModel.selectedBlockVersion
+                            ColumnLayout {
+                                Layout.fillWidth: true
+                                spacing: 4
+
+                                Label {
+                                    text: "Version"
+                                    font.bold: true
+                                }
+
+                                ComboBox {
+                                    Layout.fillWidth: true
+                                    model: BlocksModel.selectedBlockVersionOptions
+                                    enabled: BlocksModel.selectedBlockVersions.length > 0
+                                    currentIndex: Math.max(0, BlocksModel.selectedBlockVersions.indexOf(BlocksModel.selectedBlockVersion))
+                                    onActivated: BlocksModel.selectBlockVersion(BlocksModel.selectedBlockVersions[currentIndex])
+                                }
                             }
 
                             DetailField {
@@ -279,6 +306,210 @@ Page {
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+
+    Dialog {
+        id: slicePromptDialog
+        parent: Overlay.overlay
+        x: Math.round((parent.width - width) / 2)
+        y: Math.round((parent.height - height) / 2)
+        width: Math.min(parent.width - 64, 1040)
+        height: Math.min(parent.height - 64, 780)
+        modal: true
+        dim: true
+        visible: BlockSliceVm.open
+        title: "AI Slice Prompt Into Blocks"
+        standardButtons: Dialog.NoButton
+        onClosed: BlockSliceVm.closeDialog()
+
+        background: Rectangle {
+            radius: General.radiusMedium
+            color: ColorPalette.surface
+            border.color: ColorPalette.border
+        }
+
+        contentItem: ColumnLayout {
+            spacing: General.spacingMedium
+
+            RowLayout {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                spacing: General.spacingMedium
+
+                Frame {
+                    Layout.preferredWidth: 360
+                    Layout.fillHeight: true
+                    background: Rectangle {
+                        radius: General.radiusMedium
+                        color: ColorPalette.fieldBackground
+                        border.color: ColorPalette.border
+                    }
+
+                    ScrollView {
+                        id: sliceScroll
+                        anchors.fill: parent
+                        clip: true
+
+                        Column {
+                            width: sliceScroll.availableWidth
+                            spacing: General.spacingMedium
+
+                            ColumnLayout {
+                                width: parent.width
+                                spacing: 4
+
+                                Label {
+                                    text: "Namespace Prefix"
+                                    font.bold: true
+                                }
+
+                                TextField {
+                                    width: parent.width
+                                    text: BlockSliceVm.namespacePrefix
+                                    placeholderText: "team.prompt"
+                                    onTextEdited: BlockSliceVm.namespacePrefix = text
+                                }
+                            }
+
+                            ColumnLayout {
+                                width: parent.width
+                                spacing: 4
+
+                                Label {
+                                    text: "Language"
+                                    font.bold: true
+                                }
+
+                                TextField {
+                                    width: parent.width
+                                    text: BlockSliceVm.language
+                                    placeholderText: "en"
+                                    onTextEdited: BlockSliceVm.language = text
+                                }
+                            }
+
+                            ColumnLayout {
+                                width: parent.width
+                                spacing: 4
+
+                                Label {
+                                    text: "Source Prompt"
+                                    font.bold: true
+                                }
+
+                                TextArea {
+                                    width: parent.width
+                                    height: 420
+                                    text: BlockSliceVm.sourcePromptText
+                                    placeholderText: "Paste the full prompt you want to decompose"
+                                    wrapMode: TextEdit.Wrap
+                                    onTextChanged: if (text !== BlockSliceVm.sourcePromptText) BlockSliceVm.sourcePromptText = text
+                                }
+                            }
+                        }
+                    }
+                }
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    spacing: 4
+
+                    ColumnLayout {
+                        Layout.fillWidth: true
+                        spacing: 4
+
+                        RowLayout {
+                            Layout.fillWidth: true
+
+                            Label {
+                                text: "Composition Preview"
+                                font.bold: true
+                            }
+
+                            Item { Layout.fillWidth: true }
+
+                            Label {
+                                text: BlockSliceVm.compositionPreviewId
+                                opacity: 0.72
+                                visible: BlockSliceVm.compositionPreviewId.length > 0
+                            }
+                        }
+
+                        CodePreview {
+                            Layout.fillWidth: true
+                            Layout.preferredHeight: 180
+                            text: BlockSliceVm.compositionPreviewText
+                            definition: "Markdown"
+                        }
+                    }
+
+                    RowLayout {
+                        Layout.fillWidth: true
+
+                        Label {
+                            text: "Generated Blocks"
+                            font.bold: true
+                        }
+
+                        Item { Layout.fillWidth: true }
+
+                        Label {
+                            text: BlockSliceVm.generatedCount > 0
+                                  ? BlockSliceVm.generatedCount + " blocks"
+                                  : ""
+                            opacity: 0.72
+                        }
+                    }
+
+                    CodePreview {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        Layout.minimumHeight: 320
+                        text: BlockSliceVm.generatedPreviewText
+                        definition: "Markdown"
+                    }
+                }
+            }
+
+            Label {
+                text: BlockSliceVm.statusText
+                Layout.fillWidth: true
+                wrapMode: Text.WordWrap
+                opacity: 0.72
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: General.spacingSmall
+
+                Item { Layout.fillWidth: true }
+
+                SvgToolButton {
+                    iconSource: Icons.closeSvg
+                    labelText: "Cancel"
+                    onClicked: slicePromptDialog.close()
+                }
+
+                SvgToolButton {
+                    iconSource: Icons.aiAssistSvg
+                    labelText: BlockSliceVm.generating ? "Generating..." : "Generate"
+                    enabled: !BlockSliceVm.generating
+                             && !BlockSliceVm.publishing
+                             && BlockSliceVm.aiGenerationAvailable
+                    onClicked: BlockSliceVm.generate()
+                }
+
+                SvgToolButton {
+                    iconSource: Icons.saveSvg
+                    labelText: BlockSliceVm.publishing ? "Publishing..." : "Publish All"
+                    enabled: !BlockSliceVm.generating
+                             && !BlockSliceVm.publishing
+                             && BlockSliceVm.generatedCount > 0
+                    onClicked: BlockSliceVm.publishAll()
                 }
             }
         }
@@ -435,6 +666,25 @@ Page {
                                 spacing: 4
 
                                 Label {
+                                    text: "AI Prompt"
+                                    font.bold: true
+                                }
+
+                                TextArea {
+                                    width: parent.width
+                                    height: 120
+                                    text: BlockEditorVm.aiPromptText
+                                    placeholderText: "Describe the block you want to generate"
+                                    wrapMode: TextEdit.Wrap
+                                    onTextChanged: if (text !== BlockEditorVm.aiPromptText) BlockEditorVm.aiPromptText = text
+                                }
+                            }
+
+                            ColumnLayout {
+                                width: parent.width
+                                spacing: 4
+
+                                Label {
                                     text: "Tags"
                                     font.bold: true
                                 }
@@ -544,9 +794,18 @@ Page {
                 }
 
                 SvgToolButton {
+                    iconSource: Icons.aiAssistSvg
+                    labelText: BlockEditorVm.generating ? "Generating..." : "Generate"
+                    enabled: !BlockEditorVm.generating
+                             && !BlockEditorVm.saving
+                             && BlockEditorVm.aiGenerationAvailable
+                    onClicked: BlockEditorVm.generate()
+                }
+
+                SvgToolButton {
                     iconSource: Icons.saveSvg
                     labelText: BlockEditorVm.saving ? "Saving..." : BlockEditorVm.saveButtonText
-                    enabled: !BlockEditorVm.saving
+                    enabled: !BlockEditorVm.saving && !BlockEditorVm.generating
                     onClicked: BlockEditorVm.save()
                 }
             }
@@ -558,6 +817,14 @@ Page {
 
         function onSaved() {
             editBlockDialog.close()
+        }
+    }
+
+    Connections {
+        target: BlockSliceVm
+
+        function onPublished() {
+            slicePromptDialog.close()
         }
     }
 }
