@@ -726,7 +726,7 @@ int Application::Run(int argc, char** argv) {
   CLI::App app{
       "tf - TextFoundry CLI: Reference client for Text Engine (per PRD MVP)",
       "tf"};
-  app.set_version_flag("-v,--version", "0.1.0 (MVP)");
+  app.set_version_flag("-v,--version", "0.2.0");
 
   SetupGlobalOptions(app);
 
