@@ -25,10 +25,29 @@ set(OBJECTBOX_LICENSE_FILE "${objectbox_SOURCE_DIR}/LICENSE.txt")
 add_subdirectory(src/textfoundry_ai)
 add_subdirectory(src/text_foundry_cli)
 option(TEXTFOUNDRY_BUILD_GUI "Build Qt/QML GUI frontend" ON)
+option(TEXTFOUNDRY_VENDORED_KSYNTAXHIGHLIGHTING
+  "Build KSyntaxHighlighting from source instead of using a system package"
+  ON
+)
 if(TEXTFOUNDRY_BUILD_GUI)
   set(CMAKE_MAP_IMPORTED_CONFIG_MINSIZEREL "Release;RelWithDebInfo")
   find_package(Qt6 6.8 QUIET COMPONENTS Core Qml Quick QuickControls2)
   if(Qt6_FOUND)
+    if(TEXTFOUNDRY_VENDORED_KSYNTAXHIGHLIGHTING AND NOT TARGET KF6::SyntaxHighlighting)
+      set(TEXTFOUNDRY_SAVED_BUILD_TESTING "${BUILD_TESTING}")
+      set(TEXTFOUNDRY_SAVED_KBUILD_TESTING "${KBUILD_TESTING}")
+      set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+      set(KBUILD_TESTING OFF CACHE BOOL "" FORCE)
+      set(BUILD_QCH OFF CACHE BOOL "" FORCE)
+      FetchContent_Declare(
+        syntax_highlighting
+        GIT_REPOSITORY https://github.com/KDE/syntax-highlighting.git
+        GIT_TAG v6.23.0
+      )
+      FetchContent_MakeAvailable(syntax_highlighting)
+      set(BUILD_TESTING "${TEXTFOUNDRY_SAVED_BUILD_TESTING}" CACHE BOOL "" FORCE)
+      set(KBUILD_TESTING "${TEXTFOUNDRY_SAVED_KBUILD_TESTING}" CACHE BOOL "" FORCE)
+    endif()
     if(NOT TARGET qt6keychain)
       find_package(Qt6Keychain CONFIG QUIET)
       if(TARGET qt6keychain)
