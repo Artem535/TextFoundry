@@ -14,11 +14,10 @@ variables:
 
 cache:
   key:
+    prefix: "rpm-fedora43"
     files:
       - vcpkg.json
       - vcpkg-configuration.json
-      - CMakePresets.json
-      - .gitlab-ci.yml
   paths:
     - .cache/vcpkg
     - .cache/vcpkg-bincache
