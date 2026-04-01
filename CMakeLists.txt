@@ -47,7 +47,15 @@ if(TEXTFOUNDRY_BUILD_GUI)
         GIT_REPOSITORY https://github.com/KDE/syntax-highlighting.git
         GIT_TAG v6.23.0
       )
-      FetchContent_MakeAvailable(syntax_highlighting)
+      FetchContent_GetProperties(syntax_highlighting)
+      if(NOT syntax_highlighting_POPULATED)
+        FetchContent_Populate(syntax_highlighting)
+        add_subdirectory(
+          ${syntax_highlighting_SOURCE_DIR}
+          ${syntax_highlighting_BINARY_DIR}
+          EXCLUDE_FROM_ALL
+        )
+      endif()
       set(BUILD_TESTING "${TEXTFOUNDRY_SAVED_BUILD_TESTING}" CACHE BOOL "" FORCE)
       set(KBUILD_TESTING "${TEXTFOUNDRY_SAVED_KBUILD_TESTING}" CACHE BOOL "" FORCE)
       set(CMAKE_DISABLE_FIND_PACKAGE_Python "${TEXTFOUNDRY_SAVED_DISABLE_FIND_PACKAGE_PYTHON}")
