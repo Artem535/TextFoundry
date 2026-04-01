@@ -115,6 +115,7 @@ moc_*.cpp
 moc_*.h
 qrc_*.cpp
 ui_*.h
+!src/text_foundry_cli/ui_style.h
 *.qmlc
 *.jsc
 Makefile*
