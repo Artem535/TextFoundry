@@ -22,6 +22,7 @@ class CompositionsViewModel : public QObject {
   Q_PROPERTY(QStringList selectedVersionOptions READ selectedVersionOptions NOTIFY detailsChanged)
   Q_PROPERTY(QString selectedState READ selectedState NOTIFY detailsChanged)
   Q_PROPERTY(QString selectedDescription READ selectedDescription NOTIFY detailsChanged)
+  Q_PROPERTY(QString selectedRevisionComment READ selectedRevisionComment NOTIFY detailsChanged)
   Q_PROPERTY(QString selectedFragmentCount READ selectedFragmentCount NOTIFY detailsChanged)
   Q_PROPERTY(QStringList selectedFragments READ selectedFragments NOTIFY detailsChanged)
   Q_PROPERTY(QString tone READ tone WRITE setTone NOTIFY normalizationChanged)
@@ -52,6 +53,7 @@ class CompositionsViewModel : public QObject {
   QStringList selectedVersionOptions() const;
   QString selectedState() const;
   QString selectedDescription() const;
+  QString selectedRevisionComment() const;
   QString selectedFragmentCount() const;
   QStringList selectedFragments() const;
   QString tone() const;
@@ -86,6 +88,7 @@ class CompositionsViewModel : public QObject {
   Q_INVOKABLE void selectCompositionVersion(const QString& value);
   Q_INVOKABLE void deprecateSelected();
   Q_INVOKABLE void normalizeSelected();
+  Q_INVOKABLE void updateBlocksToLatest();
 
  signals:
   void compositionsChanged();
@@ -108,6 +111,7 @@ class CompositionsViewModel : public QObject {
   QStringList selected_version_options_;
   QString selected_state_;
   QString selected_description_;
+  QString selected_revision_comment_;
   QString selected_fragment_count_;
   QStringList selected_fragments_;
   QString tone_;

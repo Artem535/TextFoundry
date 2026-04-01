@@ -70,6 +70,7 @@ class CompositionEditorViewModel : public QObject {
   Q_PROPERTY(QString compositionId READ compositionId WRITE setCompositionId NOTIFY editorChanged)
   Q_PROPERTY(QString currentVersion READ currentVersion NOTIFY editorChanged)
   Q_PROPERTY(QString description READ description WRITE setDescription NOTIFY editorChanged)
+  Q_PROPERTY(QString revisionComment READ revisionComment WRITE setRevisionComment NOTIFY editorChanged)
   Q_PROPERTY(QString bumpMode READ bumpMode WRITE setBumpMode NOTIFY editorChanged)
   Q_PROPERTY(QStringList bumpOptions READ bumpOptions CONSTANT)
   Q_PROPERTY(QStringList availableBlockIds READ availableBlockIds NOTIFY editorChanged)
@@ -108,6 +109,7 @@ class CompositionEditorViewModel : public QObject {
   QString compositionId() const;
   QString currentVersion() const;
   QString description() const;
+  QString revisionComment() const;
   QString bumpMode() const;
   QStringList bumpOptions() const;
   QStringList availableBlockIds() const;
@@ -133,6 +135,7 @@ class CompositionEditorViewModel : public QObject {
 
   void setCompositionId(const QString& value);
   void setDescription(const QString& value);
+  void setRevisionComment(const QString& value);
   void setBumpMode(const QString& value);
   void setBlockRefBlockId(const QString& value);
   void setBlockSearchText(const QString& value);
@@ -195,6 +198,7 @@ class CompositionEditorViewModel : public QObject {
   QString composition_id_;
   QString current_version_;
   QString description_;
+  QString revision_comment_;
   QString bump_mode_ = QStringLiteral("Minor");
   QStringList available_block_ids_;
   QStringList filtered_block_ids_;

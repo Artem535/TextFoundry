@@ -60,12 +60,34 @@ Frame {
                     visible: !CompositionEditorVm.createMode
 
                     Label {
-                        text: "Current Version"
+                        text: "Base Version"
                         font.bold: true
                     }
 
                     Label {
                         text: CompositionEditorVm.currentVersion.length > 0 ? CompositionEditorVm.currentVersion : "Unpublished"
+                    }
+                }
+
+                ColumnLayout {
+                    Layout.fillWidth: true
+                    width: parent.width
+                    spacing: 4
+
+                    Label {
+                        text: "Revision Comment"
+                        font.bold: true
+                    }
+
+                    TextArea {
+                        Layout.fillWidth: true
+                        Layout.preferredHeight: 84
+                        text: CompositionEditorVm.revisionComment
+                        placeholderText: CompositionEditorVm.createMode
+                                         ? "Optional note for the first published version"
+                                         : "What changed in this new version?"
+                        wrapMode: TextEdit.Wrap
+                        onTextChanged: if (text !== CompositionEditorVm.revisionComment) CompositionEditorVm.revisionComment = text
                     }
                 }
 

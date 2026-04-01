@@ -6,6 +6,7 @@
 #include <string>
 
 #include "app/session_view_model.h"
+#include "tf/block_ref.h"
 #include "tf/block_type.hpp"
 #include "tf/composition.h"
 #include "tf/fragment.h"
@@ -108,6 +109,10 @@ QString CompositionsViewModel::selectedState() const { return selected_state_; }
 
 QString CompositionsViewModel::selectedDescription() const {
   return selected_description_;
+}
+
+QString CompositionsViewModel::selectedRevisionComment() const {
+  return selected_revision_comment_;
 }
 
 QString CompositionsViewModel::selectedFragmentCount() const {
@@ -318,6 +323,86 @@ void CompositionsViewModel::normalizeSelected() {
   setStatusText(QStringLiteral("Normalized composition created."));
 }
 
+void CompositionsViewModel::updateBlocksToLatest() {
+  if (selected_composition_id_.isEmpty()) {
+    setStatusText(QStringLiteral("Select a composition first."));
+    return;
+  }
+
+  Version version;
+  if (const auto parse_error = ParseVersionText(selected_version_, version);
+      parse_error.has_value()) {
+    setStatusText(QString("Error: %1").arg(QString::fromStdString(*parse_error)));
+    return;
+  }
+
+  auto composition_result = session_->engine().LoadComposition(
+      selected_composition_id_.toStdString(), version);
+  if (composition_result.HasError()) {
+    setStatusText(QString("Error: %1")
+                      .arg(QString::fromStdString(composition_result.error().message)));
+    return;
+  }
+
+  const auto& composition = composition_result.value();
+  CompositionDraftBuilder builder(composition.id());
+  builder.WithDescription(composition.description())
+      .WithRevisionComment("Updated block references to latest block versions.");
+
+  bool changed = false;
+  for (const auto& fragment : composition.fragments()) {
+    if (fragment.IsBlockRef()) {
+      const auto& ref = fragment.AsBlockRef();
+      auto latest_result =
+          session_->engine().GetLatestBlockVersion(ref.GetBlockId());
+      if (latest_result.HasError()) {
+        setStatusText(QString("Error: %1")
+                          .arg(QString::fromStdString(latest_result.error().message)));
+        return;
+      }
+
+      const auto latest_version = latest_result.value();
+      if (!ref.version().has_value() || ref.version().value() != latest_version) {
+        changed = true;
+      }
+
+      builder.AddBlockRef(
+          BlockRef(ref.GetBlockId(), latest_version, ref.LocalParams()));
+      continue;
+    }
+
+    if (fragment.IsStaticText()) {
+      builder.AddStaticText(fragment.AsStaticText().text());
+      continue;
+    }
+
+    if (fragment.IsSeparator()) {
+      builder.AddSeparator(fragment.AsSeparator().type);
+    }
+  }
+
+  if (!changed) {
+    setStatusText(QStringLiteral("All block references already use latest versions."));
+    return;
+  }
+
+  auto update_result = session_->engine().UpdateComposition(
+      builder.build(), Engine::VersionBump::Minor);
+  if (update_result.HasError()) {
+    setStatusText(QString("Error: %1")
+                      .arg(QString::fromStdString(update_result.error().message)));
+    return;
+  }
+
+  reload();
+  setSelectedCompositionId(
+      QString::fromStdString(update_result.value().id()));
+  selected_version_ =
+      QString::fromStdString(update_result.value().version().ToString());
+  refreshDetails();
+  setStatusText(QStringLiteral("Updated block references to latest versions."));
+}
+
 void CompositionsViewModel::syncCompositions() {
   auto ids = session_->engine().ListCompositions();
   std::sort(ids.begin(), ids.end());
@@ -354,6 +439,7 @@ void CompositionsViewModel::refreshDetails() {
     selected_version_options_.clear();
     selected_state_.clear();
     selected_description_.clear();
+    selected_revision_comment_.clear();
     selected_fragment_count_.clear();
     selected_fragments_.clear();
     setStatusText(QStringLiteral("No compositions found."));
@@ -368,6 +454,7 @@ void CompositionsViewModel::refreshDetails() {
     selected_versions_.clear();
     selected_state_.clear();
     selected_description_.clear();
+    selected_revision_comment_.clear();
     selected_fragment_count_.clear();
     selected_fragments_.clear();
     setStatusText(QString("Error: %1")
@@ -411,6 +498,7 @@ void CompositionsViewModel::refreshDetails() {
       parse_error.has_value()) {
     selected_state_.clear();
     selected_description_.clear();
+    selected_revision_comment_.clear();
     selected_fragment_count_.clear();
     selected_fragments_.clear();
     setStatusText(QString("Error: %1")
@@ -426,6 +514,7 @@ void CompositionsViewModel::refreshDetails() {
     selected_version_options_.clear();
     selected_state_.clear();
     selected_description_.clear();
+    selected_revision_comment_.clear();
     selected_fragment_count_.clear();
     selected_fragments_.clear();
     setStatusText(QString("Error: %1")
@@ -439,6 +528,8 @@ void CompositionsViewModel::refreshDetails() {
   selected_state_ = QString::fromUtf8(BlockStateToString(composition.state()).data(),
                                       static_cast<int>(BlockStateToString(composition.state()).size()));
   selected_description_ = QString::fromStdString(composition.description());
+  selected_revision_comment_ =
+      QString::fromStdString(composition.revision_comment());
   selected_fragment_count_ = QString::number(composition.fragmentCount());
   selected_fragments_.clear();
   selected_fragments_.reserve(static_cast<qsizetype>(composition.fragments().size()));

@@ -60,6 +60,8 @@ set(TEXTFOUNDRY_GUI_RESOURCES
     "resource/icons/solid/paste.svg"
     "resource/icons/solid/trash.svg"
     "resource/icons/solid/broom.svg"
+    "resource/icons/solid/folder.svg"
+    "resource/icons/solid/folder-open.svg"
     "resource/icons/solid/wand-magic-sparkles.svg"
 )
 
@@ -140,10 +142,19 @@ if(UNIX AND NOT APPLE)
         ${CMAKE_CURRENT_BINARY_DIR}/textfoundry.desktop
         @ONLY
     )
+    configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/dist/textfoundry.metainfo.xml.in
+        ${CMAKE_CURRENT_BINARY_DIR}/textfoundry.metainfo.xml
+        @ONLY
+    )
 
     install(
         FILES ${CMAKE_CURRENT_BINARY_DIR}/textfoundry.desktop
         DESTINATION ${CMAKE_INSTALL_DATADIR}/applications
+    )
+    install(
+        FILES ${CMAKE_CURRENT_BINARY_DIR}/textfoundry.metainfo.xml
+        DESTINATION ${CMAKE_INSTALL_DATADIR}/metainfo
     )
 
     install(

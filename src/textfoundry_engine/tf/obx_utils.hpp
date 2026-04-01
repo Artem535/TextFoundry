@@ -19,6 +19,11 @@
 #include "version.h"
 
 namespace tf::utils {
+struct CompositionStoragePayload {
+  std::optional<StyleProfile> style_profile;
+  std::optional<std::string> revision_comment;
+};
+
 // ============================================================================
 // Enums Conversion
 // ============================================================================
@@ -276,11 +281,26 @@ inline Composition obx_composition_to_composition(
   comp.SetProjectKey(obxComp.projectKey);
   comp.SetVersion(Version{obxComp.versionMajor, obxComp.versionMinor});
   comp.SetDescription(obxComp.description);
+  comp.SetRevisionComment(obxComp.revisionComment);
   comp.SetState(ObxStateCodeToBlockState(obxComp.state));
 
   if (!obxComp.styleProfileJson.empty()) {
-    comp.SetStyleProfile(
-        rfl::json::read<StyleProfile>(obxComp.styleProfileJson).value());
+    const auto style = rfl::json::read<StyleProfile>(obxComp.styleProfileJson);
+    if (style.has_value()) {
+      comp.SetStyleProfile(std::move(*style));
+    } else {
+      const auto payload =
+          rfl::json::read<CompositionStoragePayload>(obxComp.styleProfileJson);
+      if (payload.has_value()) {
+        if (payload->style_profile.has_value()) {
+          comp.SetStyleProfile(std::move(*payload->style_profile));
+        }
+        if (comp.revision_comment().empty() &&
+            payload->revision_comment.has_value()) {
+          comp.SetRevisionComment(std::move(*payload->revision_comment));
+        }
+      }
+    }
   }
 
   return comp;
@@ -300,6 +320,7 @@ inline ObxComposition composition_to_obx_composition(const Composition& comp,
   obxComp.versionMajor = comp.version().major;
   obxComp.versionMinor = comp.version().minor;
   obxComp.description = comp.description();
+  obxComp.revisionComment = comp.revision_comment();
   if (comp.GetStyleProfile().has_value()) {
     obxComp.styleProfileJson = rfl::json::write(comp.GetStyleProfile().value());
   }

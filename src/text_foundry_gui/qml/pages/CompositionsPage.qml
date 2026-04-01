@@ -60,6 +60,14 @@ Page {
 
                         SvgToolButton {
                             compact: true
+                            iconSource: Icons.reloadSvg
+                            labelText: "Use Latest Blocks"
+                            enabled: CompositionsVm.selectedCompositionId.length > 0
+                            onClicked: CompositionsVm.updateBlocksToLatest()
+                        }
+
+                        SvgToolButton {
+                            compact: true
                             iconSource: Icons.deprecateSvg
                             labelText: "Deprecate"
                             enabled: CompositionsVm.selectedCompositionId.length > 0
@@ -178,6 +186,12 @@ Page {
                             label: "Description"
                             value: CompositionsVm.selectedDescription
                             placeholder: "No description"
+                        }
+
+                        DetailField {
+                            label: "Revision Comment"
+                            value: CompositionsVm.selectedRevisionComment
+                            placeholder: "No revision comment"
                         }
 
                         ColumnLayout {

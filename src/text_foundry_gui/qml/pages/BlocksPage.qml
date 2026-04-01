@@ -67,11 +67,19 @@ Page {
                     }
                 }
 
+                TextField {
+                    Layout.fillWidth: true
+                    placeholderText: "Search block id, description, template, tags..."
+                    text: BlocksModel.searchText
+                    onTextChanged: BlocksModel.searchText = text
+                }
+
                 TreeView {
                     id: blocksTree
                     Layout.fillWidth: true
                     Layout.fillHeight: true
                     clip: true
+                    property var expandedFolders: ({})
                     model: BlocksModel
                     selectionModel: ItemSelectionModel {}
                     columnWidthProvider: function(column) {
@@ -79,6 +87,55 @@ Page {
                     }
                     palette.highlight: ColorPalette.selection
                     palette.highlightedText: ColorPalette.onSelection
+
+                    function rememberExpandedFolders() {
+                        const remembered = {}
+
+                        function visit(parentIndex) {
+                            const count = BlocksModel.rowCount(parentIndex)
+                            for (let row = 0; row < count; ++row) {
+                                const index = BlocksModel.index(row, 0, parentIndex)
+                                if (!index.valid)
+                                    continue
+
+                                const isFolder = BlocksModel.data(index, BlocksModel.IsFolderRole)
+                                if (!isFolder)
+                                    continue
+
+                                const fullPath = BlocksModel.data(index, BlocksModel.FullPathRole)
+                                if (blocksTree.isExpanded(row, parentIndex))
+                                    remembered[fullPath] = true
+
+                                visit(index)
+                            }
+                        }
+
+                        visit(Qt.invalidModelIndex)
+                        expandedFolders = remembered
+                    }
+
+                    function restoreExpandedFolders() {
+                        function visit(parentIndex) {
+                            const count = BlocksModel.rowCount(parentIndex)
+                            for (let row = 0; row < count; ++row) {
+                                const index = BlocksModel.index(row, 0, parentIndex)
+                                if (!index.valid)
+                                    continue
+
+                                const isFolder = BlocksModel.data(index, BlocksModel.IsFolderRole)
+                                if (!isFolder)
+                                    continue
+
+                                const fullPath = BlocksModel.data(index, BlocksModel.FullPathRole)
+                                if (expandedFolders[fullPath])
+                                    blocksTree.expand(row, parentIndex)
+
+                                visit(index)
+                            }
+                        }
+
+                        visit(Qt.invalidModelIndex)
+                    }
 
                     delegate: TreeViewDelegate {
                         id: treeDelegate
@@ -98,13 +155,34 @@ Page {
                         }
 
                         contentItem: Label {
-                            text: treeDelegate.text
-                            color: treeDelegate.current
-                                   ? treeDelegate.palette.highlightedText
-                                   : ColorPalette.textPrimary
-                            font.bold: isFolder
-                            elide: Text.ElideRight
-                            verticalAlignment: Text.AlignVCenter
+                            RowLayout {
+                                anchors.fill: parent
+                                spacing: General.spacingSmall
+
+                                SvgIcon {
+                                    visible: isFolder
+                                    source: blocksTree.isExpanded(row)
+                                            ? Icons.folderOpenSvg
+                                            : Icons.folderSvg
+                                    color: treeDelegate.current
+                                           ? treeDelegate.palette.highlightedText
+                                           : ColorPalette.textPrimary
+                                    iconWidth: 15
+                                    iconHeight: 15
+                                    Layout.alignment: Qt.AlignVCenter
+                                }
+
+                                Label {
+                                    Layout.fillWidth: true
+                                    text: treeDelegate.text
+                                    color: treeDelegate.current
+                                           ? treeDelegate.palette.highlightedText
+                                           : ColorPalette.textPrimary
+                                    font.bold: isFolder
+                                    elide: Text.ElideRight
+                                    verticalAlignment: Text.AlignVCenter
+                                }
+                            }
                         }
 
                         onClicked: {
@@ -112,7 +190,14 @@ Page {
                             blocksTree.selectionModel.setCurrentIndex(
                                         modelIndex, ItemSelectionModel.ClearAndSelect)
                             if (isFolder) {
+                                blocksTree.rememberExpandedFolders()
                                 blocksTree.toggleExpanded(row)
+
+                                const fullPath = model.fullPath
+                                if (blocksTree.isExpanded(row))
+                                    blocksTree.expandedFolders[fullPath] = true
+                                else
+                                    delete blocksTree.expandedFolders[fullPath]
                             } else {
                                 BlocksModel.selectBlock(blockId)
                             }
@@ -122,6 +207,17 @@ Page {
                     ScrollBar.vertical: ScrollBar {}
 
                     Component.onCompleted: expandRecursively()
+
+                    Connections {
+                        target: BlocksModel
+
+                        function onTreeReloaded() {
+                            if (BlocksModel.searchText.trim().length > 0)
+                                blocksTree.expandRecursively()
+                            else
+                                blocksTree.restoreExpandedFolders()
+                        }
+                    }
                 }
             }
         }
@@ -221,8 +317,9 @@ Page {
 
                         DetailField {
                             label: "Description"
-                            value: BlocksModel.selectedBlockDescription
+                            value: BlocksModel.highlightSearchText(BlocksModel.selectedBlockDescription)
                             placeholder: "No description"
+                            richText: true
                         }
 
                         ColumnLayout {
@@ -297,15 +394,63 @@ Page {
                                 font.bold: true
                             }
 
-                            CodePreview {
+                            Loader {
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
                                 Layout.minimumHeight: 220
-                                text: BlocksModel.selectedBlockTemplate
-                                definition: "Markdown"
+                                active: true
+                                sourceComponent: BlocksModel.searchText.trim().length > 0
+                                                 ? highlightedTemplatePreview
+                                                 : plainTemplatePreview
                             }
                         }
                     }
+                }
+            }
+        }
+    }
+
+    Component {
+        id: plainTemplatePreview
+
+        CodePreview {
+            text: BlocksModel.selectedBlockTemplate
+            definition: "Markdown"
+        }
+    }
+
+    Component {
+        id: highlightedTemplatePreview
+
+        Frame {
+            padding: General.paddingMedium
+
+            background: Rectangle {
+                radius: General.radiusSmall
+                color: ColorPalette.fieldBackground
+                border.color: ColorPalette.borderStrong
+            }
+
+            ScrollView {
+                id: highlightedTemplateScroll
+                anchors.fill: parent
+                clip: true
+                ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+
+                TextEdit {
+                    width: highlightedTemplateScroll.availableWidth
+                    text: "<div style='color:" + ColorPalette.textPrimary
+                          + ";'>" + BlocksModel.highlightSearchContent(BlocksModel.selectedBlockTemplate)
+                          + "</div>"
+                    textFormat: TextEdit.RichText
+                    readOnly: true
+                    wrapMode: TextEdit.Wrap
+                    selectByMouse: true
+                    font.family: General.monospaceFamily
+                    font.pixelSize: SessionVm.previewFontSize
+                    color: highlightedTemplateScroll.palette.windowText
+                    selectedTextColor: highlightedTemplateScroll.palette.highlightedText
+                    selectionColor: highlightedTemplateScroll.palette.highlight
                 }
             }
         }

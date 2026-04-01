@@ -115,6 +115,7 @@ class Composition {
   [[nodiscard]] const std::string& ProjectKey() const noexcept;
 
   [[nodiscard]] const std::string& description() const noexcept;
+  [[nodiscard]] const std::string& revision_comment() const noexcept;
 
   // Setters (allowed only for Draft state)
   void SetId(CompositionId id);
@@ -126,6 +127,7 @@ class Composition {
   void SetProjectKey(std::string key);
 
   void SetDescription(std::string desc);
+  void SetRevisionComment(std::string comment);
 
   /**
    * Add a BlockRef fragment with local parameters
@@ -206,6 +208,7 @@ class Composition {
 
   // Metadata
   std::string description_;
+  std::string revision_comment_;
 };
 
 class CompositionDraft {
@@ -252,6 +255,7 @@ class CompositionDraftBuilder {
   CompositionDraftBuilder& WithProjectKey(std::string key);
 
   CompositionDraftBuilder& WithDescription(std::string desc);
+  CompositionDraftBuilder& WithRevisionComment(std::string comment);
 
   CompositionDraftBuilder& AddBlockRef(BlockRef ref);
 

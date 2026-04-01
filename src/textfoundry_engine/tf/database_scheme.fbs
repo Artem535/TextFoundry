@@ -168,6 +168,9 @@ table ObxComposition {
     /// Next version reference
     /// objectbox:relation=ObxComposition
     nextVersionId: ulong;
+
+    /// Short human-readable note about what changed in this version
+    revisionComment: string;
 }
 
 // ============================================================================

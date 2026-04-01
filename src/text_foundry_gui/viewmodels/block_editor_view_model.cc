@@ -275,6 +275,7 @@ void BlockEditorViewModel::save() {
 
   blocks_->reload();
   blocks_->selectBlock(block_id_);
+  blocks_->selectLatestVersion();
   setStatusText(QString("%1 %2 as version %3")
                     .arg(create_mode_ ? QStringLiteral("Created")
                                       : QStringLiteral("Saved"),

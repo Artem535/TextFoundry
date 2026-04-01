@@ -52,6 +52,9 @@ const std::string& Composition::ProjectKey() const noexcept {
 const std::string& Composition::description() const noexcept {
   return description_;
 }
+const std::string& Composition::revision_comment() const noexcept {
+  return revision_comment_;
+}
 
 void Composition::SetId(CompositionId id) { id_ = std::move(id); }
 
@@ -65,6 +68,9 @@ void Composition::SetProjectKey(std::string key) {
 }
 void Composition::SetDescription(std::string desc) {
   description_ = std::move(desc);
+}
+void Composition::SetRevisionComment(std::string comment) {
+  revision_comment_ = std::move(comment);
 }
 
 void Composition::SetVersion(const Version& v) { version_ = v; }
@@ -197,6 +203,12 @@ CompositionDraftBuilder& CompositionDraftBuilder::WithProjectKey(
 CompositionDraftBuilder& CompositionDraftBuilder::WithDescription(
     std::string desc) {
   comp_.SetDescription(std::move(desc));
+  return *this;
+}
+
+CompositionDraftBuilder& CompositionDraftBuilder::WithRevisionComment(
+    std::string comment) {
+  comp_.SetRevisionComment(std::move(comment));
   return *this;
 }
 

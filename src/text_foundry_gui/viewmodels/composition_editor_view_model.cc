@@ -338,6 +338,10 @@ QString CompositionEditorViewModel::currentVersion() const {
 
 QString CompositionEditorViewModel::description() const { return description_; }
 
+QString CompositionEditorViewModel::revisionComment() const {
+  return revision_comment_;
+}
+
 QString CompositionEditorViewModel::bumpMode() const { return bump_mode_; }
 
 QStringList CompositionEditorViewModel::bumpOptions() const {
@@ -436,6 +440,12 @@ void CompositionEditorViewModel::setCompositionId(const QString& value) {
 void CompositionEditorViewModel::setDescription(const QString& value) {
   if (description_ == value) return;
   description_ = value;
+  emit editorChanged();
+}
+
+void CompositionEditorViewModel::setRevisionComment(const QString& value) {
+  if (revision_comment_ == value) return;
+  revision_comment_ = value;
   emit editorChanged();
 }
 
@@ -808,6 +818,7 @@ void CompositionEditorViewModel::save() {
 
   CompositionDraftBuilder builder(composition_id_.trimmed().toStdString());
   builder.WithDescription(description_.toStdString())
+      .WithRevisionComment(revision_comment_.trimmed().toStdString())
       .WithProjectKey(session_->projectKey().toStdString());
 
   const bool has_separator_specs = std::ranges::any_of(
@@ -878,6 +889,7 @@ void CompositionEditorViewModel::resetForm() {
   composition_id_.clear();
   current_version_.clear();
   description_.clear();
+  revision_comment_.clear();
   bump_mode_ = QStringLiteral("Minor");
   available_block_ids_.clear();
   filtered_block_ids_.clear();
@@ -899,7 +911,16 @@ bool CompositionEditorViewModel::loadSelectedComposition() {
   resetForm();
   loadAvailableBlocks();
 
-  auto result = session_->engine().LoadComposition(selected_id.toStdString());
+  Version version;
+  if (const auto parse_error =
+          ParseVersionText(compositions_->selectedVersion(), version);
+      parse_error.has_value()) {
+    setStatusText(QString("Error: %1").arg(QString::fromStdString(*parse_error)));
+    return false;
+  }
+
+  auto result =
+      session_->engine().LoadComposition(selected_id.toStdString(), version);
   if (result.HasError()) {
     setStatusText(QString("Error: %1")
                       .arg(QString::fromStdString(result.error().message)));
@@ -910,6 +931,7 @@ bool CompositionEditorViewModel::loadSelectedComposition() {
   composition_id_ = selected_id;
   current_version_ = QString::fromStdString(composition.version().ToString());
   description_ = QString::fromStdString(composition.description());
+  revision_comment_.clear();
 
   std::vector<FragmentSpec> fragments;
   fragments.reserve(composition.fragments().size());
@@ -950,7 +972,7 @@ bool CompositionEditorViewModel::loadSelectedComposition() {
   }
 
   fragments_model_.setFragments(std::move(fragments));
-  setStatusText(QStringLiteral("Editing selected composition."));
+  setStatusText(QStringLiteral("Editing selected version. Saving will publish a new latest version."));
   return true;
 }
 

@@ -17,6 +17,7 @@ class BlocksModel : public QAbstractItemModel {
   QML_SINGLETON
   QML_NAMED_ELEMENT(BlocksModel)
   Q_PROPERTY(QString selectedBlockId READ selectedBlockId WRITE setSelectedBlockId NOTIFY selectedBlockIdChanged)
+  Q_PROPERTY(QString searchText READ searchText WRITE setSearchText NOTIFY searchTextChanged)
   Q_PROPERTY(bool showDerivedBlocks READ showDerivedBlocks WRITE setShowDerivedBlocks NOTIFY showDerivedBlocksChanged)
   Q_PROPERTY(QString detailsText READ detailsText NOTIFY detailsTextChanged)
   Q_PROPERTY(QString selectedBlockVersion READ selectedBlockVersion NOTIFY detailsTextChanged)
@@ -35,6 +36,9 @@ class BlocksModel : public QAbstractItemModel {
     BlockIdRole,
     IsFolderRole,
     FullPathRole,
+    HighlightedDisplayRole,
+    MatchSnippetRole,
+    HighlightedMatchSnippetRole,
   };
 
   explicit BlocksModel(SessionViewModel* session, QObject* parent = nullptr);
@@ -63,26 +67,34 @@ class BlocksModel : public QAbstractItemModel {
   QString selectedBlockTemplate() const;
   QStringList selectedBlockTags() const;
   QStringList selectedBlockDefaults() const;
+  QString searchText() const;
   bool showDerivedBlocks() const;
 
   void setSelectedBlockId(const QString& value);
+  void setSearchText(const QString& value);
   void setShowDerivedBlocks(bool value);
 
   Q_INVOKABLE void reload();
   Q_INVOKABLE void selectBlock(const QString& block_id);
   Q_INVOKABLE void selectBlockVersion(const QString& version_text);
+  Q_INVOKABLE void selectLatestVersion();
   Q_INVOKABLE void deprecateSelected();
+  Q_INVOKABLE QString highlightSearchText(const QString& text) const;
+  Q_INVOKABLE QString highlightSearchContent(const QString& text) const;
 
  signals:
   void selectedBlockIdChanged();
+  void searchTextChanged();
   void showDerivedBlocksChanged();
   void detailsTextChanged();
+  void treeReloaded();
 
  private:
   struct Node {
     QString label;
     QString full_path;
     QString block_id;
+    QString match_snippet;
     bool is_folder = true;
     Node* parent = nullptr;
     std::vector<std::unique_ptr<Node>> children;
@@ -113,6 +125,7 @@ class BlocksModel : public QAbstractItemModel {
   QString selected_block_template_;
   QStringList selected_block_tags_;
   QStringList selected_block_defaults_;
+  QString search_text_;
   bool show_derived_blocks_ = false;
 };
 

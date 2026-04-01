@@ -31,6 +31,8 @@ Item {
     readonly property url removeSvg: "qrc:/qt/qml/TextFoundry/resource/icons/solid/trash.svg"
     readonly property url cleanSvg: "qrc:/qt/qml/TextFoundry/resource/icons/solid/broom.svg"
     readonly property url broomSvg: cleanSvg
+    readonly property url folderSvg: "qrc:/qt/qml/TextFoundry/resource/icons/solid/folder.svg"
+    readonly property url folderOpenSvg: "qrc:/qt/qml/TextFoundry/resource/icons/solid/folder-open.svg"
     readonly property url aiAssistSvg: "qrc:/qt/qml/TextFoundry/resource/icons/solid/wand-magic-sparkles.svg"
     readonly property url sliceSvg: "qrc:/qt/qml/TextFoundry/resource/icons/solid/scissors.svg"
 

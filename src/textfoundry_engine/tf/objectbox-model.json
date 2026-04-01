@@ -200,7 +200,7 @@
     },
     {
       "id": "4:6318735372778212312",
-      "lastPropertyId": "14:8353812056519611991",
+      "lastPropertyId": "15:7553676083110335075",
       "name": "ObxComposition",
       "properties": [
         {
@@ -289,6 +289,11 @@
           "type": 11,
           "flags": 520,
           "relationTarget": "ObxComposition"
+        },
+        {
+          "id": "15:7553676083110335075",
+          "name": "revisionComment",
+          "type": 9
         }
       ]
     },

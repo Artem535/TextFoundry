@@ -2,6 +2,7 @@
 
 #include <QCoreApplication>
 #include <algorithm>
+#include <array>
 #include <sstream>
 
 #include "app/session_view_model.h"
@@ -11,6 +12,163 @@ namespace {
 
 bool IsDerivedBlockId(const QString& block_id) {
   return block_id.contains(QStringLiteral(".norm."));
+}
+
+QString HtmlEscaped(const QString& text) { return text.toHtmlEscaped(); }
+
+QString HtmlEscapedPreservingWhitespace(const QString& text) {
+  QString escaped = HtmlEscaped(text);
+  escaped.replace(QStringLiteral("\t"), QStringLiteral("&nbsp;&nbsp;&nbsp;&nbsp;"));
+  escaped.replace(QStringLiteral(" "), QStringLiteral("&nbsp;"));
+  escaped.replace(QStringLiteral("\n"), QStringLiteral("<br/>"));
+  return escaped;
+}
+
+QString HighlightMatch(const QString& text, const QString& needle,
+                       const bool preserve_whitespace = false) {
+  const auto escape = [preserve_whitespace](const QString& value) {
+    return preserve_whitespace ? HtmlEscapedPreservingWhitespace(value)
+                               : HtmlEscaped(value);
+  };
+
+  const QString escaped_text = escape(text);
+  if (needle.isEmpty()) {
+    return escaped_text;
+  }
+
+  const QString lower_text = text.toLower();
+  const QString lower_needle = needle.toLower();
+  QString result;
+  int position = 0;
+
+  while (position < text.size()) {
+    const int match = lower_text.indexOf(lower_needle, position);
+    if (match < 0) {
+      result += escape(text.mid(position));
+      break;
+    }
+
+    result += escape(text.mid(position, match - position));
+    result += QStringLiteral(
+                  "<span style=\"background-color:#f6e27a;color:#161616;\">") +
+              escape(text.mid(match, needle.size())) +
+              QStringLiteral("</span>");
+    position = match + needle.size();
+  }
+
+  return result;
+}
+
+QString SnippetAroundMatch(const QString& text, const QString& needle,
+                           const int radius = 36) {
+  if (needle.isEmpty() || text.isEmpty()) return {};
+
+  const int match = text.toLower().indexOf(needle.toLower());
+  if (match < 0) return {};
+
+  const int start = std::max(0, match - radius);
+  const int end = std::min(text.size(), match + needle.size() + radius);
+  QString snippet = text.mid(start, end - start).simplified();
+  if (start > 0) {
+    snippet.prepend(QStringLiteral("..."));
+  }
+  if (end < text.size()) {
+    snippet.append(QStringLiteral("..."));
+  }
+  return snippet;
+}
+
+QString BlockMatchSnippet(const tf::Block& block, const QString& block_id,
+                          const QString& needle) {
+  const std::array<QString, 4> fields = {
+      block_id,
+      QString::fromStdString(block.description()),
+      QString::fromStdString(block.templ().Content()),
+      QString::fromStdString(block.language()),
+  };
+
+  for (const auto& field : fields) {
+    const QString snippet = SnippetAroundMatch(field, needle);
+    if (!snippet.isEmpty()) {
+      return snippet;
+    }
+  }
+
+  for (const auto& tag : block.tags()) {
+    const QString snippet = SnippetAroundMatch(QString::fromStdString(tag), needle);
+    if (!snippet.isEmpty()) {
+      return snippet;
+    }
+  }
+  for (const auto& [key, value] : block.defaults()) {
+    const QString combined =
+        QString::fromStdString(key) + QStringLiteral("=") +
+        QString::fromStdString(value);
+    const QString snippet = SnippetAroundMatch(combined, needle);
+    if (!snippet.isEmpty()) {
+      return snippet;
+    }
+  }
+
+  return {};
+}
+
+bool BlockMatchesSearch(const tf::Block& block, const QString& block_id,
+                        const QString& needle, QString* snippet = nullptr) {
+  if (needle.isEmpty()) {
+    if (snippet != nullptr) {
+      snippet->clear();
+    }
+    return true;
+  }
+
+  if (block_id.contains(needle, Qt::CaseInsensitive)) {
+    if (snippet != nullptr) {
+      *snippet = BlockMatchSnippet(block, block_id, needle);
+    }
+    return true;
+  }
+  if (QString::fromStdString(block.description())
+          .contains(needle, Qt::CaseInsensitive)) {
+    if (snippet != nullptr) {
+      *snippet = BlockMatchSnippet(block, block_id, needle);
+    }
+    return true;
+  }
+  if (QString::fromStdString(block.templ().Content())
+          .contains(needle, Qt::CaseInsensitive)) {
+    if (snippet != nullptr) {
+      *snippet = BlockMatchSnippet(block, block_id, needle);
+    }
+    return true;
+  }
+  if (QString::fromStdString(block.language())
+          .contains(needle, Qt::CaseInsensitive)) {
+    if (snippet != nullptr) {
+      *snippet = BlockMatchSnippet(block, block_id, needle);
+    }
+    return true;
+  }
+
+  for (const auto& tag : block.tags()) {
+    if (QString::fromStdString(tag).contains(needle, Qt::CaseInsensitive)) {
+      if (snippet != nullptr) {
+        *snippet = BlockMatchSnippet(block, block_id, needle);
+      }
+      return true;
+    }
+  }
+  for (const auto& [key, value] : block.defaults()) {
+    if (QString::fromStdString(key).contains(needle, Qt::CaseInsensitive) ||
+        QString::fromStdString(value).contains(needle, Qt::CaseInsensitive)) {
+      if (snippet != nullptr) {
+        *snippet = BlockMatchSnippet(block, block_id, needle);
+      }
+      return true;
+    }
+  }
+
+  return false;
 }
 
 std::optional<std::string> ParseVersionText(const QString& input, Version& out) {
@@ -118,6 +276,12 @@ QVariant BlocksModel::data(const QModelIndex& index, const int role) const {
       return node->is_folder;
     case FullPathRole:
       return node->full_path;
+    case HighlightedDisplayRole:
+      return HighlightMatch(node->label, search_text_.trimmed());
+    case MatchSnippetRole:
+      return node->match_snippet;
+    case HighlightedMatchSnippetRole:
+      return HighlightMatch(node->match_snippet, search_text_.trimmed());
     default:
       return {};
   }
@@ -130,6 +294,9 @@ QHash<int, QByteArray> BlocksModel::roleNames() const {
       {BlockIdRole, "blockId"},
       {IsFolderRole, "isFolder"},
       {FullPathRole, "fullPath"},
+      {HighlightedDisplayRole, "highlightedDisplay"},
+      {MatchSnippetRole, "matchSnippet"},
+      {HighlightedMatchSnippetRole, "highlightedMatchSnippet"},
   };
 }
 
@@ -167,13 +334,23 @@ QStringList BlocksModel::selectedBlockDefaults() const {
   return selected_block_defaults_;
 }
 
+QString BlocksModel::searchText() const { return search_text_; }
+
 bool BlocksModel::showDerivedBlocks() const { return show_derived_blocks_; }
 
 void BlocksModel::setSelectedBlockId(const QString& value) {
   if (selected_block_id_ == value) return;
   selected_block_id_ = value;
+  selected_block_version_.clear();
   emit selectedBlockIdChanged();
   refreshDetails();
+}
+
+void BlocksModel::setSearchText(const QString& value) {
+  if (search_text_ == value) return;
+  search_text_ = value;
+  emit searchTextChanged();
+  reload();
 }
 
 void BlocksModel::setShowDerivedBlocks(const bool value) {
@@ -195,6 +372,19 @@ void BlocksModel::selectBlockVersion(const QString& version_text) {
   selected_block_version_ = version_text;
   emit detailsTextChanged();
   refreshDetails();
+}
+
+void BlocksModel::selectLatestVersion() {
+  if (selected_block_versions_.isEmpty()) return;
+  selectBlockVersion(selected_block_versions_.front());
+}
+
+QString BlocksModel::highlightSearchText(const QString& text) const {
+  return HighlightMatch(text, search_text_.trimmed());
+}
+
+QString BlocksModel::highlightSearchContent(const QString& text) const {
+  return HighlightMatch(text, search_text_.trimmed(), true);
 }
 
 void BlocksModel::deprecateSelected() {
@@ -232,6 +422,7 @@ void BlocksModel::refreshTree() {
   root_->full_path = "/";
   root_->is_folder = true;
 
+  const QString needle = search_text_.trimmed();
   auto ids = session_->engine().ListBlocks();
   std::sort(ids.begin(), ids.end());
 
@@ -240,6 +431,18 @@ void BlocksModel::refreshTree() {
     if (!show_derived_blocks_ && IsDerivedBlockId(block_id)) {
       continue;
     }
+
+    QString snippet;
+    if (!needle.isEmpty()) {
+      const auto block_result = session_->engine().LoadBlock(raw_id);
+      if (block_result.HasError()) {
+        continue;
+      }
+      if (!BlockMatchesSearch(block_result.value(), block_id, needle, &snippet)) {
+        continue;
+      }
+    }
+
     const auto parts = block_id.split('.', Qt::SkipEmptyParts);
     Node* folder = root_.get();
     if (parts.size() > 1) {
@@ -250,6 +453,7 @@ void BlocksModel::refreshTree() {
     block->label = parts.isEmpty() ? block_id : parts.back();
     block->full_path = block_id;
     block->block_id = block_id;
+    block->match_snippet = snippet;
     block->is_folder = false;
     block->parent = folder;
     folder->children.push_back(std::move(block));
@@ -258,6 +462,7 @@ void BlocksModel::refreshTree() {
   sortTree(root_.get());
 
   endResetModel();
+  emit treeReloaded();
 
   if (selected_block_id_.isEmpty()) {
     if (auto* first = firstBlockNode(root_.get())) {
