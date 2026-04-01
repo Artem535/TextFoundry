@@ -87,6 +87,8 @@ table ObxBlock {
     tagsJson: string;
     /// Human-readable description
     description: string;
+    /// Short human-readable note about what changed in this version
+    revisionComment: string;
     /// Creation timestamp
     createdAt: long;
     /// Last modification timestamp

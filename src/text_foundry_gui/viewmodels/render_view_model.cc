@@ -3,6 +3,7 @@
 #include <QCoreApplication>
 #include <QGuiApplication>
 #include <QClipboard>
+#include <QVariantMap>
 
 #include <algorithm>
 #include <cctype>
@@ -185,9 +186,17 @@ RenderViewModel* RenderViewModel::instance() {
 
 QStringList RenderViewModel::compositionIds() const { return composition_ids_; }
 
+QStringList RenderViewModel::filteredCompositionIds() const {
+  return filtered_composition_ids_;
+}
+
+QString RenderViewModel::searchText() const { return search_text_; }
+
 QString RenderViewModel::selectedCompositionId() const {
   return selected_composition_id_;
 }
+
+QVariantList RenderViewModel::versionEntries() const { return version_entries_; }
 
 QString RenderViewModel::versionText() const { return version_text_; }
 
@@ -260,8 +269,72 @@ QString RenderViewModel::statusText() const { return status_text_; }
 void RenderViewModel::setSelectedCompositionId(const QString& value) {
   if (selected_composition_id_ == value) return;
   selected_composition_id_ = value;
+  version_entries_.clear();
+
+  if (!selected_composition_id_.isEmpty()) {
+    auto versions_result = session_->engine().ListCompositionVersions(
+        selected_composition_id_.toStdString());
+    if (!versions_result.HasError()) {
+      auto versions = versions_result.value();
+      std::sort(versions.begin(), versions.end(), std::greater<Version>());
+
+      QVariantList entries;
+      QString selected_version = version_text_.trimmed();
+      QString latest_version;
+
+      for (const auto& version : versions) {
+        auto composition_result =
+            session_->engine().LoadComposition(selected_composition_id_.toStdString(),
+                                              version);
+        if (composition_result.HasError()) continue;
+
+        const auto& composition = composition_result.value();
+        const QString version_label = QString::fromStdString(version.ToString());
+        if (latest_version.isEmpty()) {
+          latest_version = version_label;
+        }
+
+        const QString comment =
+            QString::fromStdString(composition.revision_comment()).trimmed();
+        const QString state = QString::fromUtf8(
+            BlockStateToString(composition.state()).data(),
+            static_cast<int>(BlockStateToString(composition.state()).size()));
+
+        QVariantMap entry;
+        entry.insert(QStringLiteral("version"), version_label);
+        entry.insert(QStringLiteral("label"),
+                     version_label == latest_version
+                         ? QString("%1 (latest)").arg(version_label)
+                         : version_label);
+        entry.insert(QStringLiteral("state"), state);
+        entry.insert(QStringLiteral("comment"), comment);
+        entries.push_back(entry);
+      }
+
+      version_entries_ = entries;
+      if (!latest_version.isEmpty() &&
+          (selected_version.isEmpty() ||
+           !std::ranges::any_of(version_entries_, [&](const QVariant& value) {
+             return value.toMap().value(QStringLiteral("version")).toString() ==
+                    selected_version;
+           }))) {
+        version_text_ = latest_version;
+        emit versionTextChanged();
+      }
+    }
+  } else if (!version_text_.isEmpty()) {
+    version_text_.clear();
+    emit versionTextChanged();
+  }
+
   emit selectedCompositionIdChanged();
   refreshRawPreview();
+}
+
+void RenderViewModel::setSearchText(const QString& value) {
+  if (search_text_ == value) return;
+  search_text_ = value;
+  refreshFilteredCompositions();
 }
 
 void RenderViewModel::setVersionText(const QString& value) {
@@ -345,8 +418,15 @@ void RenderViewModel::setPreserveExamples(const bool value) {
 }
 
 void RenderViewModel::reload() {
+  const QString previous_selection = selected_composition_id_;
   syncCompositions();
-  refreshRawPreview();
+  if (!previous_selection.isEmpty() &&
+      previous_selection == selected_composition_id_) {
+    selected_composition_id_.clear();
+    setSelectedCompositionId(previous_selection);
+  } else {
+    refreshRawPreview();
+  }
   setStatusText(QStringLiteral("Compositions list refreshed."));
 }
 
@@ -647,6 +727,7 @@ void RenderViewModel::syncCompositions() {
 
   const bool compositions_changed = composition_ids_ != updated;
   composition_ids_ = std::move(updated);
+  refreshFilteredCompositions();
   if (compositions_changed) {
     emit compositionsChanged();
   }
@@ -660,8 +741,28 @@ void RenderViewModel::syncCompositions() {
       composition_ids_.isEmpty() ? QString() : composition_ids_.front();
   if (selected_composition_id_ != next) {
     selected_composition_id_ = next;
+    version_entries_.clear();
     emit selectedCompositionIdChanged();
   }
+}
+
+void RenderViewModel::refreshFilteredCompositions() {
+  if (search_text_.trimmed().isEmpty()) {
+    filtered_composition_ids_ = composition_ids_;
+    emit compositionsChanged();
+    return;
+  }
+
+  const QString needle = search_text_.trimmed().toLower();
+  QStringList filtered;
+  filtered.reserve(composition_ids_.size());
+  for (const auto& id : composition_ids_) {
+    if (id.toLower().contains(needle)) {
+      filtered.push_back(id);
+    }
+  }
+  filtered_composition_ids_ = std::move(filtered);
+  emit compositionsChanged();
 }
 
 }  // namespace tf::gui

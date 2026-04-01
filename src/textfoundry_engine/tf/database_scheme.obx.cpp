@@ -98,6 +98,7 @@ const obx::Property<ObxBlock, OBXPropertyType_Long> ObxBlock_::createdAt(14);
 const obx::Property<ObxBlock, OBXPropertyType_Long> ObxBlock_::updatedAt(15);
 const obx::RelationProperty<ObxBlock, ObxBlock> ObxBlock_::previousVersionId(16);
 const obx::RelationProperty<ObxBlock, ObxBlock> ObxBlock_::nextVersionId(17);
+const obx::Property<ObxBlock, OBXPropertyType_String> ObxBlock_::revisionComment(18);
 const obx::RelationStandalone<ObxBlock, ObxTag> ObxBlock_::tags(1);
 
 void ObxBlock::_OBX_MetaInfo::toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb, const ObxBlock& object) {
@@ -109,6 +110,7 @@ void ObxBlock::_OBX_MetaInfo::toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb, 
     auto offsetparamsJson = fbb.CreateString(object.paramsJson);
     auto offsettagsJson = fbb.CreateString(object.tagsJson);
     auto offsetdescription = fbb.CreateString(object.description);
+    auto offsetrevisionComment = fbb.CreateString(object.revisionComment);
     flatbuffers::uoffset_t fbStart = fbb.StartTable();
     fbb.AddElement(4, object.id);
     fbb.AddOffset(6, offsetblockId);
@@ -127,6 +129,7 @@ void ObxBlock::_OBX_MetaInfo::toFlatBuffer(flatbuffers::FlatBufferBuilder& fbb, 
     fbb.AddElement(32, object.updatedAt);
     fbb.AddElement(34, object.previousVersionId);
     fbb.AddElement(36, object.nextVersionId);
+    fbb.AddOffset(38, offsetrevisionComment);
     flatbuffers::Offset<flatbuffers::Table> offset;
     offset.o = fbb.EndTable(fbStart);
     fbb.Finish(offset);
@@ -213,6 +216,14 @@ void ObxBlock::_OBX_MetaInfo::fromFlatBuffer(const void* data, size_t, ObxBlock&
     outObject.updatedAt = table->GetField<int64_t>(32, 0);
     outObject.previousVersionId = table->GetField<obx_id>(34, 0);
     outObject.nextVersionId = table->GetField<obx_id>(36, 0);
+    {
+        auto* ptr = table->GetPointer<const flatbuffers::String*>(38);
+        if (ptr) {
+            outObject.revisionComment.assign(ptr->c_str(), ptr->size());
+        } else {
+            outObject.revisionComment.clear();
+        }
+    }
 }
 
 const obx::Property<ObxBlockUsage, OBXPropertyType_Long> ObxBlockUsage_::id(1);

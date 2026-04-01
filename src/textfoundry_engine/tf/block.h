@@ -79,6 +79,8 @@ class Block {
 
   [[nodiscard]] const std::string& description() const noexcept;
 
+  [[nodiscard]] const std::string& revision_comment() const noexcept;
+
   // Setters (allowed only for Draft state)
   void SetId(BlockId id);
 
@@ -97,6 +99,8 @@ class Block {
   void SetLanguage(std::string lang);
 
   void SetDescription(std::string desc);
+
+  void SetRevisionComment(std::string comment);
 
   void SetVersion(const Version& v);
 
@@ -152,6 +156,7 @@ class Block {
   std::unordered_set<std::string> tags_;
   std::string language_ = "en";
   std::string description_;
+  std::string revision_comment_;
 };
 
 class BlockDraft {
@@ -208,6 +213,8 @@ class BlockDraftBuilder {
   BlockDraftBuilder& WithLanguage(std::string lang);
 
   BlockDraftBuilder& WithDescription(std::string desc);
+
+  BlockDraftBuilder& WithRevisionComment(std::string comment);
 
   [[nodiscard]] BlockDraft build();
 

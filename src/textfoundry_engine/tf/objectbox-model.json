@@ -50,7 +50,7 @@
     },
     {
       "id": "2:2496193293690618790",
-      "lastPropertyId": "17:224210701642087014",
+      "lastPropertyId": "18:4776915646075869603",
       "name": "ObxBlock",
       "properties": [
         {
@@ -151,6 +151,11 @@
           "type": 11,
           "flags": 520,
           "relationTarget": "ObxBlock"
+        },
+        {
+          "id": "18:4776915646075869603",
+          "name": "revisionComment",
+          "type": 9
         }
       ],
       "relations": [

@@ -318,12 +318,18 @@ QStringList BlocksModel::selectedBlockVersionOptions() const {
   return selected_block_version_options_;
 }
 
+QVariantList BlocksModel::versionEntries() const { return version_entries_; }
+
 QString BlocksModel::selectedBlockType() const { return selected_block_type_; }
 
 QString BlocksModel::selectedBlockLanguage() const { return selected_block_language_; }
 
 QString BlocksModel::selectedBlockDescription() const {
   return selected_block_description_;
+}
+
+QString BlocksModel::selectedBlockRevisionComment() const {
+  return selected_block_revision_comment_;
 }
 
 QString BlocksModel::selectedBlockTemplate() const { return selected_block_template_; }
@@ -486,9 +492,11 @@ void BlocksModel::refreshDetails() {
     selected_block_version_.clear();
     selected_block_versions_.clear();
     selected_block_version_options_.clear();
+    version_entries_.clear();
     selected_block_type_.clear();
     selected_block_language_.clear();
     selected_block_description_.clear();
+    selected_block_revision_comment_.clear();
     selected_block_template_.clear();
     selected_block_tags_.clear();
     selected_block_defaults_.clear();
@@ -507,9 +515,11 @@ void BlocksModel::refreshDetails() {
     selected_block_version_.clear();
     selected_block_versions_.clear();
     selected_block_version_options_.clear();
+    version_entries_.clear();
     selected_block_type_.clear();
     selected_block_language_.clear();
     selected_block_description_.clear();
+    selected_block_revision_comment_.clear();
     selected_block_template_.clear();
     selected_block_tags_.clear();
     selected_block_defaults_.clear();
@@ -522,6 +532,7 @@ void BlocksModel::refreshDetails() {
 
   selected_block_versions_.clear();
   selected_block_version_options_.clear();
+  version_entries_.clear();
   const auto& versions = versions_result.value();
   for (int i = 0; i < static_cast<int>(versions.size()); ++i) {
     const auto& version = versions[static_cast<size_t>(i)];
@@ -543,6 +554,25 @@ void BlocksModel::refreshDetails() {
       label += QStringLiteral(" (%1)").arg(markers.join(QStringLiteral(", ")));
     }
     selected_block_version_options_.push_back(label);
+
+    QVariantMap entry;
+    entry.insert(QStringLiteral("version"), version_text);
+    entry.insert(QStringLiteral("label"), label);
+    entry.insert(QStringLiteral("comment"),
+                 !block_result.HasError()
+                     ? QString::fromStdString(block_result.value().revision_comment())
+                     : QString());
+    entry.insert(QStringLiteral("state"),
+                 !block_result.HasError()
+                     ? QString::fromUtf8(
+                           BlockStateToString(block_result.value().state()).data(),
+                           static_cast<int>(BlockStateToString(
+                                                block_result.value().state())
+                                                .size()))
+                     : QString());
+    entry.insert(QStringLiteral("isLatest"), i == 0);
+    entry.insert(QStringLiteral("isSelected"), version_text == selected_block_version_);
+    version_entries_.push_back(entry);
   }
   if (selected_block_version_.isEmpty() ||
       !selected_block_versions_.contains(selected_block_version_)) {
@@ -555,6 +585,14 @@ void BlocksModel::refreshDetails() {
   if (const auto parse_error =
           ParseVersionText(selected_block_version_, selected_version);
       parse_error.has_value()) {
+    selected_block_type_.clear();
+    selected_block_language_.clear();
+    selected_block_description_.clear();
+    selected_block_revision_comment_.clear();
+    selected_block_template_.clear();
+    selected_block_tags_.clear();
+    selected_block_defaults_.clear();
+    version_entries_.clear();
     const auto text = QString("Error: %1").arg(QString::fromStdString(*parse_error));
     if (details_text_ != text) {
       details_text_ = text;
@@ -571,9 +609,11 @@ void BlocksModel::refreshDetails() {
     selected_block_version_.clear();
     selected_block_versions_.clear();
     selected_block_version_options_.clear();
+    version_entries_.clear();
     selected_block_type_.clear();
     selected_block_language_.clear();
     selected_block_description_.clear();
+    selected_block_revision_comment_.clear();
     selected_block_template_.clear();
     selected_block_tags_.clear();
     selected_block_defaults_.clear();
@@ -591,6 +631,8 @@ void BlocksModel::refreshDetails() {
                         static_cast<int>(tf::BlockTypeToString(block.type()).size()));
   selected_block_language_ = QString::fromStdString(block.language());
   selected_block_description_ = QString::fromStdString(block.description());
+  selected_block_revision_comment_ =
+      QString::fromStdString(block.revision_comment());
   selected_block_template_ = QString::fromStdString(block.templ().Content());
   selected_block_tags_.clear();
   for (const auto& tag : block.tags()) {
@@ -603,6 +645,14 @@ void BlocksModel::refreshDetails() {
         QString::fromStdString(key + "=" + value));
   }
   std::sort(selected_block_defaults_.begin(), selected_block_defaults_.end());
+
+  for (int i = 0; i < version_entries_.size(); ++i) {
+    auto entry = version_entries_[i].toMap();
+    entry[QStringLiteral("isSelected")] =
+        entry.value(QStringLiteral("version")).toString() ==
+        selected_block_version_;
+    version_entries_[i] = entry;
+  }
 
   std::ostringstream out;
   out << "id: " << block.Id() << "\n";

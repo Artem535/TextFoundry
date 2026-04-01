@@ -98,6 +98,8 @@ struct ObxBlock {
     obx_id previousVersionId;
     /// Next version reference (for version chain)
     obx_id nextVersionId;
+    /// Short human-readable note about what changed in this version
+    std::string revisionComment;
 
     struct _OBX_MetaInfo {
         static constexpr obx_schema_id entityId() { return 2; }
@@ -136,6 +138,7 @@ struct ObxBlock_ {
     static const obx::Property<ObxBlock, OBXPropertyType_Long> updatedAt;
     static const obx::RelationProperty<ObxBlock, ObxBlock> previousVersionId;
     static const obx::RelationProperty<ObxBlock, ObxBlock> nextVersionId;
+    static const obx::Property<ObxBlock, OBXPropertyType_String> revisionComment;
     static const obx::RelationStandalone<ObxBlock, ObxTag> tags;
 };
 

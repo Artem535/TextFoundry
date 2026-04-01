@@ -25,6 +25,7 @@ class BlockEditorViewModel : public QObject {
   Q_PROPERTY(QString type READ type WRITE setType NOTIFY formChanged)
   Q_PROPERTY(QString language READ language WRITE setLanguage NOTIFY formChanged)
   Q_PROPERTY(QString description READ description WRITE setDescription NOTIFY formChanged)
+  Q_PROPERTY(QString revisionComment READ revisionComment WRITE setRevisionComment NOTIFY formChanged)
   Q_PROPERTY(QString tagsText READ tagsText WRITE setTagsText NOTIFY formChanged)
   Q_PROPERTY(QString defaultsText READ defaultsText WRITE setDefaultsText NOTIFY formChanged)
   Q_PROPERTY(QString templateText READ templateText WRITE setTemplateText NOTIFY formChanged)
@@ -52,6 +53,7 @@ class BlockEditorViewModel : public QObject {
   QString type() const;
   QString language() const;
   QString description() const;
+  QString revisionComment() const;
   QString tagsText() const;
   QString defaultsText() const;
   QString templateText() const;
@@ -68,6 +70,7 @@ class BlockEditorViewModel : public QObject {
   void setType(const QString& value);
   void setLanguage(const QString& value);
   void setDescription(const QString& value);
+  void setRevisionComment(const QString& value);
   void setTagsText(const QString& value);
   void setDefaultsText(const QString& value);
   void setTemplateText(const QString& value);
@@ -106,6 +109,7 @@ class BlockEditorViewModel : public QObject {
   QString type_ = QStringLiteral("domain");
   QString language_ = QStringLiteral("en");
   QString description_;
+  QString revision_comment_;
   QString tags_text_;
   QString defaults_text_;
   QString template_text_;

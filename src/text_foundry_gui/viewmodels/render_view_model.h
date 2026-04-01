@@ -3,6 +3,7 @@
 #include <QObject>
 #include <QString>
 #include <QStringList>
+#include <QVariantList>
 #include <QtQml/qqml.h>
 
 #include "tf/composition.h"
@@ -17,7 +18,10 @@ class RenderViewModel : public QObject {
   QML_SINGLETON
   QML_NAMED_ELEMENT(RenderVm)
   Q_PROPERTY(QStringList compositionIds READ compositionIds NOTIFY compositionsChanged)
+  Q_PROPERTY(QStringList filteredCompositionIds READ filteredCompositionIds NOTIFY compositionsChanged)
+  Q_PROPERTY(QString searchText READ searchText WRITE setSearchText NOTIFY compositionsChanged)
   Q_PROPERTY(QString selectedCompositionId READ selectedCompositionId WRITE setSelectedCompositionId NOTIFY selectedCompositionIdChanged)
+  Q_PROPERTY(QVariantList versionEntries READ versionEntries NOTIFY selectedCompositionIdChanged)
   Q_PROPERTY(QString versionText READ versionText WRITE setVersionText NOTIFY versionTextChanged)
   Q_PROPERTY(QString paramsText READ paramsText WRITE setParamsText NOTIFY paramsTextChanged)
   Q_PROPERTY(QString outputText READ outputText NOTIFY outputTextChanged)
@@ -48,7 +52,10 @@ class RenderViewModel : public QObject {
   static RenderViewModel* instance();
 
   QStringList compositionIds() const;
+  QStringList filteredCompositionIds() const;
+  QString searchText() const;
   QString selectedCompositionId() const;
+  QVariantList versionEntries() const;
   QString versionText() const;
   QString paramsText() const;
   QString outputText() const;
@@ -74,6 +81,7 @@ class RenderViewModel : public QObject {
   QString statusText() const;
 
   void setSelectedCompositionId(const QString& value);
+  void setSearchText(const QString& value);
   void setVersionText(const QString& value);
   void setParamsText(const QString& value);
   void setPreviewMode(const QString& value);
@@ -118,6 +126,7 @@ class RenderViewModel : public QObject {
   void setNormalizedOutputText(QString value);
   void setStatusText(QString value);
   void syncCompositions();
+  void refreshFilteredCompositions();
   Result<QString> buildRawOutput() const;
   void refreshRawPreview();
   void updateNormalizationState(bool raw_changed);
@@ -127,7 +136,10 @@ class RenderViewModel : public QObject {
 
   SessionViewModel* session_;
   QStringList composition_ids_;
+  QStringList filtered_composition_ids_;
+  QString search_text_;
   QString selected_composition_id_;
+  QVariantList version_entries_;
   QString version_text_;
   QString params_text_;
   QString output_text_ = QStringLiteral("Select a composition and click Render.");

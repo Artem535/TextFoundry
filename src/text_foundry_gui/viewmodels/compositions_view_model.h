@@ -3,6 +3,7 @@
 #include <QObject>
 #include <QString>
 #include <QStringList>
+#include <QVariantList>
 #include <QtQml/qqml.h>
 
 #include "tf/engine.h"
@@ -16,10 +17,13 @@ class CompositionsViewModel : public QObject {
   QML_SINGLETON
   QML_NAMED_ELEMENT(CompositionsVm)
   Q_PROPERTY(QStringList compositionIds READ compositionIds NOTIFY compositionsChanged)
+  Q_PROPERTY(QStringList filteredCompositionIds READ filteredCompositionIds NOTIFY compositionsChanged)
+  Q_PROPERTY(QString searchText READ searchText WRITE setSearchText NOTIFY compositionsChanged)
   Q_PROPERTY(QString selectedCompositionId READ selectedCompositionId WRITE setSelectedCompositionId NOTIFY selectedCompositionIdChanged)
   Q_PROPERTY(QString selectedVersion READ selectedVersion NOTIFY detailsChanged)
   Q_PROPERTY(QStringList selectedVersions READ selectedVersions NOTIFY detailsChanged)
   Q_PROPERTY(QStringList selectedVersionOptions READ selectedVersionOptions NOTIFY detailsChanged)
+  Q_PROPERTY(QVariantList versionEntries READ versionEntries NOTIFY detailsChanged)
   Q_PROPERTY(QString selectedState READ selectedState NOTIFY detailsChanged)
   Q_PROPERTY(QString selectedDescription READ selectedDescription NOTIFY detailsChanged)
   Q_PROPERTY(QString selectedRevisionComment READ selectedRevisionComment NOTIFY detailsChanged)
@@ -39,6 +43,12 @@ class CompositionsViewModel : public QObject {
   Q_PROPERTY(bool normalizationAvailable READ normalizationAvailable NOTIFY normalizationChanged)
   Q_PROPERTY(QString normalizationStatusText READ normalizationStatusText NOTIFY normalizationChanged)
   Q_PROPERTY(QString statusText READ statusText NOTIFY statusTextChanged)
+  Q_PROPERTY(bool compareOpen READ compareOpen NOTIFY compareChanged)
+  Q_PROPERTY(QString compareLeftTitle READ compareLeftTitle NOTIFY compareChanged)
+  Q_PROPERTY(QString compareRightTitle READ compareRightTitle NOTIFY compareChanged)
+  Q_PROPERTY(QString compareLeftText READ compareLeftText NOTIFY compareChanged)
+  Q_PROPERTY(QString compareRightText READ compareRightText NOTIFY compareChanged)
+  Q_PROPERTY(QString compareSummary READ compareSummary NOTIFY compareChanged)
 
  public:
   explicit CompositionsViewModel(SessionViewModel* session,
@@ -47,10 +57,13 @@ class CompositionsViewModel : public QObject {
   static CompositionsViewModel* instance();
 
   QStringList compositionIds() const;
+  QStringList filteredCompositionIds() const;
+  QString searchText() const;
   QString selectedCompositionId() const;
   QString selectedVersion() const;
   QStringList selectedVersions() const;
   QStringList selectedVersionOptions() const;
+  QVariantList versionEntries() const;
   QString selectedState() const;
   QString selectedDescription() const;
   QString selectedRevisionComment() const;
@@ -70,8 +83,15 @@ class CompositionsViewModel : public QObject {
   bool normalizationAvailable() const;
   QString normalizationStatusText() const;
   QString statusText() const;
+  bool compareOpen() const;
+  QString compareLeftTitle() const;
+  QString compareRightTitle() const;
+  QString compareLeftText() const;
+  QString compareRightText() const;
+  QString compareSummary() const;
 
   void setSelectedCompositionId(const QString& value);
+  void setSearchText(const QString& value);
   void setTone(const QString& value);
   void setTense(const QString& value);
   void setTargetLanguage(const QString& value);
@@ -89,6 +109,8 @@ class CompositionsViewModel : public QObject {
   Q_INVOKABLE void deprecateSelected();
   Q_INVOKABLE void normalizeSelected();
   Q_INVOKABLE void updateBlocksToLatest();
+  Q_INVOKABLE void openCompareWithLatest();
+  Q_INVOKABLE void closeCompare();
 
  signals:
   void compositionsChanged();
@@ -96,19 +118,24 @@ class CompositionsViewModel : public QObject {
   void detailsChanged();
   void normalizationChanged();
   void statusTextChanged();
+  void compareChanged();
 
  private:
   void syncCompositions();
+  void refreshFilteredCompositions();
   void refreshDetails();
   void setStatusText(QString value);
   SemanticStyle currentSemanticStyle() const;
 
   SessionViewModel* session_;
   QStringList composition_ids_;
+  QStringList filtered_composition_ids_;
+  QString search_text_;
   QString selected_composition_id_;
   QString selected_version_;
   QStringList selected_versions_;
   QStringList selected_version_options_;
+  QVariantList version_entries_;
   QString selected_state_;
   QString selected_description_;
   QString selected_revision_comment_;
@@ -127,6 +154,12 @@ class CompositionsViewModel : public QObject {
   bool normalizing_ = false;
   QString normalization_status_text_ = QStringLiteral("Create a normalized composition to preserve structure and placeholders.");
   QString status_text_ = QStringLiteral("Select a composition to see details.");
+  bool compare_open_ = false;
+  QString compare_left_title_;
+  QString compare_right_title_;
+  QString compare_left_text_;
+  QString compare_right_text_;
+  QString compare_summary_;
 };
 
 }  // namespace tf::gui

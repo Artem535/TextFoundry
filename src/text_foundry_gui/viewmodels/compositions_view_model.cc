@@ -65,6 +65,39 @@ QString PreviewFragment(const Fragment& fragment) {
                              static_cast<int>(SeparatorTypeToString(fragment.AsSeparator().type).size())));
 }
 
+QString BuildCompositionSnapshot(const Composition& composition) {
+  QStringList lines;
+  lines << QString("Id: %1").arg(QString::fromStdString(composition.id()));
+  lines << QString("Version: %1")
+               .arg(QString::fromStdString(composition.version().ToString()));
+  lines << QString("State: %1")
+               .arg(QString::fromUtf8(BlockStateToString(composition.state()).data(),
+                                      static_cast<int>(BlockStateToString(composition.state()).size())));
+
+  const QString description = QString::fromStdString(composition.description()).trimmed();
+  lines << QString("Description: %1")
+               .arg(description.isEmpty() ? QStringLiteral("No description")
+                                          : description);
+
+  const QString revision_comment =
+      QString::fromStdString(composition.revision_comment()).trimmed();
+  lines << QString("Revision Comment: %1")
+               .arg(revision_comment.isEmpty() ? QStringLiteral("No revision comment")
+                                               : revision_comment);
+  lines << QString();
+  lines << QStringLiteral("Fragments:");
+
+  int index = 1;
+  for (const auto& fragment : composition.fragments()) {
+    lines << QString("%1. %2").arg(index++).arg(PreviewFragment(fragment));
+  }
+  if (composition.fragments().empty()) {
+    lines << QStringLiteral("No fragments");
+  }
+
+  return lines.join('\n');
+}
+
 }  // namespace
 
 CompositionsViewModel::CompositionsViewModel(SessionViewModel* session,
@@ -91,6 +124,12 @@ CompositionsViewModel* CompositionsViewModel::instance() {
 
 QStringList CompositionsViewModel::compositionIds() const { return composition_ids_; }
 
+QStringList CompositionsViewModel::filteredCompositionIds() const {
+  return filtered_composition_ids_;
+}
+
+QString CompositionsViewModel::searchText() const { return search_text_; }
+
 QString CompositionsViewModel::selectedCompositionId() const {
   return selected_composition_id_;
 }
@@ -103,6 +142,10 @@ QStringList CompositionsViewModel::selectedVersions() const {
 
 QStringList CompositionsViewModel::selectedVersionOptions() const {
   return selected_version_options_;
+}
+
+QVariantList CompositionsViewModel::versionEntries() const {
+  return version_entries_;
 }
 
 QString CompositionsViewModel::selectedState() const { return selected_state_; }
@@ -161,11 +204,35 @@ QString CompositionsViewModel::normalizationStatusText() const {
 
 QString CompositionsViewModel::statusText() const { return status_text_; }
 
+bool CompositionsViewModel::compareOpen() const { return compare_open_; }
+
+QString CompositionsViewModel::compareLeftTitle() const {
+  return compare_left_title_;
+}
+
+QString CompositionsViewModel::compareRightTitle() const {
+  return compare_right_title_;
+}
+
+QString CompositionsViewModel::compareLeftText() const { return compare_left_text_; }
+
+QString CompositionsViewModel::compareRightText() const {
+  return compare_right_text_;
+}
+
+QString CompositionsViewModel::compareSummary() const { return compare_summary_; }
+
 void CompositionsViewModel::setSelectedCompositionId(const QString& value) {
   if (selected_composition_id_ == value) return;
   selected_composition_id_ = value;
   emit selectedCompositionIdChanged();
   refreshDetails();
+}
+
+void CompositionsViewModel::setSearchText(const QString& value) {
+  if (search_text_ == value) return;
+  search_text_ = value;
+  refreshFilteredCompositions();
 }
 
 void CompositionsViewModel::setTone(const QString& value) {
@@ -403,6 +470,69 @@ void CompositionsViewModel::updateBlocksToLatest() {
   setStatusText(QStringLiteral("Updated block references to latest versions."));
 }
 
+void CompositionsViewModel::openCompareWithLatest() {
+  if (selected_composition_id_.isEmpty()) {
+    setStatusText(QStringLiteral("Select a composition first."));
+    return;
+  }
+
+  const int current_index = selected_versions_.indexOf(selected_version_);
+  if (current_index <= 0 || selected_versions_.isEmpty()) {
+    setStatusText(QStringLiteral("Select a non-latest version for comparison."));
+    return;
+  }
+
+  Version left_version;
+  if (const auto parse_error =
+          ParseVersionText(selected_versions_.front(), left_version);
+      parse_error.has_value()) {
+    setStatusText(QString("Error: %1").arg(QString::fromStdString(*parse_error)));
+    return;
+  }
+
+  Version right_version;
+  if (const auto parse_error =
+          ParseVersionText(selected_versions_[current_index], right_version);
+      parse_error.has_value()) {
+    setStatusText(QString("Error: %1").arg(QString::fromStdString(*parse_error)));
+    return;
+  }
+
+  auto left_result = session_->engine().LoadComposition(
+      selected_composition_id_.toStdString(), left_version);
+  if (left_result.HasError()) {
+    setStatusText(QString("Error: %1")
+                      .arg(QString::fromStdString(left_result.error().message)));
+    return;
+  }
+
+  auto right_result = session_->engine().LoadComposition(
+      selected_composition_id_.toStdString(), right_version);
+  if (right_result.HasError()) {
+    setStatusText(QString("Error: %1")
+                      .arg(QString::fromStdString(right_result.error().message)));
+    return;
+  }
+
+  compare_left_title_ = QString("Latest %1").arg(selected_versions_.front());
+  compare_right_title_ =
+      QString("Selected %1").arg(selected_versions_[current_index]);
+  compare_left_text_ = BuildCompositionSnapshot(left_result.value());
+  compare_right_text_ = BuildCompositionSnapshot(right_result.value());
+  compare_summary_ =
+      QString("%1: %2 vs %3")
+          .arg(selected_composition_id_, selected_versions_.front(),
+               selected_versions_[current_index]);
+  compare_open_ = true;
+  emit compareChanged();
+}
+
+void CompositionsViewModel::closeCompare() {
+  if (!compare_open_) return;
+  compare_open_ = false;
+  emit compareChanged();
+}
+
 void CompositionsViewModel::syncCompositions() {
   auto ids = session_->engine().ListCompositions();
   std::sort(ids.begin(), ids.end());
@@ -415,21 +545,38 @@ void CompositionsViewModel::syncCompositions() {
 
   const bool changed = composition_ids_ != updated;
   composition_ids_ = std::move(updated);
+  refreshFilteredCompositions();
   if (changed) {
     emit compositionsChanged();
   }
 
   if (!selected_composition_id_.isEmpty() &&
-      composition_ids_.contains(selected_composition_id_)) {
+      filtered_composition_ids_.contains(selected_composition_id_)) {
     return;
   }
 
   const QString next =
-      composition_ids_.isEmpty() ? QString() : composition_ids_.front();
+      filtered_composition_ids_.isEmpty() ? QString() : filtered_composition_ids_.front();
   if (selected_composition_id_ != next) {
     selected_composition_id_ = next;
     emit selectedCompositionIdChanged();
   }
+}
+
+void CompositionsViewModel::refreshFilteredCompositions() {
+  const QString needle = search_text_.trimmed();
+  QStringList filtered;
+  filtered.reserve(composition_ids_.size());
+
+  for (const auto& id : composition_ids_) {
+    if (needle.isEmpty() || id.contains(needle, Qt::CaseInsensitive)) {
+      filtered.push_back(id);
+    }
+  }
+
+  if (filtered_composition_ids_ == filtered) return;
+  filtered_composition_ids_ = std::move(filtered);
+  emit compositionsChanged();
 }
 
 void CompositionsViewModel::refreshDetails() {
@@ -437,6 +584,7 @@ void CompositionsViewModel::refreshDetails() {
     selected_version_.clear();
     selected_versions_.clear();
     selected_version_options_.clear();
+    version_entries_.clear();
     selected_state_.clear();
     selected_description_.clear();
     selected_revision_comment_.clear();
@@ -452,6 +600,8 @@ void CompositionsViewModel::refreshDetails() {
   if (versions_result.HasError()) {
     selected_version_.clear();
     selected_versions_.clear();
+    selected_version_options_.clear();
+    version_entries_.clear();
     selected_state_.clear();
     selected_description_.clear();
     selected_revision_comment_.clear();
@@ -465,6 +615,7 @@ void CompositionsViewModel::refreshDetails() {
 
   selected_versions_.clear();
   selected_version_options_.clear();
+  version_entries_.clear();
   const auto& versions = versions_result.value();
   for (int i = 0; i < static_cast<int>(versions.size()); ++i) {
     const auto& version = versions[static_cast<size_t>(i)];
@@ -486,6 +637,27 @@ void CompositionsViewModel::refreshDetails() {
       label += QStringLiteral(" (%1)").arg(markers.join(QStringLiteral(", ")));
     }
     selected_version_options_.push_back(label);
+
+    QVariantMap entry;
+    entry.insert(QStringLiteral("version"), version_text);
+    entry.insert(QStringLiteral("label"), label);
+    entry.insert(QStringLiteral("comment"),
+                 !composition_result.HasError()
+                     ? QString::fromStdString(
+                           composition_result.value().revision_comment())
+                     : QString());
+    entry.insert(QStringLiteral("state"),
+                 !composition_result.HasError()
+                     ? QString::fromUtf8(
+                           BlockStateToString(composition_result.value().state())
+                               .data(),
+                           static_cast<int>(BlockStateToString(
+                                                composition_result.value().state())
+                                                .size()))
+                     : QString());
+    entry.insert(QStringLiteral("isLatest"), i == 0);
+    entry.insert(QStringLiteral("isSelected"), version_text == selected_version_);
+    version_entries_.push_back(entry);
   }
   if (selected_version_.isEmpty() ||
       !selected_versions_.contains(selected_version_)) {
@@ -512,6 +684,7 @@ void CompositionsViewModel::refreshDetails() {
   if (result.HasError()) {
     selected_versions_.clear();
     selected_version_options_.clear();
+    version_entries_.clear();
     selected_state_.clear();
     selected_description_.clear();
     selected_revision_comment_.clear();
@@ -535,6 +708,13 @@ void CompositionsViewModel::refreshDetails() {
   selected_fragments_.reserve(static_cast<qsizetype>(composition.fragments().size()));
   for (const auto& fragment : composition.fragments()) {
     selected_fragments_.push_back(PreviewFragment(fragment));
+  }
+
+  for (int i = 0; i < version_entries_.size(); ++i) {
+    auto entry = version_entries_[i].toMap();
+    entry[QStringLiteral("isSelected")] =
+        entry.value(QStringLiteral("version")).toString() == selected_version_;
+    version_entries_[i] = entry;
   }
 
   setStatusText(QStringLiteral("Composition details loaded."));

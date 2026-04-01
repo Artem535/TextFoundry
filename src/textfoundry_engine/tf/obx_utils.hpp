@@ -229,6 +229,7 @@ inline Block ObxBlockToBlock(const ObxBlock& obxBlock) {
     block.SetTags(std::move(tags_set));
   }
   block.SetDescription(obxBlock.description);
+  block.SetRevisionComment(obxBlock.revisionComment);
 
   if (!obxBlock.defaultsJson.empty()) {
     block.SetDefaults(rfl::json::read<Params>(obxBlock.defaultsJson).value());
@@ -262,6 +263,7 @@ inline ObxBlock BlockToObxBlock(const Block& block, const obx_id id = 0) {
   std::vector<std::string> tags_vec(block.tags().begin(), block.tags().end());
   obxBlock.tagsJson = rfl::json::write(tags_vec);
   obxBlock.description = block.description();
+  obxBlock.revisionComment = block.revision_comment();
   // Note: createdAt, updatedAt should be set by storage layer
   return obxBlock;
 }

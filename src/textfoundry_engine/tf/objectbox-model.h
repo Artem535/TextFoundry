@@ -65,8 +65,9 @@ static inline OBX_model* create_obx_model() {
     obx_model_property(model, "nextVersionId", OBXPropertyType_Relation, 17, 224210701642087014);
     obx_model_property_flags(model, OBXPropertyFlags_INDEXED | OBXPropertyFlags_INDEX_PARTIAL_SKIP_ZERO);
     obx_model_property_relation(model, "ObxBlock", 4, 5814796698401403902);
+    obx_model_property(model, "revisionComment", OBXPropertyType_String, 18, 4776915646075869603);
     obx_model_relation(model, 1, 8855734577157281833, 8, 7456270714802992409);
-    obx_model_entity_last_property_id(model, 17, 224210701642087014);
+    obx_model_entity_last_property_id(model, 18, 4776915646075869603);
     
     obx_model_entity(model, "ObxBlockUsage", 3, 406653744218480240);
     obx_model_property(model, "id", OBXPropertyType_Long, 1, 6168088358158080939);

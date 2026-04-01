@@ -3,6 +3,7 @@
 #include <QAbstractItemModel>
 #include <QString>
 #include <QStringList>
+#include <QVariantList>
 #include <QtQml/qqml.h>
 
 #include <memory>
@@ -23,9 +24,11 @@ class BlocksModel : public QAbstractItemModel {
   Q_PROPERTY(QString selectedBlockVersion READ selectedBlockVersion NOTIFY detailsTextChanged)
   Q_PROPERTY(QStringList selectedBlockVersions READ selectedBlockVersions NOTIFY detailsTextChanged)
   Q_PROPERTY(QStringList selectedBlockVersionOptions READ selectedBlockVersionOptions NOTIFY detailsTextChanged)
+  Q_PROPERTY(QVariantList versionEntries READ versionEntries NOTIFY detailsTextChanged)
   Q_PROPERTY(QString selectedBlockType READ selectedBlockType NOTIFY detailsTextChanged)
   Q_PROPERTY(QString selectedBlockLanguage READ selectedBlockLanguage NOTIFY detailsTextChanged)
   Q_PROPERTY(QString selectedBlockDescription READ selectedBlockDescription NOTIFY detailsTextChanged)
+  Q_PROPERTY(QString selectedBlockRevisionComment READ selectedBlockRevisionComment NOTIFY detailsTextChanged)
   Q_PROPERTY(QString selectedBlockTemplate READ selectedBlockTemplate NOTIFY detailsTextChanged)
   Q_PROPERTY(QStringList selectedBlockTags READ selectedBlockTags NOTIFY detailsTextChanged)
   Q_PROPERTY(QStringList selectedBlockDefaults READ selectedBlockDefaults NOTIFY detailsTextChanged)
@@ -61,9 +64,11 @@ class BlocksModel : public QAbstractItemModel {
   QString selectedBlockVersion() const;
   QStringList selectedBlockVersions() const;
   QStringList selectedBlockVersionOptions() const;
+  QVariantList versionEntries() const;
   QString selectedBlockType() const;
   QString selectedBlockLanguage() const;
   QString selectedBlockDescription() const;
+  QString selectedBlockRevisionComment() const;
   QString selectedBlockTemplate() const;
   QStringList selectedBlockTags() const;
   QStringList selectedBlockDefaults() const;
@@ -119,9 +124,11 @@ class BlocksModel : public QAbstractItemModel {
   QString selected_block_version_;
   QStringList selected_block_versions_;
   QStringList selected_block_version_options_;
+  QVariantList version_entries_;
   QString selected_block_type_;
   QString selected_block_language_;
   QString selected_block_description_;
+  QString selected_block_revision_comment_;
   QString selected_block_template_;
   QStringList selected_block_tags_;
   QStringList selected_block_defaults_;

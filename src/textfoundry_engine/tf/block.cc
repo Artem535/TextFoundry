@@ -134,6 +134,10 @@ const std::string& Block::language() const noexcept { return language_; }
 
 const std::string& Block::description() const noexcept { return description_; }
 
+const std::string& Block::revision_comment() const noexcept {
+  return revision_comment_;
+}
+
 void Block::SetId(BlockId id) { id_ = std::move(id); }
 
 void Block::SetType(BlockType type) { type_ = type; }
@@ -155,6 +159,10 @@ void Block::SetTags(std::unordered_set<std::string> tags) {
 void Block::SetLanguage(std::string lang) { language_ = std::move(lang); }
 
 void Block::SetDescription(std::string desc) { description_ = std::move(desc); }
+
+void Block::SetRevisionComment(std::string comment) {
+  revision_comment_ = std::move(comment);
+}
 
 bool Block::CanResolveParam(const std::string& param_name,
                             const Params& local_override,
@@ -231,6 +239,12 @@ BlockDraftBuilder& BlockDraftBuilder::WithLanguage(std::string lang) {
 
 BlockDraftBuilder& BlockDraftBuilder::WithDescription(std::string desc) {
   block_.SetDescription(std::move(desc));
+  return *this;
+}
+
+BlockDraftBuilder& BlockDraftBuilder::WithRevisionComment(
+    std::string comment) {
+  block_.SetRevisionComment(std::move(comment));
   return *this;
 }
 

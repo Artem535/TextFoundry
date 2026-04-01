@@ -123,6 +123,8 @@ QString BlockEditorViewModel::language() const { return language_; }
 
 QString BlockEditorViewModel::description() const { return description_; }
 
+QString BlockEditorViewModel::revisionComment() const { return revision_comment_; }
+
 QString BlockEditorViewModel::tagsText() const { return tags_text_; }
 
 QString BlockEditorViewModel::defaultsText() const { return defaults_text_; }
@@ -175,6 +177,12 @@ void BlockEditorViewModel::setLanguage(const QString& value) {
 void BlockEditorViewModel::setDescription(const QString& value) {
   if (description_ == value) return;
   description_ = value;
+  emit formChanged();
+}
+
+void BlockEditorViewModel::setRevisionComment(const QString& value) {
+  if (revision_comment_ == value) return;
+  revision_comment_ = value;
   emit formChanged();
 }
 
@@ -251,6 +259,7 @@ void BlockEditorViewModel::save() {
   builder.WithType(ParseBlockType(type_))
       .WithLanguage(language_.toStdString())
       .WithDescription(description_.toStdString())
+      .WithRevisionComment(revision_comment_.trimmed().toStdString())
       .WithTemplate(Template(template_text_.toStdString()))
       .WithDefaults(defaults_result.value());
 
@@ -361,6 +370,7 @@ void BlockEditorViewModel::resetForm() {
   type_ = QStringLiteral("domain");
   language_ = QStringLiteral("en");
   description_.clear();
+  revision_comment_.clear();
   tags_text_.clear();
   defaults_text_.clear();
   template_text_.clear();
@@ -375,7 +385,28 @@ bool BlockEditorViewModel::loadSelectedBlock() {
     return false;
   }
 
-  auto result = session_->engine().LoadBlock(selected_id.toStdString());
+  std::optional<Version> version;
+  const QString selected_version = blocks_->selectedBlockVersion().trimmed();
+  if (!selected_version.isEmpty()) {
+    const auto parts = selected_version.split('.');
+    bool major_ok = false;
+    bool minor_ok = false;
+    if (parts.size() == 2) {
+      const int major = parts[0].toInt(&major_ok);
+      const int minor = parts[1].toInt(&minor_ok);
+      if (major_ok && minor_ok && major >= 0 && major <= 65535 && minor >= 0 &&
+          minor <= 65535) {
+        version = Version{static_cast<uint16_t>(major),
+                          static_cast<uint16_t>(minor)};
+      }
+    }
+    if (!version.has_value()) {
+      setStatusText(QStringLiteral("Selected block version is invalid."));
+      return false;
+    }
+  }
+
+  auto result = session_->engine().LoadBlock(selected_id.toStdString(), version);
   if (result.HasError()) {
     setStatusText(QString("Error: %1")
                       .arg(QString::fromStdString(result.error().message)));
@@ -389,6 +420,7 @@ bool BlockEditorViewModel::loadSelectedBlock() {
                             static_cast<int>(BlockTypeToString(block.type()).size()));
   language_ = QString::fromStdString(block.language());
   description_ = QString::fromStdString(block.description());
+  revision_comment_ = QString::fromStdString(block.revision_comment());
   template_text_ = QString::fromStdString(block.templ().Content());
 
   QStringList tags;

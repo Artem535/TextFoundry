@@ -5,6 +5,8 @@ import org.kde.syntaxhighlighting
 import TextFoundry
 
 Page {
+    id: root
+
     background: Rectangle {
         color: ColorPalette.background
     }
@@ -25,7 +27,7 @@ Page {
             ColumnLayout {
                 anchors.fill: parent
                 anchors.margins: General.paddingMedium
-                spacing: General.paddingSmall
+                spacing: General.spacingMedium
 
                 RowLayout {
                     Layout.fillWidth: true
@@ -37,34 +39,6 @@ Page {
                     }
 
                     Item { Layout.fillWidth: true }
-
-                    SvgToolButton {
-                        compact: true
-                        iconSource: Icons.addSvg
-                        labelText: "New"
-                        onClicked: BlockEditorVm.openCreateEditor()
-                    }
-
-                    SvgToolButton {
-                        compact: true
-                        iconSource: Icons.aiAssistSvg
-                        labelText: "AI Slice"
-                        enabled: BlockSliceVm.aiGenerationAvailable
-                        onClicked: BlockSliceVm.openDialog()
-                    }
-
-                    SvgToolButton {
-                        compact: true
-                        iconSource: Icons.reloadSvg
-                        labelText: "Reload"
-                        onClicked: BlocksModel.reload()
-                    }
-
-                    CheckBox {
-                        text: "Show Derived"
-                        checked: BlocksModel.showDerivedBlocks
-                        onToggled: BlocksModel.showDerivedBlocks = checked
-                    }
                 }
 
                 TextField {
@@ -74,148 +48,241 @@ Page {
                     onTextChanged: BlocksModel.searchText = text
                 }
 
-                TreeView {
-                    id: blocksTree
+                Frame {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    clip: true
-                    property var expandedFolders: ({})
-                    model: BlocksModel
-                    selectionModel: ItemSelectionModel {}
-                    columnWidthProvider: function(column) {
-                        return column === 0 ? blocksTree.width : 0
+                    Layout.preferredHeight: 320
+                    padding: 0
+                    background: Rectangle {
+                        radius: General.radiusMedium
+                        color: ColorPalette.fieldBackground
+                        border.color: ColorPalette.border
                     }
-                    palette.highlight: ColorPalette.selection
-                    palette.highlightedText: ColorPalette.onSelection
 
-                    function rememberExpandedFolders() {
-                        const remembered = {}
+                    ColumnLayout {
+                        anchors.fill: parent
+                        anchors.margins: General.paddingSmall
+                        spacing: General.spacingSmall
 
-                        function visit(parentIndex) {
-                            const count = BlocksModel.rowCount(parentIndex)
-                            for (let row = 0; row < count; ++row) {
-                                const index = BlocksModel.index(row, 0, parentIndex)
-                                if (!index.valid)
-                                    continue
+                        Label {
+                            text: "Blocks"
+                            font.bold: true
+                        }
 
-                                const isFolder = BlocksModel.data(index, BlocksModel.IsFolderRole)
-                                if (!isFolder)
-                                    continue
-
-                                const fullPath = BlocksModel.data(index, BlocksModel.FullPathRole)
-                                if (blocksTree.isExpanded(row, parentIndex))
-                                    remembered[fullPath] = true
-
-                                visit(index)
+                        TreeView {
+                            id: blocksTree
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            clip: true
+                            property var expandedFolders: ({})
+                            model: BlocksModel
+                            selectionModel: ItemSelectionModel {}
+                            columnWidthProvider: function(column) {
+                                return column === 0 ? blocksTree.width : 0
                             }
-                        }
+                            palette.highlight: ColorPalette.selection
+                            palette.highlightedText: ColorPalette.onSelection
 
-                        visit(Qt.invalidModelIndex)
-                        expandedFolders = remembered
-                    }
+                            function rememberExpandedFolders() {
+                                const remembered = {}
 
-                    function restoreExpandedFolders() {
-                        function visit(parentIndex) {
-                            const count = BlocksModel.rowCount(parentIndex)
-                            for (let row = 0; row < count; ++row) {
-                                const index = BlocksModel.index(row, 0, parentIndex)
-                                if (!index.valid)
-                                    continue
+                                function visit(parentIndex) {
+                                    const count = BlocksModel.rowCount(parentIndex)
+                                    for (let row = 0; row < count; ++row) {
+                                        const index = BlocksModel.index(row, 0, parentIndex)
+                                        if (!index.valid)
+                                            continue
 
-                                const isFolder = BlocksModel.data(index, BlocksModel.IsFolderRole)
-                                if (!isFolder)
-                                    continue
+                                        const isFolder = BlocksModel.data(index, BlocksModel.IsFolderRole)
+                                        if (!isFolder)
+                                            continue
 
-                                const fullPath = BlocksModel.data(index, BlocksModel.FullPathRole)
-                                if (expandedFolders[fullPath])
-                                    blocksTree.expand(row, parentIndex)
+                                        const fullPath = BlocksModel.data(index, BlocksModel.FullPathRole)
+                                        if (blocksTree.isExpanded(row, parentIndex))
+                                            remembered[fullPath] = true
 
-                                visit(index)
-                            }
-                        }
-
-                        visit(Qt.invalidModelIndex)
-                    }
-
-                    delegate: TreeViewDelegate {
-                        id: treeDelegate
-                        required property bool isFolder
-                        required property string blockId
-
-                        implicitHeight: isFolder ? 32 : 28
-                        indentation: General.treeIndent
-                        text: model.display
-
-                        background: Rectangle {
-                            anchors.fill: parent
-                            color: treeDelegate.current
-                                   ? treeDelegate.palette.highlight
-                                   : "transparent"
-                            radius: General.radiusSmall
-                        }
-
-                        contentItem: Label {
-                            RowLayout {
-                                anchors.fill: parent
-                                spacing: General.spacingSmall
-
-                                SvgIcon {
-                                    visible: isFolder
-                                    source: blocksTree.isExpanded(row)
-                                            ? Icons.folderOpenSvg
-                                            : Icons.folderSvg
-                                    color: treeDelegate.current
-                                           ? treeDelegate.palette.highlightedText
-                                           : ColorPalette.textPrimary
-                                    iconWidth: 15
-                                    iconHeight: 15
-                                    Layout.alignment: Qt.AlignVCenter
+                                        visit(index)
+                                    }
                                 }
 
-                                Label {
-                                    Layout.fillWidth: true
-                                    text: treeDelegate.text
+                                visit(Qt.invalidModelIndex)
+                                expandedFolders = remembered
+                            }
+
+                            function restoreExpandedFolders() {
+                                function visit(parentIndex) {
+                                    const count = BlocksModel.rowCount(parentIndex)
+                                    for (let row = 0; row < count; ++row) {
+                                        const index = BlocksModel.index(row, 0, parentIndex)
+                                        if (!index.valid)
+                                            continue
+
+                                        const isFolder = BlocksModel.data(index, BlocksModel.IsFolderRole)
+                                        if (!isFolder)
+                                            continue
+
+                                        const fullPath = BlocksModel.data(index, BlocksModel.FullPathRole)
+                                        if (expandedFolders[fullPath])
+                                            blocksTree.expand(row, parentIndex)
+
+                                        visit(index)
+                                    }
+                                }
+
+                                visit(Qt.invalidModelIndex)
+                            }
+
+                            delegate: TreeViewDelegate {
+                                id: treeDelegate
+                                required property bool isFolder
+                                required property string blockId
+
+                                implicitHeight: isFolder ? 32 : 28
+                                indentation: General.treeIndent
+                                text: model.display
+
+                                background: Rectangle {
+                                    anchors.fill: parent
                                     color: treeDelegate.current
-                                           ? treeDelegate.palette.highlightedText
-                                           : ColorPalette.textPrimary
-                                    font.bold: isFolder
-                                    elide: Text.ElideRight
-                                    verticalAlignment: Text.AlignVCenter
+                                           ? treeDelegate.palette.highlight
+                                           : "transparent"
+                                    radius: General.radiusSmall
+                                }
+
+                                contentItem: Label {
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        spacing: General.spacingSmall
+
+                                        SvgIcon {
+                                            visible: isFolder
+                                            source: blocksTree.isExpanded(row)
+                                                    ? Icons.folderOpenSvg
+                                                    : Icons.folderSvg
+                                            color: treeDelegate.current
+                                                   ? treeDelegate.palette.highlightedText
+                                                   : ColorPalette.textPrimary
+                                            iconWidth: 15
+                                            iconHeight: 15
+                                            Layout.alignment: Qt.AlignVCenter
+                                        }
+
+                                        Label {
+                                            Layout.fillWidth: true
+                                            text: treeDelegate.text
+                                            color: treeDelegate.current
+                                                   ? treeDelegate.palette.highlightedText
+                                                   : ColorPalette.textPrimary
+                                            font.bold: isFolder
+                                            elide: Text.ElideRight
+                                            verticalAlignment: Text.AlignVCenter
+                                        }
+                                    }
+                                }
+
+                                onClicked: {
+                                    const modelIndex = blocksTree.index(row, column)
+                                    blocksTree.selectionModel.setCurrentIndex(
+                                                modelIndex, ItemSelectionModel.ClearAndSelect)
+                                    if (isFolder) {
+                                        blocksTree.rememberExpandedFolders()
+                                        blocksTree.toggleExpanded(row)
+
+                                        const fullPath = model.fullPath
+                                        if (blocksTree.isExpanded(row))
+                                            blocksTree.expandedFolders[fullPath] = true
+                                        else
+                                            delete blocksTree.expandedFolders[fullPath]
+                                    } else {
+                                        BlocksModel.selectBlock(blockId)
+                                    }
+                                }
+                            }
+
+                            ScrollBar.vertical: ScrollBar {}
+
+                            Component.onCompleted: expandRecursively()
+
+                            Connections {
+                                target: BlocksModel
+
+                                function onTreeReloaded() {
+                                    if (BlocksModel.searchText.trim().length > 0)
+                                        blocksTree.expandRecursively()
+                                    else
+                                        blocksTree.restoreExpandedFolders()
                                 }
                             }
                         }
+                    }
+                }
 
-                        onClicked: {
-                            const modelIndex = blocksTree.index(row, column)
-                            blocksTree.selectionModel.setCurrentIndex(
-                                        modelIndex, ItemSelectionModel.ClearAndSelect)
-                            if (isFolder) {
-                                blocksTree.rememberExpandedFolders()
-                                blocksTree.toggleExpanded(row)
-
-                                const fullPath = model.fullPath
-                                if (blocksTree.isExpanded(row))
-                                    blocksTree.expandedFolders[fullPath] = true
-                                else
-                                    delete blocksTree.expandedFolders[fullPath]
-                            } else {
-                                BlocksModel.selectBlock(blockId)
-                            }
-                        }
+                Frame {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    Layout.preferredHeight: 280
+                    padding: 0
+                    background: Rectangle {
+                        radius: General.radiusMedium
+                        color: ColorPalette.fieldBackground
+                        border.color: ColorPalette.border
                     }
 
-                    ScrollBar.vertical: ScrollBar {}
+                    ColumnLayout {
+                        anchors.fill: parent
+                        anchors.margins: General.paddingSmall
+                        spacing: General.spacingSmall
 
-                    Component.onCompleted: expandRecursively()
+                        Label {
+                            text: "Versions"
+                            font.bold: true
+                        }
 
-                    Connections {
-                        target: BlocksModel
+                        ListView {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            clip: true
+                            spacing: General.spacingSmall
+                            model: BlocksModel.versionEntries
 
-                        function onTreeReloaded() {
-                            if (BlocksModel.searchText.trim().length > 0)
-                                blocksTree.expandRecursively()
-                            else
-                                blocksTree.restoreExpandedFolders()
+                            delegate: ItemDelegate {
+                                required property var modelData
+
+                                width: ListView.view.width
+                                padding: General.paddingSmall
+                                highlighted: modelData.isSelected
+                                onClicked: BlocksModel.selectBlockVersion(modelData.version)
+
+                                contentItem: ColumnLayout {
+                                    spacing: 4
+
+                                    RowLayout {
+                                        Layout.fillWidth: true
+
+                                        Label {
+                                            text: modelData.label
+                                            font.bold: true
+                                            elide: Text.ElideRight
+                                            Layout.fillWidth: true
+                                        }
+
+                                        Label {
+                                            visible: modelData.state.length > 0
+                                            text: modelData.state
+                                            opacity: 0.72
+                                        }
+                                    }
+
+                                    Label {
+                                        Layout.fillWidth: true
+                                        text: modelData.comment.length > 0
+                                              ? modelData.comment
+                                              : "No revision comment"
+                                        wrapMode: Text.WordWrap
+                                        opacity: modelData.comment.length > 0 ? 0.82 : 0.58
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -249,6 +316,34 @@ Page {
 
                     SvgToolButton {
                         compact: true
+                        iconSource: Icons.addSvg
+                        labelText: "New"
+                        onClicked: BlockEditorVm.openCreateEditor()
+                    }
+
+                    SvgToolButton {
+                        compact: true
+                        iconSource: Icons.aiAssistSvg
+                        labelText: "AI Slice"
+                        enabled: BlockSliceVm.aiGenerationAvailable
+                        onClicked: BlockSliceVm.openDialog()
+                    }
+
+                    SvgToolButton {
+                        compact: true
+                        iconSource: Icons.reloadSvg
+                        labelText: "Reload"
+                        onClicked: BlocksModel.reload()
+                    }
+
+                    CheckBox {
+                        text: "Show Derived"
+                        checked: BlocksModel.showDerivedBlocks
+                        onToggled: BlocksModel.showDerivedBlocks = checked
+                    }
+
+                    SvgToolButton {
+                        compact: true
                         iconSource: Icons.editSvg
                         labelText: "Edit"
                         enabled: BlocksModel.selectedBlockId.length > 0
@@ -264,127 +359,151 @@ Page {
                     }
                 }
 
-                Rectangle {
+                GridLayout {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    radius: General.radiusSmall
-                    color: ColorPalette.fieldBackground
-                    border.color: ColorPalette.borderStrong
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: General.paddingMedium
-                        spacing: General.spacingMedium
+                    columns: 2
+                    rowSpacing: General.spacingMedium
+                    columnSpacing: General.spacingMedium
 
-                        GridLayout {
-                            Layout.fillWidth: true
-                            columns: 4
-                            rowSpacing: General.spacingMedium
-                            columnSpacing: General.spacingLarge
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        Layout.preferredWidth: 340
+                        Layout.minimumWidth: 300
+                        Layout.maximumWidth: 420
+                        radius: General.radiusSmall
+                        color: ColorPalette.fieldBackground
+                        border.color: ColorPalette.borderStrong
 
-                            DetailField {
-                                label: "Id"
-                                value: BlocksModel.selectedBlockId
-                            }
+                        ScrollView {
+                            anchors.fill: parent
+                            anchors.margins: General.paddingMedium
+                            clip: true
 
                             ColumnLayout {
-                                Layout.fillWidth: true
-                                spacing: 4
+                                width: Math.max(0, parent.availableWidth)
+                                spacing: General.spacingMedium
 
-                                Label {
-                                    text: "Version"
-                                    font.bold: true
-                                }
-
-                                ComboBox {
+                                GridLayout {
                                     Layout.fillWidth: true
-                                    model: BlocksModel.selectedBlockVersionOptions
-                                    enabled: BlocksModel.selectedBlockVersions.length > 0
-                                    currentIndex: Math.max(0, BlocksModel.selectedBlockVersions.indexOf(BlocksModel.selectedBlockVersion))
-                                    onActivated: BlocksModel.selectBlockVersion(BlocksModel.selectedBlockVersions[currentIndex])
+                                    columns: 2
+                                    rowSpacing: General.spacingMedium
+                                    columnSpacing: General.spacingLarge
+
+                                    DetailField {
+                                        Layout.columnSpan: 2
+                                        label: "Id"
+                                        value: BlocksModel.selectedBlockId
+                                    }
+
+                                    DetailField {
+                                        label: "Version"
+                                        value: BlocksModel.selectedBlockVersion
+                                    }
+
+                                    DetailField {
+                                        label: "Type"
+                                        value: BlocksModel.selectedBlockType
+                                    }
+
+                                    DetailField {
+                                        label: "Language"
+                                        value: BlocksModel.selectedBlockLanguage
+                                    }
                                 }
-                            }
 
-                            DetailField {
-                                label: "Type"
-                                value: BlocksModel.selectedBlockType
-                            }
+                                DetailField {
+                                    label: "Description"
+                                    value: BlocksModel.highlightSearchText(BlocksModel.selectedBlockDescription)
+                                    placeholder: "No description"
+                                    richText: true
+                                }
 
-                            DetailField {
-                                label: "Language"
-                                value: BlocksModel.selectedBlockLanguage
-                            }
-                        }
+                                DetailField {
+                                    label: "Revision Comment"
+                                    value: BlocksModel.highlightSearchText(BlocksModel.selectedBlockRevisionComment)
+                                    placeholder: "No revision comment"
+                                    richText: true
+                                }
 
-                        DetailField {
-                            label: "Description"
-                            value: BlocksModel.highlightSearchText(BlocksModel.selectedBlockDescription)
-                            placeholder: "No description"
-                            richText: true
-                        }
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 4
 
-                        ColumnLayout {
-                            Layout.fillWidth: true
-                            spacing: 4
+                                    Label {
+                                        text: "Tags"
+                                        font.bold: true
+                                    }
 
-                            Label {
-                                text: "Tags"
-                                font.bold: true
-                            }
+                                    Flow {
+                                        Layout.fillWidth: true
+                                        width: parent.width
+                                        spacing: General.spacingSmall
 
-                            Flow {
-                                Layout.fillWidth: true
-                                width: parent.width
-                                spacing: General.spacingSmall
+                                        Repeater {
+                                            model: BlocksModel.selectedBlockTags
 
-                                Repeater {
-                                    model: BlocksModel.selectedBlockTags
+                                            delegate: TagChip {
+                                                required property string modelData
+                                                text: modelData
+                                            }
+                                        }
+                                    }
 
-                                    delegate: TagChip {
-                                        required property string modelData
-                                        text: modelData
+                                    Label {
+                                        visible: BlocksModel.selectedBlockTags.length === 0
+                                        text: "No tags"
+                                        opacity: 0.72
+                                    }
+                                }
+
+                                ColumnLayout {
+                                    Layout.fillWidth: true
+                                    spacing: 4
+
+                                    Label {
+                                        text: "Defaults"
+                                        font.bold: true
+                                    }
+
+                                    Flow {
+                                        Layout.fillWidth: true
+                                        width: parent.width
+                                        spacing: General.spacingSmall
+
+                                        Repeater {
+                                            model: BlocksModel.selectedBlockDefaults
+
+                                            delegate: TagChip {
+                                                required property string modelData
+                                                text: modelData
+                                            }
+                                        }
+                                    }
+
+                                    Label {
+                                        visible: BlocksModel.selectedBlockDefaults.length === 0
+                                        text: "No defaults"
+                                        opacity: 0.72
                                     }
                                 }
                             }
-
-                            Label {
-                                visible: BlocksModel.selectedBlockTags.length === 0
-                                text: "No tags"
-                                opacity: 0.72
-                            }
                         }
+                    }
+
+                    Rectangle {
+                        Layout.fillWidth: true
+                        Layout.fillHeight: true
+                        Layout.preferredWidth: 820
+                        Layout.minimumWidth: 620
+                        radius: General.radiusSmall
+                        color: ColorPalette.fieldBackground
+                        border.color: ColorPalette.borderStrong
 
                         ColumnLayout {
-                            Layout.fillWidth: true
-                            spacing: 4
-
-                            Label {
-                                text: "Defaults"
-                                font.bold: true
-                            }
-
-                            Flow {
-                                Layout.fillWidth: true
-                                width: parent.width
-                                spacing: General.spacingSmall
-
-                                Repeater {
-                                    model: BlocksModel.selectedBlockDefaults
-
-                                    delegate: TagChip {
-                                        required property string modelData
-                                        text: modelData
-                                    }
-                                }
-                            }
-
-                            Label {
-                                visible: BlocksModel.selectedBlockDefaults.length === 0
-                                text: "No defaults"
-                                opacity: 0.72
-                            }
-                        }
-
-                        ColumnLayout {
+                            anchors.fill: parent
+                            anchors.margins: General.paddingMedium
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             spacing: 4
@@ -397,7 +516,6 @@ Page {
                             Loader {
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
-                                Layout.minimumHeight: 220
                                 active: true
                                 sourceComponent: BlocksModel.searchText.trim().length > 0
                                                  ? highlightedTemplatePreview
@@ -422,36 +540,25 @@ Page {
     Component {
         id: highlightedTemplatePreview
 
-        Frame {
-            padding: General.paddingMedium
+        ScrollView {
+            id: highlightedTemplateScroll
+            clip: true
+            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
-            background: Rectangle {
-                radius: General.radiusSmall
-                color: ColorPalette.fieldBackground
-                border.color: ColorPalette.borderStrong
-            }
-
-            ScrollView {
-                id: highlightedTemplateScroll
-                anchors.fill: parent
-                clip: true
-                ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-
-                TextEdit {
-                    width: highlightedTemplateScroll.availableWidth
-                    text: "<div style='color:" + ColorPalette.textPrimary
-                          + ";'>" + BlocksModel.highlightSearchContent(BlocksModel.selectedBlockTemplate)
-                          + "</div>"
-                    textFormat: TextEdit.RichText
-                    readOnly: true
-                    wrapMode: TextEdit.Wrap
-                    selectByMouse: true
-                    font.family: General.monospaceFamily
-                    font.pixelSize: SessionVm.previewFontSize
-                    color: highlightedTemplateScroll.palette.windowText
-                    selectedTextColor: highlightedTemplateScroll.palette.highlightedText
-                    selectionColor: highlightedTemplateScroll.palette.highlight
-                }
+            TextEdit {
+                width: highlightedTemplateScroll.availableWidth
+                text: "<div style='color:" + ColorPalette.textPrimary
+                      + ";'>" + BlocksModel.highlightSearchContent(BlocksModel.selectedBlockTemplate)
+                      + "</div>"
+                textFormat: TextEdit.RichText
+                readOnly: true
+                wrapMode: TextEdit.Wrap
+                selectByMouse: true
+                font.family: General.monospaceFamily
+                font.pixelSize: SessionVm.previewFontSize
+                color: highlightedTemplateScroll.palette.windowText
+                selectedTextColor: highlightedTemplateScroll.palette.highlightedText
+                selectionColor: highlightedTemplateScroll.palette.highlight
             }
         }
     }
@@ -733,9 +840,30 @@ Page {
 
                             DetailField {
                                 width: parent.width
-                                label: "Current Version"
+                                label: "Base Version"
                                 value: BlockEditorVm.currentVersion
                                 visible: !BlockEditorVm.createMode
+                            }
+
+                            ColumnLayout {
+                                width: parent.width
+                                spacing: 4
+
+                                Label {
+                                    text: "Revision Comment"
+                                    font.bold: true
+                                }
+
+                                TextArea {
+                                    width: parent.width
+                                    height: 84
+                                    text: BlockEditorVm.revisionComment
+                                    placeholderText: BlockEditorVm.createMode
+                                                     ? "Optional note for the first published version"
+                                                     : "What changed in this new version?"
+                                    wrapMode: TextEdit.Wrap
+                                    onTextChanged: if (text !== BlockEditorVm.revisionComment) BlockEditorVm.revisionComment = text
+                                }
                             }
 
                             ColumnLayout {
