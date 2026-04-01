@@ -4,11 +4,20 @@
 #include <QCoreApplication>
 #include <QEventLoop>
 #include <QSettings>
-#include <qtkeychain/keychain.h>
 #include <sago/platform_folders.h>
 
 #include <filesystem>
 #include <utility>
+
+#if __has_include(<qtkeychain/keychain.h>)
+#include <qtkeychain/keychain.h>
+#elif __has_include(<qt6keychain/keychain.h>)
+#include <qt6keychain/keychain.h>
+#elif __has_include(<keychain.h>)
+#include <keychain.h>
+#else
+#error "QtKeychain header not found"
+#endif
 
 #include "openai_compatible_block_generator.h"
 #include "openai_compatible_normalizer.h"
