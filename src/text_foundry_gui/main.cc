@@ -1,5 +1,6 @@
 #include <QGuiApplication>
 #include <QIcon>
+#include <QDir>
 #include <QQmlApplicationEngine>
 
 int main(int argc, char** argv) {
@@ -11,6 +12,11 @@ int main(int argc, char** argv) {
       QIcon(QStringLiteral(":/qt/qml/TextFoundry/resource/app/textfoundry.svg")));
 
   QQmlApplicationEngine engine;
+  const QString app_dir = QCoreApplication::applicationDirPath();
+  engine.addImportPath(app_dir + QStringLiteral("/../lib/qt6/qml"));
+  engine.addImportPath(app_dir + QStringLiteral("/../lib64/qt6/qml"));
+  engine.addImportPath(app_dir + QStringLiteral("/../Resources/qml"));
+  engine.addImportPath(QDir(app_dir).absoluteFilePath(QStringLiteral("../qml")));
 
   QObject::connect(
       &engine, &QQmlApplicationEngine::objectCreationFailed, &app,

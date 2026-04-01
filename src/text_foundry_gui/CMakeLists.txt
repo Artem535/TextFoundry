@@ -1,6 +1,11 @@
 find_package(platform_folders CONFIG REQUIRED)
 find_package(KF6SyntaxHighlighting QUIET)
 
+option(TEXTFOUNDRY_BUNDLE_KSYNTAX_QML
+    "Bundle org.kde.syntaxhighlighting QML module with the app install tree"
+    OFF
+)
+
 qt_standard_project_setup(REQUIRES 6.8)
 
 set_source_files_properties(qml/Constants/ColorPalette.qml PROPERTIES
@@ -17,20 +22,27 @@ qt_add_executable(textfoundry_gui
     main.cc
 )
 
-if(KF6SyntaxHighlighting_FOUND AND NOT TARGET kquicksyntaxhighlightingplugin)
-    find_library(KQUICKSYNTAXHIGHLIGHTINGPLUGIN_LIBRARY
-        NAMES kquicksyntaxhighlightingplugin libkquicksyntaxhighlightingplugin
+if(KF6SyntaxHighlighting_FOUND)
+    find_path(KSYNTAX_QML_MODULE_DIR
+        NAMES qmldir
         HINTS
             /usr/lib64/qt6/qml/org/kde/syntaxhighlighting
             /usr/lib/qt6/qml/org/kde/syntaxhighlighting
     )
 
-    if(KQUICKSYNTAXHIGHLIGHTINGPLUGIN_LIBRARY)
-        add_library(kquicksyntaxhighlightingplugin SHARED IMPORTED)
-        set_target_properties(kquicksyntaxhighlightingplugin PROPERTIES
-            IMPORTED_LOCATION "${KQUICKSYNTAXHIGHLIGHTINGPLUGIN_LIBRARY}"
-            INTERFACE_LINK_LIBRARIES "KF6::SyntaxHighlighting"
+    if(KSYNTAX_QML_MODULE_DIR AND NOT TARGET kquicksyntaxhighlightingplugin)
+        find_library(KQUICKSYNTAXHIGHLIGHTINGPLUGIN_LIBRARY
+            NAMES kquicksyntaxhighlightingplugin libkquicksyntaxhighlightingplugin
+            HINTS ${KSYNTAX_QML_MODULE_DIR}
         )
+
+        if(KQUICKSYNTAXHIGHLIGHTINGPLUGIN_LIBRARY)
+            add_library(kquicksyntaxhighlightingplugin SHARED IMPORTED)
+            set_target_properties(kquicksyntaxhighlightingplugin PROPERTIES
+                IMPORTED_LOCATION "${KQUICKSYNTAXHIGHLIGHTINGPLUGIN_LIBRARY}"
+                INTERFACE_LINK_LIBRARIES "KF6::SyntaxHighlighting"
+            )
+        endif()
     endif()
 endif()
 
@@ -160,5 +172,12 @@ if(UNIX AND NOT APPLE)
     install(
         FILES ${CMAKE_CURRENT_SOURCE_DIR}/resource/app/textfoundry.svg
         DESTINATION ${CMAKE_INSTALL_DATADIR}/icons/hicolor/scalable/apps
+    )
+endif()
+
+if(TEXTFOUNDRY_BUNDLE_KSYNTAX_QML AND KSYNTAX_QML_MODULE_DIR)
+    install(
+        DIRECTORY ${KSYNTAX_QML_MODULE_DIR}/
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/qt6/qml/org/kde/syntaxhighlighting
     )
 endif()
