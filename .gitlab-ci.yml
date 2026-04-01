@@ -7,6 +7,24 @@ variables:
   LC_ALL: C.UTF-8
   GIT_SUBMODULE_STRATEGY: recursive
   VCPKG_ROOT: "$CI_PROJECT_DIR/.cache/vcpkg"
+  VCPKG_DEFAULT_BINARY_CACHE: "$CI_PROJECT_DIR/.cache/vcpkg-bincache"
+  CCACHE_DIR: "$CI_PROJECT_DIR/.cache/ccache"
+  CCACHE_BASEDIR: "$CI_PROJECT_DIR"
+  CCACHE_COMPILERCHECK: "content"
+
+cache:
+  key:
+    files:
+      - vcpkg.json
+      - vcpkg-configuration.json
+      - CMakePresets.json
+      - .gitlab-ci.yml
+  paths:
+    - .cache/vcpkg
+    - .cache/vcpkg-bincache
+    - .cache/ccache
+    - build-rel/_deps
+    - build-rel/vcpkg_installed
 
 build_rpm:
   stage: build
@@ -17,7 +35,7 @@ build_rpm:
     - dnf install -y gcc-c++ clang cmake ninja-build make git rpm-build ccache qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qttools-devel qt6-qtsvg-devel qt6-qtquickcontrols2-devel qt6-qttranslations qt6-linguist extra-cmake-modules qtkeychain-qt6-devel openssl-devel
     - test -d "$VCPKG_ROOT/.git" || git clone --depth 1 https://github.com/microsoft/vcpkg.git "$VCPKG_ROOT"
     - "$VCPKG_ROOT/bootstrap-vcpkg.sh"
-    - cmake --preset vcpkg-rel --log-level=VERBOSE
+    - cmake --preset vcpkg-rel --log-level=VERBOSE -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
     - cmake --build build-rel --verbose -j"$(nproc)"
     - cpack --debug --verbose -G RPM --config build-rel/CPackConfig.cmake
   artifacts:
