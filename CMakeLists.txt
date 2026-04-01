@@ -74,3 +74,23 @@ install(
         "${CMAKE_CURRENT_BINARY_DIR}/TextFoundryConfigVersion.cmake"
     DESTINATION "${TEXTFOUNDRY_INSTALL_CMAKEDIR}"
 )
+
+set(CPACK_PACKAGE_NAME "textfoundry")
+set(CPACK_PACKAGE_VENDOR "TextFoundry")
+set(CPACK_PACKAGE_CONTACT "TextFoundry Maintainers")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY
+    "Desktop workbench for authoring reusable prompt blocks, compositions, and renders")
+set(CPACK_PACKAGE_INSTALL_DIRECTORY "TextFoundry")
+set(CPACK_PACKAGE_FILE_NAME
+    "${CPACK_PACKAGE_NAME}-${PROJECT_VERSION}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
+set(CPACK_RESOURCE_FILE_README
+    "${CMAKE_CURRENT_SOURCE_DIR}/doc/release_checklist.md")
+
+set(CPACK_GENERATOR "RPM")
+set(CPACK_RPM_FILE_NAME "RPM-DEFAULT")
+set(CPACK_RPM_PACKAGE_RELEASE 1)
+set(CPACK_RPM_PACKAGE_LICENSE "Proprietary")
+set(CPACK_RPM_PACKAGE_GROUP "Applications/Productivity")
+set(CPACK_RPM_PACKAGE_DESCRIPTION "${CPACK_PACKAGE_DESCRIPTION_SUMMARY}")
+
+include(CPack)

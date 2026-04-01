@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>textfoundry.desktop</id>
+  <metadata_license>MIT</metadata_license>
+  <project_license>Proprietary</project_license>
+  <name>TextFoundry</name>
+  <summary>Prompt block and composition workbench</summary>
+  <description>
+    <p>
+      TextFoundry is a desktop workbench for authoring reusable prompt blocks,
+      assembling compositions, rendering final prompts, and applying optional
+      AI-assisted generation and normalization workflows.
+    </p>
+    <p>
+      It is designed for structured prompt engineering with explicit versioning,
+      composition editing, deterministic rendering, and local project storage.
+    </p>
+  </description>
+  <launchable type="desktop-id">textfoundry.desktop</launchable>
+  <provides>
+    <binary>tf-gui</binary>
+  </provides>
+  <categories>
+    <category>Development</category>
+    <category>Utility</category>
+  </categories>
+  <developer id="com.textfoundry">
+    <name>TextFoundry</name>
+  </developer>
+  <branding>
+    <color type="primary" scheme_preference="dark">#6eb2f2</color>
+  </branding>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="@PROJECT_VERSION@" date="2026-03-27"/>
+  </releases>
+</component>

@@ -1,15 +1,39 @@
-# The Docker image that will be used to build your app
-image: asciidoctor/docker-asciidoctor:main
+stages:
+  - build
+  - pages
+
+variables:
+  LANG: C.UTF-8
+  LC_ALL: C.UTF-8
+  GIT_SUBMODULE_STRATEGY: recursive
+  VCPKG_ROOT: "$CI_PROJECT_DIR/.cache/vcpkg"
+
+build_rpm:
+  stage: build
+  image: fedora:43
+  script:
+    - dnf config-manager setopt fedora-cisco-openh264.enabled=0
+    - dnf install -y https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
+    - dnf install -y gcc-c++ clang cmake ninja-build make git rpm-build ccache qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qttools-devel qt6-qtsvg-devel qt6-qtquickcontrols2-devel qt6-qttranslations qt6-linguist extra-cmake-modules kf6-ksyntaxhighlighting-devel openssl-devel
+    - test -d "$VCPKG_ROOT/.git" || git clone --depth 1 https://github.com/microsoft/vcpkg.git "$VCPKG_ROOT"
+    - "$VCPKG_ROOT/bootstrap-vcpkg.sh"
+    - cmake --preset vcpkg-rel
+    - cmake --build build-rel -j"$(nproc)"
+    - cpack -G RPM --config build-rel/CPackConfig.cmake
+  artifacts:
+    paths:
+      - "*.rpm"
+    expire_in: 7 days
+
 pages:
+  stage: pages
+  image: asciidoctor/docker-asciidoctor:main
   script:
     - mkdir public
     - cd public
     - asciidoctor ../doc/main.adoc -o index.html
   artifacts:
     paths:
-      # The folder that contains the files to be exposed at the Page URL
       - public
   rules:
-    # This ensures that only pushes to the default branch will trigger
-    # a pages deploy
     - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
