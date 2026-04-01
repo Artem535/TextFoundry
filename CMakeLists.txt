@@ -21,6 +21,7 @@ set(FTXUI_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(ftxui)
 
 add_subdirectory(src/textfoundry_engine)
+set(OBJECTBOX_LICENSE_FILE "${objectbox_SOURCE_DIR}/LICENSE.txt")
 add_subdirectory(src/textfoundry_ai)
 add_subdirectory(src/text_foundry_cli)
 option(TEXTFOUNDRY_BUILD_GUI "Build Qt/QML GUI frontend" ON)
@@ -28,16 +29,19 @@ if(TEXTFOUNDRY_BUILD_GUI)
   find_package(Qt6 6.8 QUIET COMPONENTS Core Qml Quick QuickControls2)
   if(Qt6_FOUND)
     if(NOT TARGET qt6keychain)
-      set(BUILD_WITH_QT6 ON CACHE BOOL "" FORCE)
-      set(BUILD_TEST_APPLICATION OFF CACHE BOOL "" FORCE)
-      set(BUILD_TRANSLATIONS OFF CACHE BOOL "" FORCE)
-      set(LIBSECRET_SUPPORT OFF CACHE BOOL "" FORCE)
-      FetchContent_Declare(
-        qtkeychain
-        URL https://github.com/frankosterfeld/qtkeychain/archive/refs/tags/0.15.0.tar.gz
-        DOWNLOAD_EXTRACT_TIMESTAMP FALSE
-      )
-      FetchContent_MakeAvailable(qtkeychain)
+      find_package(Qt6Keychain CONFIG QUIET)
+      if(NOT TARGET qt6keychain)
+        set(BUILD_WITH_QT6 ON CACHE BOOL "" FORCE)
+        set(BUILD_TEST_APPLICATION OFF CACHE BOOL "" FORCE)
+        set(BUILD_TRANSLATIONS OFF CACHE BOOL "" FORCE)
+        set(LIBSECRET_SUPPORT OFF CACHE BOOL "" FORCE)
+        FetchContent_Declare(
+          qtkeychain
+          URL https://github.com/frankosterfeld/qtkeychain/archive/refs/tags/0.15.0.tar.gz
+          DOWNLOAD_EXTRACT_TIMESTAMP FALSE
+        )
+        FetchContent_MakeAvailable(qtkeychain)
+      endif()
     endif()
     add_subdirectory(src/text_foundry_gui)
   else()
@@ -75,9 +79,23 @@ install(
     DESTINATION "${TEXTFOUNDRY_INSTALL_CMAKEDIR}"
 )
 
+if(TARGET objectbox)
+  install(FILES $<TARGET_FILE:objectbox>
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  )
+endif()
+
+if(EXISTS "${OBJECTBOX_LICENSE_FILE}")
+  install(FILES "${OBJECTBOX_LICENSE_FILE}"
+    DESTINATION ${CMAKE_INSTALL_DATADIR}/licenses/${PROJECT_NAME}
+    RENAME objectbox-LICENSE.txt
+  )
+endif()
+
 set(CPACK_PACKAGE_NAME "textfoundry")
 set(CPACK_PACKAGE_VENDOR "TextFoundry")
 set(CPACK_PACKAGE_CONTACT "TextFoundry Maintainers")
+set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY
     "Desktop workbench for authoring reusable prompt blocks, compositions, and renders")
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "TextFoundry")
@@ -85,6 +103,7 @@ set(CPACK_PACKAGE_FILE_NAME
     "${CPACK_PACKAGE_NAME}-${PROJECT_VERSION}-${CMAKE_SYSTEM_NAME}-${CMAKE_SYSTEM_PROCESSOR}")
 set(CPACK_RESOURCE_FILE_README
     "${CMAKE_CURRENT_SOURCE_DIR}/doc/release_checklist.md")
+set(CPACK_PACKAGING_INSTALL_PREFIX "/usr")
 
 set(CPACK_GENERATOR "RPM")
 set(CPACK_RPM_FILE_NAME "RPM-DEFAULT")
@@ -92,5 +111,10 @@ set(CPACK_RPM_PACKAGE_RELEASE 1)
 set(CPACK_RPM_PACKAGE_LICENSE "Proprietary")
 set(CPACK_RPM_PACKAGE_GROUP "Applications/Productivity")
 set(CPACK_RPM_PACKAGE_DESCRIPTION "${CPACK_PACKAGE_DESCRIPTION_SUMMARY}")
+set(CPACK_RPM_PACKAGE_AUTOREQ ON)
+set(CPACK_RPM_EXCLUDE_FROM_AUTO_FILELIST_ADDITION
+    /lib /lib64 /usr/lib /usr/lib64 /usr/bin /usr/sbin
+    /usr/share /usr/share/applications /usr/share/icons /usr/share/metainfo
+)
 
 include(CPack)

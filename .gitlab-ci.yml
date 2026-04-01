@@ -14,7 +14,7 @@ build_rpm:
   script:
     - dnf config-manager setopt fedora-cisco-openh264.enabled=0
     - dnf install -y https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
-    - dnf install -y gcc-c++ clang cmake ninja-build make git rpm-build ccache qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qttools-devel qt6-qtsvg-devel qt6-qtquickcontrols2-devel qt6-qttranslations qt6-linguist extra-cmake-modules kf6-syntax-highlighting-devel openssl-devel
+    - dnf install -y gcc-c++ clang cmake ninja-build make git rpm-build ccache qt6-qtbase-devel qt6-qtdeclarative-devel qt6-qttools-devel qt6-qtsvg-devel qt6-qtquickcontrols2-devel qt6-qttranslations qt6-linguist extra-cmake-modules kf6-syntax-highlighting-devel qtkeychain-qt6-devel openssl-devel
     - test -d "$VCPKG_ROOT/.git" || git clone --depth 1 https://github.com/microsoft/vcpkg.git "$VCPKG_ROOT"
     - "$VCPKG_ROOT/bootstrap-vcpkg.sh"
     - cmake --preset vcpkg-rel
