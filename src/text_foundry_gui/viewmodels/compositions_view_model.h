@@ -46,6 +46,7 @@ class CompositionsViewModel : public QObject {
   Q_PROPERTY(bool compareOpen READ compareOpen NOTIFY compareChanged)
   Q_PROPERTY(QString compareLeftTitle READ compareLeftTitle NOTIFY compareChanged)
   Q_PROPERTY(QString compareRightTitle READ compareRightTitle NOTIFY compareChanged)
+  Q_PROPERTY(QVariantList compareRows READ compareRows NOTIFY compareChanged)
   Q_PROPERTY(QString compareLeftText READ compareLeftText NOTIFY compareChanged)
   Q_PROPERTY(QString compareRightText READ compareRightText NOTIFY compareChanged)
   Q_PROPERTY(QString compareSummary READ compareSummary NOTIFY compareChanged)
@@ -86,6 +87,7 @@ class CompositionsViewModel : public QObject {
   bool compareOpen() const;
   QString compareLeftTitle() const;
   QString compareRightTitle() const;
+  QVariantList compareRows() const;
   QString compareLeftText() const;
   QString compareRightText() const;
   QString compareSummary() const;
@@ -122,6 +124,8 @@ class CompositionsViewModel : public QObject {
   void compareChanged();
 
  private:
+  QString buildRawCompositionText(const Composition& composition) const;
+  void buildCompareDiff(const QString& left_text, const QString& right_text);
   void syncCompositions();
   void refreshFilteredCompositions();
   void refreshDetails();
@@ -158,6 +162,7 @@ class CompositionsViewModel : public QObject {
   bool compare_open_ = false;
   QString compare_left_title_;
   QString compare_right_title_;
+  QVariantList compare_rows_;
   QString compare_left_text_;
   QString compare_right_text_;
   QString compare_summary_;

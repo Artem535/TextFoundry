@@ -251,7 +251,7 @@ Page {
                                     }
 
                                     MenuItem {
-                                        text: "Compare Latest"
+                                        text: "Compare Raw"
                                         enabled: CompositionsVm.selectedVersions.indexOf(CompositionsVm.selectedVersion) > 0
                                         onTriggered: CompositionsVm.openCompareWithLatest()
                                     }
@@ -737,6 +737,18 @@ Page {
 
                                 SvgToolButton {
                                     compact: true
+                                    iconSource: Icons.aiAssistSvg
+                                    labelText: "Rewrite Blocks"
+                                    toolTipText: "Preview block-level AI patches without changing composition structure."
+                                    enabled: CompositionsVm.selectedCompositionId.length > 0
+                                             && CompositionBlockRewriteVm.rewriteAvailable
+                                    onClicked: CompositionBlockRewriteVm.openDialog(
+                                                   CompositionsVm.selectedCompositionId,
+                                                   CompositionsVm.selectedVersion)
+                                }
+
+                                SvgToolButton {
+                                    compact: true
                                     iconSource: Icons.reloadSvg
                                     labelText: "Use Latest Blocks"
                                     enabled: CompositionsVm.selectedCompositionId.length > 0
@@ -746,7 +758,7 @@ Page {
                                 SvgToolButton {
                                     compact: true
                                     iconSource: Icons.copySvg
-                                    labelText: "Compare Latest"
+                                    labelText: "Compare Raw"
                                     enabled: CompositionsVm.selectedVersions.indexOf(CompositionsVm.selectedVersion) > 0
                                     onClicked: CompositionsVm.openCompareWithLatest()
                                 }
@@ -876,7 +888,7 @@ Page {
         modal: true
         dim: true
         visible: CompositionsVm.compareOpen
-        title: "Compare Versions"
+        title: "Compare Raw Prompts"
         standardButtons: Dialog.NoButton
         onClosed: CompositionsVm.closeCompare()
 
@@ -898,63 +910,137 @@ Page {
 
             RowLayout {
                 Layout.fillWidth: true
-                Layout.fillHeight: true
                 spacing: General.spacingMedium
 
-                Frame {
+                Label {
                     Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    background: Rectangle {
-                        radius: General.radiusMedium
-                        color: ColorPalette.fieldBackground
-                        border.color: ColorPalette.border
-                    }
-
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: General.paddingMedium
-                        spacing: General.spacingSmall
-
-                        Label {
-                            text: CompositionsVm.compareLeftTitle
-                            font.bold: true
-                        }
-
-                        TextArea {
-                            Layout.fillWidth: true
-                            Layout.fillHeight: true
-                            readOnly: true
-                            wrapMode: TextEdit.Wrap
-                            text: CompositionsVm.compareLeftText
-                        }
-                    }
+                    text: CompositionsVm.compareLeftTitle
+                    font.bold: true
                 }
 
-                Frame {
+                Label {
                     Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    background: Rectangle {
-                        radius: General.radiusMedium
-                        color: ColorPalette.fieldBackground
-                        border.color: ColorPalette.border
+                    text: CompositionsVm.compareRightTitle
+                    font.bold: true
+                }
+            }
+
+            Frame {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                padding: 0
+                background: Rectangle {
+                    radius: General.radiusMedium
+                    color: ColorPalette.fieldBackground
+                    border.color: ColorPalette.border
+                }
+
+                ListView {
+                    id: compareRowsView
+                    anchors.fill: parent
+                    anchors.margins: General.paddingMedium
+                    clip: true
+                    spacing: General.spacingSmall
+                    model: CompositionsVm.compareRows
+
+                    ScrollBar.horizontal: ScrollBar {
+                        policy: ScrollBar.AlwaysOff
+                    }
+                    ScrollBar.vertical: ScrollBar {
+                        policy: ScrollBar.AsNeeded
                     }
 
-                    ColumnLayout {
-                        anchors.fill: parent
-                        anchors.margins: General.paddingMedium
-                        spacing: General.spacingSmall
+                    delegate: Item {
+                        required property var modelData
 
-                        Label {
-                            text: CompositionsVm.compareRightTitle
-                            font.bold: true
+                        function diffBackground(kind) {
+                            if (kind === "removed")
+                                return "#4d2b31"
+                            if (kind === "added")
+                                return "#1f4a37"
+                            if (kind === "changed")
+                                return "#4e3f1f"
+                            return "transparent"
                         }
 
-                        TextArea {
-                            Layout.fillWidth: true
-                            Layout.fillHeight: true
-                            readOnly: true
-                            wrapMode: TextEdit.Wrap
-                            text: CompositionsVm.compareRightText
+                        width: compareRowsView.width
+                        height: Math.max(leftCellText.implicitHeight, rightCellText.implicitHeight) + 8
+
+                        RowLayout {
+                            anchors.fill: parent
+                            anchors.leftMargin: General.paddingSmall
+                            anchors.rightMargin: General.paddingSmall
+                            spacing: General.spacingMedium
+
+                            RowLayout {
+                                id: leftLineRow
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                Layout.alignment: Qt.AlignTop
+                                spacing: General.spacingSmall
+
+                                Label {
+                                    Layout.preferredWidth: 36
+                                    Layout.alignment: Qt.AlignTop
+                                    horizontalAlignment: Text.AlignRight
+                                    color: ColorPalette.onSurfaceMuted
+                                    opacity: 0.72
+                                    font.family: General.monospaceFamily
+                                    text: modelData.leftLineNumber
+                                }
+
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    radius: 2
+                                    color: diffBackground(modelData.leftKind)
+
+                                    Label {
+                                        id: leftCellText
+                                        anchors.fill: parent
+                                        anchors.margins: 6
+                                        text: modelData.leftText.length > 0 ? modelData.leftText : " "
+                                        wrapMode: Text.WrapAtWordBoundaryOrAnywhere
+                                        font.family: General.monospaceFamily
+                                        verticalAlignment: Text.AlignTop
+                                    }
+                                }
+                            }
+
+                            RowLayout {
+                                id: rightLineRow
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                Layout.alignment: Qt.AlignTop
+                                spacing: General.spacingSmall
+
+                                Label {
+                                    Layout.preferredWidth: 36
+                                    Layout.alignment: Qt.AlignTop
+                                    horizontalAlignment: Text.AlignRight
+                                    color: ColorPalette.onSurfaceMuted
+                                    opacity: 0.72
+                                    font.family: General.monospaceFamily
+                                    text: modelData.rightLineNumber
+                                }
+
+                                Rectangle {
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    radius: 2
+                                    color: diffBackground(modelData.rightKind)
+
+                                    Label {
+                                        id: rightCellText
+                                        anchors.fill: parent
+                                        anchors.margins: 6
+                                        text: modelData.rightText.length > 0 ? modelData.rightText : " "
+                                        wrapMode: Text.WrapAtWordBoundaryOrAnywhere
+                                        font.family: General.monospaceFamily
+                                        verticalAlignment: Text.AlignTop
+                                    }
+                                }
+                            }
                         }
                     }
                 }

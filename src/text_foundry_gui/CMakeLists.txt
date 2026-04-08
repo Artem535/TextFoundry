@@ -64,6 +64,7 @@ qt_add_qml_module(textfoundry_gui
         qml/components/CodePreview.qml
         qml/components/BlockSliceDialog.qml
         qml/components/BlockEditorWorkspace.qml
+        qml/components/CompositionBlockRewriteDialog.qml
         qml/components/DragHandle.qml
         qml/components/CompositionEditorWindow.qml
         qml/components/CompositionEditorSidebar.qml
@@ -82,6 +83,8 @@ qt_add_qml_module(textfoundry_gui
         viewmodels/block_editor_view_model.h
         viewmodels/block_slice_view_model.cc
         viewmodels/block_slice_view_model.h
+        viewmodels/composition_block_rewrite_view_model.cc
+        viewmodels/composition_block_rewrite_view_model.h
         viewmodels/composition_editor_view_model.cc
         viewmodels/composition_editor_view_model.h
         viewmodels/compositions_view_model.cc

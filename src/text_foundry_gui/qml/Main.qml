@@ -377,6 +377,7 @@ ApplicationWindow {
     }
 
     BlockSliceDialog {}
+    CompositionBlockRewriteDialog {}
 
     Dialog {
         id: discardChangesDialog

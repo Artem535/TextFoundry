@@ -1,6 +1,8 @@
 #include "viewmodels/compositions_view_model.h"
 
 #include <QCoreApplication>
+#include <QRegularExpression>
+#include <QVector>
 #include <algorithm>
 #include <ranges>
 #include <string>
@@ -65,37 +67,12 @@ QString PreviewFragment(const Fragment& fragment) {
                              static_cast<int>(SeparatorTypeToString(fragment.AsSeparator().type).size())));
 }
 
-QString BuildCompositionSnapshot(const Composition& composition) {
-  QStringList lines;
-  lines << QString("Id: %1").arg(QString::fromStdString(composition.id()));
-  lines << QString("Version: %1")
-               .arg(QString::fromStdString(composition.version().ToString()));
-  lines << QString("State: %1")
-               .arg(QString::fromUtf8(BlockStateToString(composition.state()).data(),
-                                      static_cast<int>(BlockStateToString(composition.state()).size())));
-
-  const QString description = QString::fromStdString(composition.description()).trimmed();
-  lines << QString("Description: %1")
-               .arg(description.isEmpty() ? QStringLiteral("No description")
-                                          : description);
-
-  const QString revision_comment =
-      QString::fromStdString(composition.revision_comment()).trimmed();
-  lines << QString("Revision Comment: %1")
-               .arg(revision_comment.isEmpty() ? QStringLiteral("No revision comment")
-                                               : revision_comment);
-  lines << QString();
-  lines << QStringLiteral("Fragments:");
-
-  int index = 1;
-  for (const auto& fragment : composition.fragments()) {
-    lines << QString("%1. %2").arg(index++).arg(PreviewFragment(fragment));
-  }
-  if (composition.fragments().empty()) {
-    lines << QStringLiteral("No fragments");
-  }
-
-  return lines.join('\n');
+QString HtmlEscape(QString text) {
+  text.replace('&', QStringLiteral("&amp;"));
+  text.replace('<', QStringLiteral("&lt;"));
+  text.replace('>', QStringLiteral("&gt;"));
+  text.replace('"', QStringLiteral("&quot;"));
+  return text;
 }
 
 }  // namespace
@@ -213,6 +190,8 @@ QString CompositionsViewModel::compareLeftTitle() const {
 QString CompositionsViewModel::compareRightTitle() const {
   return compare_right_title_;
 }
+
+QVariantList CompositionsViewModel::compareRows() const { return compare_rows_; }
 
 QString CompositionsViewModel::compareLeftText() const { return compare_left_text_; }
 
@@ -533,15 +512,15 @@ void CompositionsViewModel::openCompareWithLatest() {
     return;
   }
 
-  compare_left_title_ = QString("Latest %1").arg(selected_versions_.front());
-  compare_right_title_ =
-      QString("Selected %1").arg(selected_versions_[current_index]);
-  compare_left_text_ = BuildCompositionSnapshot(left_result.value());
-  compare_right_text_ = BuildCompositionSnapshot(right_result.value());
+  compare_left_title_ =
+      QString("Selected Raw %1").arg(selected_versions_[current_index]);
+  compare_right_title_ = QString("Latest Raw %1").arg(selected_versions_.front());
+  buildCompareDiff(buildRawCompositionText(right_result.value()),
+                   buildRawCompositionText(left_result.value()));
   compare_summary_ =
-      QString("%1: %2 vs %3")
-          .arg(selected_composition_id_, selected_versions_.front(),
-               selected_versions_[current_index]);
+      QString("Raw prompt compare for %1: %2 -> %3")
+          .arg(selected_composition_id_, selected_versions_[current_index],
+               selected_versions_.front());
   compare_open_ = true;
   emit compareChanged();
 }
@@ -550,6 +529,158 @@ void CompositionsViewModel::closeCompare() {
   if (!compare_open_) return;
   compare_open_ = false;
   emit compareChanged();
+}
+
+QString CompositionsViewModel::buildRawCompositionText(
+    const Composition& composition) const {
+  QString out;
+  for (const auto& fragment : composition.fragments()) {
+    if (fragment.IsSeparator()) {
+      out += QString::fromStdString(fragment.AsSeparator().toString());
+      continue;
+    }
+    if (fragment.IsStaticText()) {
+      out += QString::fromStdString(fragment.AsStaticText().text());
+      continue;
+    }
+
+    const auto& ref = fragment.AsBlockRef();
+    auto block_result = ref.version().has_value()
+                            ? session_->engine().LoadBlock(ref.GetBlockId(),
+                                                           *ref.version())
+                            : session_->engine().LoadBlock(ref.GetBlockId());
+    if (block_result.HasError()) {
+      out += QString("[Missing block: %1]").arg(
+          QString::fromStdString(ref.GetBlockId()));
+      continue;
+    }
+
+    out += QString::fromStdString(block_result.value().templ().Content());
+  }
+  return out;
+}
+
+void CompositionsViewModel::buildCompareDiff(const QString& left_text,
+                                            const QString& right_text) {
+  const QStringList left_lines = left_text.split('\n');
+  const QStringList right_lines = right_text.split('\n');
+  const int n = left_lines.size();
+  const int m = right_lines.size();
+
+  QVector<QVector<int>> dp(n + 1, QVector<int>(m + 1, 0));
+  for (int i = n - 1; i >= 0; --i) {
+    for (int j = m - 1; j >= 0; --j) {
+      if (left_lines[i] == right_lines[j]) {
+        dp[i][j] = dp[i + 1][j + 1] + 1;
+      } else {
+        dp[i][j] = std::max(dp[i + 1][j], dp[i][j + 1]);
+      }
+    }
+  }
+
+  struct Row {
+    QString left;
+    QString right;
+    bool left_changed = false;
+    bool right_changed = false;
+  };
+
+  QVector<Row> rows;
+  int i = 0;
+  int j = 0;
+  while (i < n && j < m) {
+    if (left_lines[i] == right_lines[j]) {
+      rows.push_back(Row{left_lines[i], right_lines[j], false, false});
+      ++i;
+      ++j;
+    } else if (dp[i + 1][j] >= dp[i][j + 1]) {
+      rows.push_back(Row{left_lines[i], QString(), true, false});
+      ++i;
+    } else {
+      rows.push_back(Row{QString(), right_lines[j], false, true});
+      ++j;
+    }
+  }
+  while (i < n) {
+    rows.push_back(Row{left_lines[i], QString(), true, false});
+    ++i;
+  }
+  while (j < m) {
+    rows.push_back(Row{QString(), right_lines[j], false, true});
+    ++j;
+  }
+
+  const QString html_prefix =
+      QStringLiteral("<html><body style=\"margin:0;font-family:monospace;\">");
+  QString left_html = html_prefix;
+  QString right_html = html_prefix;
+  QVariantList compare_rows;
+
+  int left_line_number = 1;
+  int right_line_number = 1;
+  for (const auto& row : rows) {
+    const QString left_bg =
+        row.left_changed && !row.right_changed
+            ? QStringLiteral("#4d2b31")
+            : row.left_changed && row.right_changed
+                  ? QStringLiteral("#4e3f1f")
+                  : QStringLiteral("transparent");
+    const QString right_bg =
+        row.right_changed && !row.left_changed
+            ? QStringLiteral("#1f4a37")
+            : row.left_changed && row.right_changed
+                  ? QStringLiteral("#4e3f1f")
+                  : QStringLiteral("transparent");
+    const QString left_fg = row.left.isEmpty() ? QStringLiteral("#7f8796")
+                                               : QStringLiteral("#d7d9e0");
+    const QString right_fg = row.right.isEmpty() ? QStringLiteral("#7f8796")
+                                                 : QStringLiteral("#d7d9e0");
+    const QString left_content = row.left.isEmpty() ? QStringLiteral("&nbsp;")
+                                                    : HtmlEscape(row.left);
+    const QString right_content = row.right.isEmpty() ? QStringLiteral("&nbsp;")
+                                                      : HtmlEscape(row.right);
+    const QString left_line_html = QStringLiteral(
+                                       "<div style=\"white-space:pre-wrap; word-break:break-word; background:%1; color:%2; "
+                                       "padding:0 6px; min-height:1.5em;\">%3</div>")
+                                       .arg(left_bg, left_fg, left_content);
+    const QString right_line_html = QStringLiteral(
+                                        "<div style=\"white-space:pre-wrap; word-break:break-word; background:%1; color:%2; "
+                                        "padding:0 6px; min-height:1.5em;\">%3</div>")
+                                        .arg(right_bg, right_fg, right_content);
+    left_html += left_line_html;
+    right_html += right_line_html;
+
+    QVariantMap compare_row;
+    compare_row.insert(QStringLiteral("leftText"), row.left);
+    compare_row.insert(QStringLiteral("rightText"), row.right);
+    compare_row.insert(QStringLiteral("leftHtml"), left_line_html);
+    compare_row.insert(QStringLiteral("rightHtml"), right_line_html);
+    compare_row.insert(QStringLiteral("leftChanged"), row.left_changed);
+    compare_row.insert(QStringLiteral("rightChanged"), row.right_changed);
+    compare_row.insert(QStringLiteral("leftKind"),
+                       row.left_changed && !row.right_changed
+                           ? QStringLiteral("removed")
+                           : row.left_changed && row.right_changed
+                                 ? QStringLiteral("changed")
+                                 : QStringLiteral("same"));
+    compare_row.insert(QStringLiteral("rightKind"),
+                       row.right_changed && !row.left_changed
+                           ? QStringLiteral("added")
+                           : row.left_changed && row.right_changed
+                                 ? QStringLiteral("changed")
+                                 : QStringLiteral("same"));
+    compare_row.insert(QStringLiteral("leftLineNumber"),
+                       row.left.isEmpty() ? QString() : QString::number(left_line_number++));
+    compare_row.insert(QStringLiteral("rightLineNumber"),
+                       row.right.isEmpty() ? QString() : QString::number(right_line_number++));
+    compare_rows.push_back(compare_row);
+  }
+
+  left_html += QStringLiteral("</body></html>");
+  right_html += QStringLiteral("</body></html>");
+  compare_rows_ = compare_rows;
+  compare_left_text_ = left_html;
+  compare_right_text_ = right_html;
 }
 
 void CompositionsViewModel::syncCompositions() {

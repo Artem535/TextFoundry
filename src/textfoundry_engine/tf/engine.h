@@ -85,6 +85,64 @@ struct NormalizedCompositionResult {
   std::vector<std::pair<BlockId, BlockId>> rewritten_blocks;
 };
 
+struct CompositionRewriteContextBlock {
+  BlockId block_id;
+  BlockType type = BlockType::Domain;
+  std::string language = "en";
+  std::string description;
+  Params defaults;
+  std::vector<std::string> tags;
+  std::string templ;
+};
+
+struct CompositionBlockRewriteRequest {
+  CompositionId source_composition_id;
+  std::optional<Version> source_version;
+  std::string instruction;
+  bool preserve_language = true;
+  bool preserve_placeholders = true;
+};
+
+struct CompositionBlockRewriteContext {
+  CompositionId source_composition_id;
+  Version source_version;
+  std::string instruction;
+  bool preserve_language = true;
+  bool preserve_placeholders = true;
+  std::vector<CompositionRewriteContextBlock> blocks;
+};
+
+struct BlockRewritePatch {
+  BlockId block_id;
+  std::optional<std::string> description;
+  std::optional<std::string> templ;
+  std::optional<Params> defaults;
+  std::optional<std::vector<std::string>> tags;
+  std::string rationale;
+};
+
+struct CompositionBlockRewritePreview {
+  CompositionId source_composition_id;
+  Version source_version;
+  std::vector<BlockRewritePatch> patches;
+};
+
+struct AppliedCompositionBlockRewriteResult {
+  CompositionId composition_id;
+  Version composition_version;
+  std::vector<std::pair<BlockId, Version>> rewritten_blocks;
+};
+
+class ICompositionBlockRewriter {
+ public:
+  virtual ~ICompositionBlockRewriter() = default;
+
+  [[nodiscard]] virtual Result<CompositionBlockRewritePreview> PreviewRewrite(
+      const CompositionBlockRewriteContext& request) const = 0;
+
+  [[nodiscard]] virtual std::string Fingerprint() const = 0;
+};
+
 /**
  * TextEngine - main API class for TextFoundry
  *
@@ -127,6 +185,12 @@ class Engine {
    * Set AI-assisted block generator for explicit authoring workflows.
    */
   void SetBlockGenerator(std::shared_ptr<IBlockGenerator> generator);
+
+  /**
+   * Set composition block rewriter for block-preserving AI rewrite workflows.
+   */
+  void SetCompositionBlockRewriter(
+      std::shared_ptr<ICompositionBlockRewriter> rewriter);
 
   // ==================== Block Operations ====================
 
@@ -298,6 +362,26 @@ class Engine {
       const CompositionNormalizationRequest& request);
 
   /**
+   * Build a block-preserving rewrite preview for a composition.
+   *
+   * The structure of the composition is preserved. The configured rewriter
+   * receives the full ordered block context and returns patch candidates for
+   * existing blocks only.
+   */
+  [[nodiscard]] Result<CompositionBlockRewritePreview>
+  PreviewCompositionBlockRewrite(
+      const CompositionBlockRewriteRequest& request);
+
+  /**
+   * Apply a previously reviewed block rewrite preview by publishing new block
+   * versions and then a new composition version with the same fragment order.
+   */
+  [[nodiscard]] Result<AppliedCompositionBlockRewriteResult>
+  ApplyCompositionBlockRewrite(
+      const CompositionBlockRewritePreview& preview,
+      VersionBump bump = VersionBump::Minor);
+
+  /**
    * Check if normalizer is configured
    */
   [[nodiscard]] bool HasNormalizer() const noexcept;
@@ -311,6 +395,11 @@ class Engine {
    * Check if a block generator is configured.
    */
   [[nodiscard]] bool HasBlockGenerator() const noexcept;
+
+  /**
+   * Check if a composition block rewriter is configured.
+   */
+  [[nodiscard]] bool HasCompositionBlockRewriter() const noexcept;
 
   // ==================== Full Initialization ====================
 
@@ -339,6 +428,7 @@ class Engine {
   std::shared_ptr<INormalizer> normalizer_;
   std::shared_ptr<IBlockNormalizer> blockNormalizer_;
   std::shared_ptr<IBlockGenerator> blockGenerator_;
+  std::shared_ptr<ICompositionBlockRewriter> compositionBlockRewriter_;
   std::unique_ptr<Renderer> renderer_;
 
   Result<PublishedComposition> PublishCompositionInternal(Composition comp,

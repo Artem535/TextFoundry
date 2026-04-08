@@ -8,6 +8,8 @@
 #include <regex>
 #include <set>
 #include <sstream>
+#include <unordered_map>
+#include <unordered_set>
 
 #include "logger.h"
 #include "objectbox-model.h"
@@ -147,6 +149,13 @@ std::string DerivedNormalizedCompositionId(const Composition& composition,
   return "norm." + composition.id();
 }
 
+std::vector<std::string> SortedTags(
+    const std::unordered_set<std::string>& tags) {
+  std::vector<std::string> out(tags.begin(), tags.end());
+  std::sort(out.begin(), out.end());
+  return out;
+}
+
 }  // namespace
 
 // Engine implementation
@@ -194,6 +203,12 @@ void Engine::SetBlockNormalizer(std::shared_ptr<IBlockNormalizer> normalizer) {
 void Engine::SetBlockGenerator(std::shared_ptr<IBlockGenerator> generator) {
   blockGenerator_ = std::move(generator);
   TF_LOG_DEBUG("Block generator set");
+}
+
+void Engine::SetCompositionBlockRewriter(
+    std::shared_ptr<ICompositionBlockRewriter> rewriter) {
+  compositionBlockRewriter_ = std::move(rewriter);
+  TF_LOG_DEBUG("Composition block rewriter set");
 }
 
 // ==================== Block Operations ====================
@@ -931,6 +946,229 @@ Result<NormalizedCompositionResult> Engine::NormalizeComposition(
   });
 }
 
+Result<CompositionBlockRewritePreview> Engine::PreviewCompositionBlockRewrite(
+    const CompositionBlockRewriteRequest& request) {
+  TF_LOG_DEBUG("Previewing composition block rewrite [id={}]",
+               request.source_composition_id);
+  if (!compositionBlockRewriter_) {
+    return Result<CompositionBlockRewritePreview>(
+        Error{ErrorCode::StorageError,
+              "No composition block rewriter configured"});
+  }
+  if (request.instruction.empty()) {
+    return Result<CompositionBlockRewritePreview>(
+        Error{ErrorCode::InvalidParamType, "Rewrite instruction is empty"});
+  }
+
+  auto composition_result =
+      request.source_version.has_value()
+          ? LoadComposition(request.source_composition_id, *request.source_version)
+          : LoadComposition(request.source_composition_id);
+  if (composition_result.HasError()) {
+    return Result<CompositionBlockRewritePreview>(composition_result.error());
+  }
+
+  const Composition source = composition_result.value();
+  CompositionBlockRewriteContext context{
+      .source_composition_id = source.id(),
+      .source_version = source.version(),
+      .instruction = request.instruction,
+      .preserve_language = request.preserve_language,
+      .preserve_placeholders = request.preserve_placeholders,
+  };
+
+  std::unordered_set<BlockId> seen_block_ids;
+  for (const auto& fragment : source.fragments()) {
+    if (!fragment.IsBlockRef()) {
+      continue;
+    }
+    const auto& block_ref = fragment.AsBlockRef();
+    if (seen_block_ids.contains(block_ref.GetBlockId())) {
+      continue;
+    }
+
+    auto block_result = block_ref.version().has_value()
+                            ? LoadBlock(block_ref.GetBlockId(), *block_ref.version())
+                            : LoadBlock(block_ref.GetBlockId());
+    if (block_result.HasError()) {
+      return Result<CompositionBlockRewritePreview>(block_result.error());
+    }
+
+    const Block& source_block = block_result.value();
+    context.blocks.push_back(CompositionRewriteContextBlock{
+        .block_id = source_block.Id(),
+        .type = source_block.type(),
+        .language = source_block.language(),
+        .description = source_block.description(),
+        .defaults = source_block.defaults(),
+        .tags = SortedTags(source_block.tags()),
+        .templ = source_block.templ().Content(),
+    });
+    seen_block_ids.insert(source_block.Id());
+  }
+
+  auto preview = compositionBlockRewriter_->PreviewRewrite(context);
+  if (preview.HasError()) {
+    return Result<CompositionBlockRewritePreview>(preview.error());
+  }
+
+  auto result = preview.value();
+  result.source_composition_id = source.id();
+  result.source_version = source.version();
+  return Result<CompositionBlockRewritePreview>(std::move(result));
+}
+
+Result<AppliedCompositionBlockRewriteResult> Engine::ApplyCompositionBlockRewrite(
+    const CompositionBlockRewritePreview& preview, const VersionBump bump) {
+  TF_LOG_DEBUG("Applying composition block rewrite [id={}]",
+               preview.source_composition_id);
+
+  auto composition_result =
+      LoadComposition(preview.source_composition_id, preview.source_version);
+  if (composition_result.HasError()) {
+    return Result<AppliedCompositionBlockRewriteResult>(
+        composition_result.error());
+  }
+  const Composition source = composition_result.value();
+  if (preview.patches.empty()) {
+    return Result<AppliedCompositionBlockRewriteResult>(
+        AppliedCompositionBlockRewriteResult{
+            .composition_id = source.id(),
+            .composition_version = source.version(),
+            .rewritten_blocks = {},
+        });
+  }
+
+  std::unordered_map<BlockId, BlockRewritePatch> patches_by_id;
+  for (const auto& patch : preview.patches) {
+    if (patch.block_id.empty()) {
+      return Result<AppliedCompositionBlockRewriteResult>(
+          Error{ErrorCode::InvalidParamType, "Rewrite patch block id is empty"});
+    }
+    if (patches_by_id.contains(patch.block_id)) {
+      return Result<AppliedCompositionBlockRewriteResult>(
+          Error{ErrorCode::InvalidParamType,
+                "Duplicate rewrite patch for block " + patch.block_id});
+    }
+    patches_by_id.emplace(patch.block_id, patch);
+  }
+
+  std::unordered_map<BlockId, Block> source_blocks_by_id;
+  for (const auto& fragment : source.fragments()) {
+    if (!fragment.IsBlockRef()) {
+      continue;
+    }
+    const auto& block_ref = fragment.AsBlockRef();
+    if (source_blocks_by_id.contains(block_ref.GetBlockId())) {
+      continue;
+    }
+    auto block_result = block_ref.version().has_value()
+                            ? LoadBlock(block_ref.GetBlockId(), *block_ref.version())
+                            : LoadBlock(block_ref.GetBlockId());
+    if (block_result.HasError()) {
+      return Result<AppliedCompositionBlockRewriteResult>(
+          block_result.error());
+    }
+    source_blocks_by_id.emplace(block_ref.GetBlockId(), block_result.value());
+  }
+
+  std::unordered_map<BlockId, PublishedBlock> published_by_id;
+  std::vector<std::pair<BlockId, Version>> rewritten_blocks;
+
+  for (const auto& patch : preview.patches) {
+    auto source_it = source_blocks_by_id.find(patch.block_id);
+    if (source_it == source_blocks_by_id.end()) {
+      return Result<AppliedCompositionBlockRewriteResult>(
+          Error{ErrorCode::BlockNotFound,
+                "Rewrite patch references block not present in source composition: " +
+                    patch.block_id});
+    }
+    const Block& source_block = source_it->second;
+
+    BlockDraftBuilder builder(source_block.Id());
+    builder.WithType(source_block.type())
+        .WithLanguage(source_block.language())
+        .WithDescription(patch.description.value_or(source_block.description()))
+        .WithTemplate(Template(patch.templ.value_or(
+            source_block.templ().Content())))
+        .WithDefaults(patch.defaults.value_or(source_block.defaults()))
+        .WithParamSchema(source_block.param_schema())
+        .WithRevisionComment(source_block.revision_comment());
+
+    const auto tags = patch.tags.has_value()
+                          ? std::unordered_set<std::string>(patch.tags->begin(),
+                                                            patch.tags->end())
+                          : source_block.tags();
+    for (const auto& tag : tags) {
+      builder.WithTag(tag);
+    }
+
+    const Template rewritten_template(
+        patch.templ.value_or(source_block.templ().Content()));
+    if (PlaceholderSet(source_block.templ()) !=
+        PlaceholderSet(rewritten_template)) {
+      return Result<AppliedCompositionBlockRewriteResult>(
+          Error{ErrorCode::InvalidParamType,
+                "Rewrite patch changed required placeholders for block " +
+                    source_block.Id()});
+    }
+
+    auto publish_result = UpdateBlock(builder.build(), bump);
+    if (publish_result.HasError()) {
+      return Result<AppliedCompositionBlockRewriteResult>(
+          publish_result.error());
+    }
+    published_by_id.emplace(source_block.Id(), publish_result.value());
+    rewritten_blocks.emplace_back(source_block.Id(),
+                                  publish_result.value().version());
+  }
+
+  CompositionDraftBuilder builder(source.id());
+  builder.WithProjectKey(source.ProjectKey())
+      .WithDescription(source.description())
+      .WithRevisionComment(source.revision_comment());
+  if (source.GetStyleProfile().has_value()) {
+    builder.WithStyleProfile(*source.GetStyleProfile());
+  }
+
+  for (const auto& fragment : source.fragments()) {
+    if (fragment.IsSeparator()) {
+      builder.AddSeparator(fragment.AsSeparator().type);
+      continue;
+    }
+    if (fragment.IsStaticText()) {
+      builder.AddStaticText(fragment.AsStaticText().text());
+      continue;
+    }
+
+    const auto& block_ref = fragment.AsBlockRef();
+    auto rewritten = published_by_id.find(block_ref.GetBlockId());
+    if (rewritten != published_by_id.end()) {
+      builder.AddBlockRef(rewritten->second.ref().GetBlockId(),
+                          rewritten->second.version().major,
+                          rewritten->second.version().minor,
+                          block_ref.LocalParams());
+    } else {
+      const auto version = block_ref.version().value_or(Version{0, 0});
+      builder.AddBlockRef(block_ref.GetBlockId(), version.major, version.minor,
+                          block_ref.LocalParams());
+    }
+  }
+
+  auto publish_composition = UpdateComposition(builder.build(), bump);
+  if (publish_composition.HasError()) {
+    return Result<AppliedCompositionBlockRewriteResult>(
+        publish_composition.error());
+  }
+
+  return Result<AppliedCompositionBlockRewriteResult>(
+      AppliedCompositionBlockRewriteResult{
+          .composition_id = publish_composition.value().id(),
+          .composition_version = publish_composition.value().version(),
+          .rewritten_blocks = std::move(rewritten_blocks),
+      });
+}
+
 bool Engine::HasNormalizer() const noexcept { return normalizer_ != nullptr; }
 
 bool Engine::HasBlockNormalizer() const noexcept {
@@ -939,6 +1177,10 @@ bool Engine::HasBlockNormalizer() const noexcept {
 
 bool Engine::HasBlockGenerator() const noexcept {
   return blockGenerator_ != nullptr;
+}
+
+bool Engine::HasCompositionBlockRewriter() const noexcept {
+  return compositionBlockRewriter_ != nullptr;
 }
 
 // ==================== Validation ====================

@@ -142,4 +142,34 @@ inline constexpr std::string_view kReviseBlockUserInstructionLabel =
 inline constexpr std::string_view kReviseBlockCurrentBlockLabel =
     "\n\nCurrent block:\n";
 
+inline constexpr std::string_view kCompositionRewriteSystemPrompt = R"(You rewrite existing TextFoundry blocks without changing composition structure.
+Return only the structured patch payload that matches the provided JSON schema.
+You are given the full ordered block context of one composition and a user instruction.
+Do not add blocks.
+Do not remove blocks.
+Do not change block ids.
+Do not change block types.
+Do not redesign the composition.
+Only propose patches for blocks that truly need changes.
+Preserve the original language of each block unless the user explicitly asks for translation.
+Preserve placeholders exactly.
+Preserve useful internal structure such as headings, bullet lists, numbered steps, examples, tags, and section labels unless the instruction explicitly asks to simplify or reorganize them.
+Prefer thoughtful, high-quality improvements over broad rewrites.
+Return omitted blocks as unchanged by simply not including them in patches.)";
+
+inline constexpr std::string_view kCompositionRewriteUserIntro =
+    "Rewrite the following composition by patching existing blocks only.\n";
+inline constexpr std::string_view kCompositionRewriteInstructionLabel =
+    "User instruction:\n";
+inline constexpr std::string_view kCompositionRewriteCompositionLabel =
+    "\nComposition:\n";
+inline constexpr std::string_view kCompositionRewriteConstraints =
+    "\nConstraints:\n"
+    "- preserve composition structure\n"
+    "- preserve block ids\n"
+    "- preserve block order\n"
+    "- preserve placeholders exactly\n"
+    "- preserve each block language unless translation is explicitly requested\n"
+    "- return patches only for changed blocks\n";
+
 }  // namespace tf::ai::prompts

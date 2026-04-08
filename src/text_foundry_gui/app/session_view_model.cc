@@ -20,6 +20,7 @@
 #endif
 
 #include "openai_compatible_block_generator.h"
+#include "openai_compatible_composition_block_rewriter.h"
 #include "openai_compatible_normalizer.h"
 #include "qt_http_transport.h"
 
@@ -291,9 +292,19 @@ void SessionViewModel::rebuildEngine() {
             .api_key = ai_api_key_.trimmed().toStdString(),
         },
         transport);
+    auto composition_block_rewriter =
+        std::make_shared<tf::ai::OpenAiCompatibleCompositionBlockRewriter>(
+            tf::ai::OpenAiCompatibleConfig{
+                .base_url = ai_base_url_.trimmed().toStdString(),
+                .model = ai_model_.trimmed().toStdString(),
+                .api_key = ai_api_key_.trimmed().toStdString(),
+            },
+            transport);
     engine_->SetBlockGenerator(std::move(generator));
     engine_->SetNormalizer(normalizer);
     engine_->SetBlockNormalizer(std::move(normalizer));
+    engine_->SetCompositionBlockRewriter(
+        std::move(composition_block_rewriter));
   }
   setStatusText(
       QString("Engine ready for project '%1'%2")
