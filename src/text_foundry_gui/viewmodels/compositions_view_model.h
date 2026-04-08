@@ -107,6 +107,7 @@ class CompositionsViewModel : public QObject {
   Q_INVOKABLE void selectComposition(const QString& value);
   Q_INVOKABLE void selectCompositionVersion(const QString& value);
   Q_INVOKABLE void deprecateSelected();
+  Q_INVOKABLE void deleteSelected();
   Q_INVOKABLE void normalizeSelected();
   Q_INVOKABLE void updateBlocksToLatest();
   Q_INVOKABLE void openCompareWithLatest();

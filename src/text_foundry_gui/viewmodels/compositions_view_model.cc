@@ -337,6 +337,25 @@ void CompositionsViewModel::deprecateSelected() {
   setStatusText(QStringLiteral("Deprecated selected composition version."));
 }
 
+void CompositionsViewModel::deleteSelected() {
+  if (selected_composition_id_.isEmpty()) {
+    setStatusText(QStringLiteral("Select a composition first."));
+    return;
+  }
+
+  const auto deleted_id = selected_composition_id_;
+  const auto error =
+      session_->engine().DeleteComposition(selected_composition_id_.toStdString());
+  if (error.is_error()) {
+    setStatusText(
+        QString("Error: %1").arg(QString::fromStdString(error.message)));
+    return;
+  }
+
+  reload();
+  setStatusText(QStringLiteral("Deleted composition %1.").arg(deleted_id));
+}
+
 void CompositionsViewModel::normalizeSelected() {
   if (!session_->engine().HasBlockNormalizer()) {
     setStatusText(QStringLiteral("Configure AI settings first."));

@@ -70,6 +70,7 @@ Page {
                         }
 
                         ListView {
+                            id: compositionsList
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             clip: true
@@ -86,6 +87,46 @@ Page {
                                 onClicked: {
                                     ListView.view.currentIndex = index
                                     CompositionsVm.selectComposition(modelData)
+                                }
+
+                                TapHandler {
+                                    acceptedButtons: Qt.RightButton
+                                    gesturePolicy: TapHandler.ReleaseWithinBounds
+                                    onTapped: function(eventPoint) {
+                                        compositionsList.currentIndex = index
+                                        CompositionsVm.selectComposition(modelData)
+                                        compositionContextMenu.popup(eventPoint.position.x,
+                                                                     eventPoint.position.y)
+                                    }
+                                }
+
+                                Menu {
+                                    id: compositionContextMenu
+
+                                    MenuItem {
+                                        text: "Edit"
+                                        onTriggered: CompositionEditorVm.openEditor()
+                                    }
+
+                                    MenuItem {
+                                        text: "AI Slice"
+                                        enabled: BlockSliceVm.aiGenerationAvailable
+                                        onTriggered: BlockSliceVm.openUpdateDialog(
+                                                         CompositionsVm.selectedCompositionId,
+                                                         CompositionsVm.selectedVersion)
+                                    }
+
+                                    MenuSeparator {}
+
+                                    MenuItem {
+                                        text: "Deprecate"
+                                        onTriggered: CompositionsVm.deprecateSelected()
+                                    }
+
+                                    MenuItem {
+                                        text: "Delete"
+                                        onTriggered: CompositionsVm.deleteSelected()
+                                    }
                                 }
                             }
                         }
@@ -122,6 +163,7 @@ Page {
                         }
 
                         ListView {
+                            id: versionsList
                             Layout.fillWidth: true
                             Layout.fillHeight: true
                             clip: true
@@ -135,6 +177,17 @@ Page {
                                 padding: General.paddingSmall
                                 highlighted: modelData.isSelected
                                 onClicked: CompositionsVm.selectCompositionVersion(modelData.version)
+
+                                TapHandler {
+                                    acceptedButtons: Qt.RightButton
+                                    gesturePolicy: TapHandler.ReleaseWithinBounds
+                                    onTapped: function(eventPoint) {
+                                        versionsList.currentIndex = index
+                                        CompositionsVm.selectCompositionVersion(modelData.version)
+                                        versionContextMenu.popup(eventPoint.position.x,
+                                                                 eventPoint.position.y)
+                                    }
+                                }
 
                                 contentItem: ColumnLayout {
                                     spacing: 4
@@ -163,6 +216,29 @@ Page {
                                               : "No revision comment"
                                         wrapMode: Text.WordWrap
                                         opacity: modelData.comment.length > 0 ? 0.82 : 0.58
+                                    }
+                                }
+
+                                Menu {
+                                    id: versionContextMenu
+
+                                    MenuItem {
+                                        text: "Deprecate Version"
+                                        onTriggered: CompositionsVm.deprecateSelected()
+                                    }
+
+                                    MenuItem {
+                                        text: "Compare Latest"
+                                        enabled: CompositionsVm.selectedVersions.indexOf(CompositionsVm.selectedVersion) > 0
+                                        onTriggered: CompositionsVm.openCompareWithLatest()
+                                    }
+
+                                    MenuItem {
+                                        text: "AI Slice"
+                                        enabled: BlockSliceVm.aiGenerationAvailable
+                                        onTriggered: BlockSliceVm.openUpdateDialog(
+                                                         CompositionsVm.selectedCompositionId,
+                                                         CompositionsVm.selectedVersion)
                                     }
                                 }
                             }
@@ -217,6 +293,17 @@ Page {
 
                     SvgToolButton {
                         compact: true
+                        iconSource: Icons.sliceSvg
+                        labelText: "AI Slice"
+                        enabled: CompositionsVm.selectedCompositionId.length > 0
+                                 && BlockSliceVm.aiGenerationAvailable
+                        onClicked: BlockSliceVm.openUpdateDialog(
+                                       CompositionsVm.selectedCompositionId,
+                                       CompositionsVm.selectedVersion)
+                    }
+
+                    SvgToolButton {
+                        compact: true
                         iconSource: Icons.reloadSvg
                         labelText: "Use Latest Blocks"
                         enabled: CompositionsVm.selectedCompositionId.length > 0
@@ -229,6 +316,14 @@ Page {
                         labelText: "Deprecate"
                         enabled: CompositionsVm.selectedCompositionId.length > 0
                         onClicked: CompositionsVm.deprecateSelected()
+                    }
+
+                    SvgToolButton {
+                        compact: true
+                        iconSource: Icons.removeSvg
+                        labelText: "Delete"
+                        enabled: CompositionsVm.selectedCompositionId.length > 0
+                        onClicked: CompositionsVm.deleteSelected()
                     }
 
                     SvgToolButton {

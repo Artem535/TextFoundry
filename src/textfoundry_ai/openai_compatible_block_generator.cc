@@ -185,11 +185,23 @@ std::string BuildBatchUserPrompt(const PromptSlicingRequest& request) {
       prompt += "- " + id + "\n";
     }
   }
+  if (!request.reusable_block_ids.empty()) {
+    prompt += "Existing block ids that may be reused when the same logical "
+              "section is being updated:\n";
+    for (const auto& id : request.reusable_block_ids) {
+      prompt += "- " + id + "\n";
+    }
+    prompt +=
+        "When a generated block matches one of those existing sections, reuse "
+        "that exact id.\n";
+  }
 
   prompt +=
       "Return blocks as a flat array. Each block must be independently reusable.\n"
       "Allowed type values: role, system, mission, safety, constraint, style, domain, meta.\n"
-      "Do not invent any other type values.";
+      "Do not invent any other type values.\n"
+      "Block ids must be stable lowercase identifiers using dot-separated segments.\n"
+      "Do not return placeholder ids like _2, block_3, section_4, tmp, or draft.";
   return prompt;
 }
 

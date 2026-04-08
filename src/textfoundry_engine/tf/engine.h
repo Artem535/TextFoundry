@@ -140,6 +140,7 @@ class Engine {
    * Deprecate a published block
    */
   [[nodiscard]] Error DeprecateBlock(const BlockId& id, Version version);
+  [[nodiscard]] Error DeleteBlock(const BlockId& id);
 
   /**
    * Get latest version of a block
@@ -230,6 +231,7 @@ class Engine {
    */
   [[nodiscard]] Error DeprecateComposition(const CompositionId& id,
                                            Version version);
+  [[nodiscard]] Error DeleteComposition(const CompositionId& id);
 
   /**
    * List all compositions
@@ -384,6 +386,7 @@ class IBlockRepository {
       const BlockId& id) = 0;
 
   [[nodiscard]] virtual Error deprecate(const BlockId& id, Version version) = 0;
+  [[nodiscard]] virtual Error remove(const BlockId& id) = 0;
 };
 
 /**
@@ -412,5 +415,6 @@ class ICompositionRepository {
 
   [[nodiscard]] virtual Error deprecate(const CompositionId& id,
                                         Version version) = 0;
+  [[nodiscard]] virtual Error remove(const CompositionId& id) = 0;
 };
 }  // namespace tf

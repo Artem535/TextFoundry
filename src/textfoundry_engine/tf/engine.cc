@@ -5,6 +5,7 @@
 #include "engine.h"
 
 #include <filesystem>
+#include <regex>
 #include <set>
 #include <sstream>
 
@@ -21,12 +22,23 @@ std::unordered_set<std::string> DeduplicateTags(
   return std::unordered_set<std::string>(tags.begin(), tags.end());
 }
 
+bool IsValidGeneratedBlockId(const std::string& id) {
+  static const std::regex kPattern(
+      R"(^[a-z0-9][a-z0-9_]*(\.[a-z0-9][a-z0-9_]*)*$)");
+  return std::regex_match(id, kPattern);
+}
+
 Result<GeneratedBlockData> ValidateGeneratedBlockData(
     GeneratedBlockData data, const std::vector<BlockId>& existing_block_ids,
     IBlockRepository* block_repo, bool allow_id_collision) {
   if (data.id.empty()) {
     return Result<GeneratedBlockData>(
         Error{ErrorCode::InvalidParamType, "Generated block id is empty"});
+  }
+  if (!IsValidGeneratedBlockId(data.id)) {
+    return Result<GeneratedBlockData>(
+        Error{ErrorCode::InvalidParamType,
+              "Generated block id must use stable lowercase dot-separated segments"});
   }
   if (data.templ.empty()) {
     return Result<GeneratedBlockData>(Error{ErrorCode::InvalidParamType,
@@ -222,6 +234,42 @@ Error Engine::DeprecateBlock(const BlockId& id, Version version) {
     TF_LOG_INFO("Block deprecated successfully [id={}]", id);
   }
   return err;
+}
+
+Error Engine::DeleteBlock(const BlockId& id) {
+  if (!blockRepo_) {
+    TF_LOG_ERROR("Cannot delete block: no block repository configured");
+    return Error{ErrorCode::StorageError, "No block repository configured"};
+  }
+  if (!compRepo_) {
+    TF_LOG_ERROR("Cannot delete block: no composition repository configured");
+    return Error{ErrorCode::StorageError, "No composition repository configured"};
+  }
+
+  for (const auto& composition_id : compRepo_->list()) {
+    const auto versions_result = compRepo_->ListVersions(composition_id);
+    if (versions_result.HasError()) {
+      continue;
+    }
+
+    for (const auto& version : versions_result.value()) {
+      auto composition_result = compRepo_->load(composition_id, version);
+      if (composition_result.HasError()) {
+        continue;
+      }
+
+      for (const auto& fragment : composition_result.value().fragments()) {
+        if (fragment.IsBlockRef() && fragment.AsBlockRef().GetBlockId() == id) {
+          return Error{
+              ErrorCode::InvalidStateTransition,
+              std::format("Block is used by composition {}@{}.{}",
+                          composition_id, version.major, version.minor)};
+        }
+      }
+    }
+  }
+
+  return blockRepo_->remove(id);
 }
 
 Result<Version> Engine::GetLatestBlockVersion(const BlockId& id) {
@@ -617,6 +665,14 @@ Error Engine::DeprecateComposition(const CompositionId& id, Version version) {
     TF_LOG_INFO("Composition deprecated successfully [id={}]", id);
   }
   return err;
+}
+
+Error Engine::DeleteComposition(const CompositionId& id) {
+  if (!compRepo_) {
+    TF_LOG_ERROR("Cannot delete composition: no composition repository configured");
+    return Error{ErrorCode::StorageError, "No composition repository configured"};
+  }
+  return compRepo_->remove(id);
 }
 
 std::vector<CompositionId> Engine::ListCompositions() const {

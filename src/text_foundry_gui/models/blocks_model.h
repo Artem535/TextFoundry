@@ -21,6 +21,8 @@ class BlocksModel : public QAbstractItemModel {
   Q_PROPERTY(QString searchText READ searchText WRITE setSearchText NOTIFY searchTextChanged)
   Q_PROPERTY(bool showDerivedBlocks READ showDerivedBlocks WRITE setShowDerivedBlocks NOTIFY showDerivedBlocksChanged)
   Q_PROPERTY(QString detailsText READ detailsText NOTIFY detailsTextChanged)
+  Q_PROPERTY(QString selectedTreePath READ selectedTreePath NOTIFY treeSelectionChanged)
+  Q_PROPERTY(bool selectedTreeIsFolder READ selectedTreeIsFolder NOTIFY treeSelectionChanged)
   Q_PROPERTY(QString selectedBlockVersion READ selectedBlockVersion NOTIFY detailsTextChanged)
   Q_PROPERTY(QStringList selectedBlockVersions READ selectedBlockVersions NOTIFY detailsTextChanged)
   Q_PROPERTY(QStringList selectedBlockVersionOptions READ selectedBlockVersionOptions NOTIFY detailsTextChanged)
@@ -61,6 +63,8 @@ class BlocksModel : public QAbstractItemModel {
 
   QString selectedBlockId() const;
   QString detailsText() const;
+  QString selectedTreePath() const;
+  bool selectedTreeIsFolder() const;
   QString selectedBlockVersion() const;
   QStringList selectedBlockVersions() const;
   QStringList selectedBlockVersionOptions() const;
@@ -81,9 +85,12 @@ class BlocksModel : public QAbstractItemModel {
 
   Q_INVOKABLE void reload();
   Q_INVOKABLE void selectBlock(const QString& block_id);
+  Q_INVOKABLE void selectTreeItem(const QString& path, bool is_folder,
+                                  const QString& block_id = QString());
   Q_INVOKABLE void selectBlockVersion(const QString& version_text);
   Q_INVOKABLE void selectLatestVersion();
   Q_INVOKABLE void deprecateSelected();
+  Q_INVOKABLE void deleteSelected();
   Q_INVOKABLE QString highlightSearchText(const QString& text) const;
   Q_INVOKABLE QString highlightSearchContent(const QString& text) const;
 
@@ -93,6 +100,7 @@ class BlocksModel : public QAbstractItemModel {
   void showDerivedBlocksChanged();
   void detailsTextChanged();
   void treeReloaded();
+  void treeSelectionChanged();
 
  private:
   struct Node {
@@ -110,15 +118,20 @@ class BlocksModel : public QAbstractItemModel {
 
   void refreshTree();
   void refreshDetails();
+  bool removeBlockNode(const QString& block_id);
+  void pruneEmptyFolders(Node* start_parent);
   Node* ensureFolderPath(const QStringList& parts);
   Node* firstBlockNode(Node* node) const;
   Node* findBlockNode(const QString& block_id, Node* node) const;
   void sortTree(Node* node);
+  QModelIndex indexForNode(const Node* node) const;
   const Node* nodeFromIndex(const QModelIndex& index) const;
   Node* nodeFromIndex(const QModelIndex& index);
 
   SessionViewModel* session_;
   std::unique_ptr<Node> root_;
+  QString selected_tree_path_;
+  bool selected_tree_is_folder_ = false;
   QString selected_block_id_;
   QString details_text_ = "Select a block to see details";
   QString selected_block_version_;

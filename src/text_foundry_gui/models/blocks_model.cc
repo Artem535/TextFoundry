@@ -308,6 +308,10 @@ QString BlocksModel::selectedBlockId() const { return selected_block_id_; }
 
 QString BlocksModel::detailsText() const { return details_text_; }
 
+QString BlocksModel::selectedTreePath() const { return selected_tree_path_; }
+
+bool BlocksModel::selectedTreeIsFolder() const { return selected_tree_is_folder_; }
+
 QString BlocksModel::selectedBlockVersion() const { return selected_block_version_; }
 
 QStringList BlocksModel::selectedBlockVersions() const {
@@ -373,6 +377,22 @@ void BlocksModel::reload() {
 
 void BlocksModel::selectBlock(const QString& block_id) { setSelectedBlockId(block_id); }
 
+void BlocksModel::selectTreeItem(const QString& path, const bool is_folder,
+                                 const QString& block_id) {
+  const bool unchanged = selected_tree_path_ == path &&
+                         selected_tree_is_folder_ == is_folder &&
+                         (is_folder || selected_block_id_ == block_id);
+  if (!unchanged) {
+    selected_tree_path_ = path;
+    selected_tree_is_folder_ = is_folder;
+    emit treeSelectionChanged();
+  }
+
+  if (!is_folder && !block_id.isEmpty()) {
+    setSelectedBlockId(block_id);
+  }
+}
+
 void BlocksModel::selectBlockVersion(const QString& version_text) {
   if (version_text.isEmpty() || selected_block_version_ == version_text) return;
   selected_block_version_ = version_text;
@@ -417,8 +437,83 @@ void BlocksModel::deprecateSelected() {
     return;
   }
 
-  refreshTree();
+  bool requires_full_reload = !search_text_.trimmed().isEmpty();
+  if (!requires_full_reload) {
+    const auto latest_result =
+        session_->engine().LoadBlock(selected_block_id_.toStdString());
+    requires_full_reload =
+        latest_result.HasError() ||
+        latest_result.value().state() == BlockState::Deprecated;
+    if (requires_full_reload) {
+      removeBlockNode(selected_block_id_);
+    }
+  }
+  if (requires_full_reload) {
+    refreshTree();
+  }
   refreshDetails();
+}
+
+void BlocksModel::deleteSelected() {
+  QStringList ids_to_delete;
+  if (selected_tree_is_folder_ && !selected_tree_path_.trimmed().isEmpty()) {
+    const QString prefix = selected_tree_path_.trimmed() + QStringLiteral(".");
+    for (const auto& raw_id : session_->engine().ListBlocks()) {
+      const QString block_id = QString::fromStdString(raw_id);
+      if (block_id.startsWith(prefix)) {
+        ids_to_delete.push_back(block_id);
+      }
+    }
+    if (ids_to_delete.isEmpty()) {
+      details_text_ = QStringLiteral("Folder is empty.");
+      emit detailsTextChanged();
+      return;
+    }
+  } else if (!selected_block_id_.trimmed().isEmpty()) {
+    ids_to_delete.push_back(selected_block_id_.trimmed());
+  } else {
+    details_text_ = QStringLiteral("Select a block or folder first.");
+    emit detailsTextChanged();
+    return;
+  }
+
+  QStringList errors;
+  for (const auto& block_id : ids_to_delete) {
+    const auto error = session_->engine().DeleteBlock(block_id.toStdString());
+    if (error.is_error()) {
+      errors.push_back(QStringLiteral("%1: %2")
+                           .arg(block_id, QString::fromStdString(error.message)));
+    }
+  }
+
+  const bool can_remove_incrementally =
+      errors.isEmpty() && ids_to_delete.size() == 1 && !selected_tree_is_folder_ &&
+      search_text_.trimmed().isEmpty();
+  if (can_remove_incrementally) {
+    removeBlockNode(ids_to_delete.front());
+  } else {
+    refreshTree();
+  }
+  refreshDetails();
+
+  if (!errors.isEmpty()) {
+    details_text_ = errors.join(QStringLiteral("\n"));
+    emit detailsTextChanged();
+    return;
+  }
+
+  if (selected_tree_is_folder_) {
+    details_text_ = QStringLiteral("Deleted %1 blocks from folder %2.")
+                        .arg(ids_to_delete.size())
+                        .arg(selected_tree_path_);
+    selected_tree_path_.clear();
+    selected_tree_is_folder_ = false;
+    emit treeSelectionChanged();
+  } else {
+    details_text_ =
+        QStringLiteral("Deleted block %1.").arg(ids_to_delete.front());
+  }
+  emit detailsTextChanged();
 }
 
 void BlocksModel::refreshTree() {
@@ -438,13 +533,18 @@ void BlocksModel::refreshTree() {
       continue;
     }
 
+    const auto latest_block_result = session_->engine().LoadBlock(raw_id);
+    if (latest_block_result.HasError()) {
+      continue;
+    }
+    if (latest_block_result.value().state() == BlockState::Deprecated) {
+      continue;
+    }
+
     QString snippet;
     if (!needle.isEmpty()) {
-      const auto block_result = session_->engine().LoadBlock(raw_id);
-      if (block_result.HasError()) {
-        continue;
-      }
-      if (!BlockMatchesSearch(block_result.value(), block_id, needle, &snippet)) {
+      if (!BlockMatchesSearch(latest_block_result.value(), block_id, needle,
+                              &snippet)) {
         continue;
       }
     }
@@ -729,6 +829,80 @@ void BlocksModel::sortTree(Node* node) {
 
   for (const auto& child : node->children) {
     sortTree(child.get());
+  }
+}
+
+QModelIndex BlocksModel::indexForNode(const Node* node) const {
+  if (node == nullptr || node == root_.get()) {
+    return {};
+  }
+  return createIndex(node->rowInParent(), 0, const_cast<Node*>(node));
+}
+
+bool BlocksModel::removeBlockNode(const QString& block_id) {
+  auto* node = findBlockNode(block_id, root_.get());
+  if (node == nullptr || node->parent == nullptr) {
+    return false;
+  }
+
+  Node* parent_node = node->parent;
+  const QModelIndex parent_index = indexForNode(parent_node);
+  const int row = node->rowInParent();
+  if (row < 0) {
+    return false;
+  }
+
+  beginRemoveRows(parent_index, row, row);
+  parent_node->children.erase(parent_node->children.begin() + row);
+  endRemoveRows();
+
+  pruneEmptyFolders(parent_node);
+
+  if (selected_block_id_ == block_id) {
+    if (auto* first = firstBlockNode(root_.get())) {
+      selected_block_id_ = first->block_id;
+    } else {
+      selected_block_id_.clear();
+    }
+    emit selectedBlockIdChanged();
+  }
+
+  if (selected_tree_path_ == block_id) {
+    selected_tree_path_.clear();
+    selected_tree_is_folder_ = false;
+    emit treeSelectionChanged();
+  }
+
+  return true;
+}
+
+void BlocksModel::pruneEmptyFolders(Node* start_parent) {
+  Node* current = start_parent;
+  while (current != nullptr && current != root_.get() &&
+         current->is_folder && current->children.empty()) {
+    Node* parent_node = current->parent;
+    if (parent_node == nullptr) {
+      return;
+    }
+
+    const QModelIndex parent_index = indexForNode(parent_node);
+    const int row = current->rowInParent();
+    if (row < 0) {
+      return;
+    }
+
+    const QString removed_path = current->full_path;
+    beginRemoveRows(parent_index, row, row);
+    parent_node->children.erase(parent_node->children.begin() + row);
+    endRemoveRows();
+
+    if (selected_tree_path_ == removed_path) {
+      selected_tree_path_.clear();
+      selected_tree_is_folder_ = false;
+      emit treeSelectionChanged();
+    }
+
+    current = parent_node;
   }
 }
 

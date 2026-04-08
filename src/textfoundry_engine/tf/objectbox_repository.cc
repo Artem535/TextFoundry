@@ -159,6 +159,25 @@ Error BlockRepository::deprecate(const BlockId& id, Version version) {
   return Error{ErrorCode::Success};
 }
 
+Error BlockRepository::remove(const BlockId& id) {
+  auto query = box_block_->query(ObxBlock_::blockId.equals(id)).build();
+  const auto blocks = query.find();
+  if (blocks.empty()) {
+    TF_LOG_ERROR("BlockRepository::remove| Block not found: {}", id);
+    return Error{ErrorCode::StorageError, "Block not found"};
+  }
+
+  for (const auto& block : blocks) {
+    if (!box_block_->remove(block.id)) {
+      TF_LOG_ERROR("BlockRepository::remove| Failed to remove block: {}", id);
+      return Error{ErrorCode::StorageError, "Failed to remove block"};
+    }
+  }
+
+  TF_LOG_INFO("BlockRepository::remove| Block removed: {}", id);
+  return Error{ErrorCode::Success};
+}
+
 // ============================================================================
 // CompositionRepository Implementation
 // ============================================================================
@@ -351,6 +370,33 @@ Error CompositionRepository::deprecate(const CompositionId& id,
   TF_LOG_INFO(
       "CompositionRepository::deprecate| Composition deprecated: {} v{}.{}", id,
       version.major, version.minor);
+  return Error{ErrorCode::Success};
+}
+
+Error CompositionRepository::remove(const CompositionId& id) {
+  auto query =
+      box_composition_->query(ObxComposition_::compositionId.equals(id)).build();
+  const auto compositions = query.find();
+  if (compositions.empty()) {
+    TF_LOG_ERROR("CompositionRepository::remove| Composition not found: {}", id);
+    return Error{ErrorCode::StorageError, "Composition not found"};
+  }
+
+  for (const auto& composition : compositions) {
+    auto frag_query =
+        box_fragment_->query(ObxFragment_::compositionId.equals(composition.id))
+            .build();
+    const auto fragments = frag_query.find();
+    for (const auto& fragment : fragments) {
+      box_fragment_->remove(fragment.id);
+    }
+    if (!box_composition_->remove(composition.id)) {
+      TF_LOG_ERROR("CompositionRepository::remove| Failed to remove composition: {}", id);
+      return Error{ErrorCode::StorageError, "Failed to remove composition"};
+    }
+  }
+
+  TF_LOG_INFO("CompositionRepository::remove| Composition removed: {}", id);
   return Error{ErrorCode::Success};
 }
 }  // namespace tf

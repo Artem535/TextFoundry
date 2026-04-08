@@ -103,6 +103,7 @@ class BlockRepository final : public IBlockRepository {
    * used for new compositions.
    */
   [[nodiscard]] Error deprecate(const BlockId& id, Version version) override;
+  [[nodiscard]] Error remove(const BlockId& id) override;
 
  private:
   std::shared_ptr<obx::Store> store_;  ///< ObjectBox store instance
@@ -204,6 +205,7 @@ class CompositionRepository final : public ICompositionRepository {
    */
   [[nodiscard]] Error deprecate(const CompositionId& id,
                                 Version version) override;
+  [[nodiscard]] Error remove(const CompositionId& id) override;
 
  private:
   std::shared_ptr<obx::Store> store_;  ///< ObjectBox store instance
