@@ -142,16 +142,6 @@ Page {
                                     }
 
                                     MenuItem {
-                                        text: "AI Slice"
-                                        enabled: BlockSliceVm.aiGenerationAvailable
-                                        onTriggered: BlockSliceVm.openUpdateDialog(
-                                                         CompositionsVm.selectedCompositionId,
-                                                         CompositionsVm.selectedVersion)
-                                    }
-
-                                    MenuSeparator {}
-
-                                    MenuItem {
                                         text: "Deprecate"
                                         onTriggered: CompositionsVm.deprecateSelected()
                                     }
@@ -264,14 +254,6 @@ Page {
                                         text: "Compare Latest"
                                         enabled: CompositionsVm.selectedVersions.indexOf(CompositionsVm.selectedVersion) > 0
                                         onTriggered: CompositionsVm.openCompareWithLatest()
-                                    }
-
-                                    MenuItem {
-                                        text: "AI Slice"
-                                        enabled: BlockSliceVm.aiGenerationAvailable
-                                        onTriggered: BlockSliceVm.openUpdateDialog(
-                                                         CompositionsVm.selectedCompositionId,
-                                                         CompositionsVm.selectedVersion)
                                     }
                                 }
                             }
@@ -691,7 +673,8 @@ Page {
 
                                     SvgToolButton {
                                         iconSource: Icons.aiAssistSvg
-                                        labelText: CompositionsVm.normalizing ? "Normalizing..." : "Normalize Composition"
+                                        labelText: CompositionsVm.normalizing ? "Normalizing..." : "Normalize Style"
+                                        toolTipText: "Preserve structure and adjust style settings such as tone, tense, audience, and locale."
                                         enabled: !CompositionsVm.normalizing
                                                  && CompositionsVm.normalizationAvailable
                                                  && CompositionsVm.selectedCompositionId.length > 0
@@ -750,17 +733,6 @@ Page {
                                     labelText: "Edit"
                                     enabled: CompositionsVm.selectedCompositionId.length > 0
                                     onClicked: CompositionEditorVm.openEditor()
-                                }
-
-                                SvgToolButton {
-                                    compact: true
-                                    iconSource: Icons.sliceSvg
-                                    labelText: "AI Slice"
-                                    enabled: CompositionsVm.selectedCompositionId.length > 0
-                                             && BlockSliceVm.aiGenerationAvailable
-                                    onClicked: BlockSliceVm.openUpdateDialog(
-                                                   CompositionsVm.selectedCompositionId,
-                                                   CompositionsVm.selectedVersion)
                                 }
 
                                 SvgToolButton {

@@ -1,5 +1,7 @@
 #include "openai_compatible_normalizer.h"
 
+#include "prompt_constants.h"
+
 #include <rfl/json.hpp>
 #include <sstream>
 
@@ -30,23 +32,11 @@ struct OpenAiChatCompletionResponse {
 };
 
 std::string BuildSystemPrompt() {
-  return R"(You normalize rendered TextFoundry output.
-Preserve meaning.
-Apply only the requested semantic style changes.
-Respect rewrite strength and preservation constraints strictly.
-Do not add explanations, metadata, markdown fences, or commentary.
-Return only the normalized text.)";
+  return std::string(prompts::kTextNormalizationSystemPrompt);
 }
 
 std::string BuildBlockSystemPrompt() {
-  return R"(You cosmetically normalize a TextFoundry block template.
-Make only light editorial changes such as grammar, fluency, clarity, and small phrasing improvements.
-Preserve the block structure closely.
-Preserve every placeholder exactly, including braces and names.
-Do not add or remove placeholders.
-Respect rewrite strength and preservation constraints strictly.
-Do not turn multiple sections into one or remove explicit tags.
-Return only the normalized template text.)";
+  return std::string(prompts::kBlockNormalizationSystemPrompt);
 }
 
 void AppendStyleDirectives(std::string& prompt, const SemanticStyle& style) {
@@ -85,26 +75,27 @@ void AppendStyleDirectives(std::string& prompt, const SemanticStyle& style) {
 }
 
 std::string BuildUserPrompt(const std::string& text, const SemanticStyle& style) {
-  std::string prompt = "Normalize the following raw text snapshot.\n";
-  prompt += "Requested semantic style:\n";
+  std::string prompt = std::string(prompts::kNormalizeTextIntro);
+  prompt += std::string(prompts::kRequestedSemanticStyleLabel);
   AppendStyleDirectives(prompt, style);
-  prompt += "\nText:\n";
+  prompt += std::string(prompts::kTextLabel);
   prompt += text;
   return prompt;
 }
 
 std::string BuildBlockUserPrompt(const BlockNormalizationRequest& request) {
-  std::string prompt = "Normalize the following block template conservatively.\n";
-  prompt += "Block id: " + request.source_block.Id() + "\n";
-  prompt += "Block type: " +
+  std::string prompt = std::string(prompts::kNormalizeBlockIntro);
+  prompt += std::string(prompts::kBlockIdLabel) + request.source_block.Id() +
+            "\n";
+  prompt += std::string(prompts::kBlockTypeLabel) +
             std::string(BlockTypeToString(request.source_block.type())) + "\n";
-  prompt += "Preserve these placeholders exactly:\n";
+  prompt += std::string(prompts::kPreservePlaceholdersLabel);
   for (const auto& param : request.source_block.templ().ExtractParamNames()) {
     prompt += "- {{" + param + "}}\n";
   }
-  prompt += "Requested semantic style:\n";
+  prompt += std::string(prompts::kRequestedSemanticStyleLabel);
   AppendStyleDirectives(prompt, request.style);
-  prompt += "\nTemplate:\n";
+  prompt += std::string(prompts::kTemplateLabel);
   prompt += request.source_block.templ().Content();
   return prompt;
 }

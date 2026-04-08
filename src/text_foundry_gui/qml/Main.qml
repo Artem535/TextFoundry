@@ -15,6 +15,7 @@ ApplicationWindow {
     property int blocksWorkspaceTab: BlockEditorVm.open ? 1 : 0
     property int pendingNavigationTab: -1
     property bool pendingCloseBlockEditor: false
+    property int pendingCloseBlockTabIndex: -1
     property var navigationItems: [
         { title: "Blocks", subtitle: "Templates and blocks", icon: Icons.blocksSvg },
         { title: "Compositions", subtitle: "Prompt assembly", icon: Icons.compositionsSvg },
@@ -34,7 +35,7 @@ ApplicationWindow {
     palette.placeholderText: ColorPalette.placeholderText
 
     function hasDirtyEditor() {
-        return (BlockEditorVm.open && BlockEditorVm.dirty)
+        return (BlockEditorVm.open && BlockEditorVm.anyDirty)
                 || (CompositionEditorVm.open && CompositionEditorVm.dirty)
     }
 
@@ -45,6 +46,7 @@ ApplicationWindow {
         if (hasDirtyEditor()) {
             pendingNavigationTab = index
             pendingCloseBlockEditor = false
+            pendingCloseBlockTabIndex = -1
             discardChangesDialog.open()
             return
         }
@@ -52,18 +54,32 @@ ApplicationWindow {
         currentTab = index
     }
 
-    function requestCloseBlockEditor() {
-        if (BlockEditorVm.open && BlockEditorVm.dirty) {
+    function requestCloseBlockTab(index) {
+        if (index === undefined)
+            index = BlockEditorVm.currentTabIndex
+
+        if (index < 0)
+            return
+
+        const tabEntry = BlockEditorVm.tabEntries[index]
+        if (tabEntry && tabEntry.dirty) {
             pendingNavigationTab = -1
-            pendingCloseBlockEditor = true
+            pendingCloseBlockEditor = false
+            pendingCloseBlockTabIndex = index
             discardChangesDialog.open()
             return
         }
 
-        BlockEditorVm.closeEditor()
+        BlockEditorVm.closeTab(index)
     }
 
     function applyPendingDiscardAction() {
+        if (pendingCloseBlockTabIndex >= 0) {
+            const tabIndex = pendingCloseBlockTabIndex
+            pendingCloseBlockTabIndex = -1
+            BlockEditorVm.closeTab(tabIndex)
+        }
+
         if (pendingCloseBlockEditor) {
             pendingCloseBlockEditor = false
             BlockEditorVm.closeEditor()
@@ -73,7 +89,7 @@ ApplicationWindow {
             const targetTab = pendingNavigationTab
             pendingNavigationTab = -1
             if (BlockEditorVm.open)
-                BlockEditorVm.closeEditor()
+                BlockEditorVm.closeAllEditors()
             if (CompositionEditorVm.open)
                 CompositionEditorVm.closeEditor()
             currentTab = targetTab
@@ -270,37 +286,45 @@ ApplicationWindow {
                         }
                     }
 
-                    Button {
-                        visible: BlockEditorVm.open
-                        text: BlockEditorVm.createMode
-                              ? "New Block"
-                              : (BlockEditorVm.blockId.length > 0
-                                 ? "Edit " + BlockEditorVm.blockId
-                                 : "Edit")
-                        checkable: true
-                        checked: root.blocksWorkspaceTab === 1
-                        onClicked: root.blocksWorkspaceTab = 1
-                        background: Rectangle {
-                            radius: General.radiusMedium
-                            color: parent.checked ? ColorPalette.primary : ColorPalette.fieldBackground
-                            border.color: parent.checked ? "transparent" : ColorPalette.border
-                        }
-                        contentItem: Label {
-                            text: parent.text
-                            horizontalAlignment: Text.AlignHCenter
-                            verticalAlignment: Text.AlignVCenter
-                            color: parent.checked ? ColorPalette.onPrimary : ColorPalette.textPrimary
-                            font.bold: true
-                            elide: Text.ElideRight
-                        }
-                    }
+                    Repeater {
+                        model: BlockEditorVm.tabEntries
 
-                    SvgToolButton {
-                        visible: BlockEditorVm.open
-                        compact: true
-                        iconSource: Icons.closeSvg
-                        labelText: "Close"
-                        onClicked: root.requestCloseBlockEditor()
+                        delegate: RowLayout {
+                            required property int index
+                            required property var modelData
+                            spacing: 0
+
+                            Button {
+                                text: (modelData.dirty ? "* " : "") + modelData.title
+                                checkable: true
+                                checked: root.blocksWorkspaceTab === 1
+                                         && BlockEditorVm.currentTabIndex === index
+                                onClicked: {
+                                    BlockEditorVm.currentTabIndex = index
+                                    root.blocksWorkspaceTab = 1
+                                }
+                                background: Rectangle {
+                                    radius: General.radiusMedium
+                                    color: parent.checked ? ColorPalette.primary : ColorPalette.fieldBackground
+                                    border.color: parent.checked ? "transparent" : ColorPalette.border
+                                }
+                                contentItem: Label {
+                                    text: parent.text
+                                    horizontalAlignment: Text.AlignHCenter
+                                    verticalAlignment: Text.AlignVCenter
+                                    color: parent.checked ? ColorPalette.onPrimary : ColorPalette.textPrimary
+                                    font.bold: true
+                                    elide: Text.ElideRight
+                                }
+                            }
+
+                            SvgToolButton {
+                                compact: true
+                                iconSource: Icons.closeSvg
+                                labelText: "Close"
+                                onClicked: root.requestCloseBlockTab(index)
+                            }
+                        }
                     }
 
                     Item {
@@ -321,7 +345,8 @@ ApplicationWindow {
                         SvgToolButton {
                             compact: true
                             iconSource: Icons.aiAssistSvg
-                            labelText: "AI Slice"
+                            labelText: "Slice Into Blocks"
+                            toolTipText: "Decompose prompt text into reusable blocks."
                             enabled: BlockSliceVm.aiGenerationAvailable
                             onClicked: BlockSliceVm.openDialog()
                         }
@@ -386,15 +411,16 @@ ApplicationWindow {
                     Layout.fillWidth: true
                 }
 
-                SvgToolButton {
-                    iconSource: Icons.closeSvg
-                    labelText: "Cancel"
-                    onClicked: {
-                        pendingNavigationTab = -1
-                        pendingCloseBlockEditor = false
-                        discardChangesDialog.close()
-                    }
-                }
+                        SvgToolButton {
+                            iconSource: Icons.closeSvg
+                            labelText: "Cancel"
+                            onClicked: {
+                                pendingNavigationTab = -1
+                                pendingCloseBlockEditor = false
+                                pendingCloseBlockTabIndex = -1
+                                discardChangesDialog.close()
+                            }
+                        }
 
                 SvgToolButton {
                     iconSource: Icons.removeSvg
@@ -413,7 +439,7 @@ ApplicationWindow {
         target: BlockEditorVm
 
         function onSaved() {
-            root.blocksWorkspaceTab = 0
+            root.blocksWorkspaceTab = 1
         }
 
         function onOpenChanged() {
@@ -421,6 +447,11 @@ ApplicationWindow {
                 root.blocksWorkspaceTab = 1
             else if (root.blocksWorkspaceTab !== 0)
                 root.blocksWorkspaceTab = 0
+        }
+
+        function onTabsChanged() {
+            if (BlockEditorVm.open)
+                root.blocksWorkspaceTab = 1
         }
     }
 }

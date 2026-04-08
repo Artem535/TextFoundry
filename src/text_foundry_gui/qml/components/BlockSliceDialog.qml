@@ -101,6 +101,34 @@ Dialog {
                         ColumnLayout {
                             width: parent.width
                             spacing: 4
+                            visible: BlockSliceVm.updateMode
+
+                            Label {
+                                text: "Preserve Structure %"
+                                font.bold: true
+                            }
+
+                            SpinBox {
+                                width: parent.width
+                                from: 10
+                                to: 100
+                                stepSize: 5
+                                value: BlockSliceVm.preserveStructurePercent
+                                editable: true
+                                onValueModified: BlockSliceVm.preserveStructurePercent = value
+                            }
+
+                            Label {
+                                width: parent.width
+                                text: "How strongly AI should preserve the current block set and ordering during rewrite."
+                                wrapMode: Text.WordWrap
+                                opacity: 0.72
+                            }
+                        }
+
+                        ColumnLayout {
+                            width: parent.width
+                            spacing: 4
 
                             Label {
                                 text: "Revision Comment"

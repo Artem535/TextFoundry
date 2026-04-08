@@ -37,6 +37,9 @@ struct PromptSlicingRequest {
   std::optional<std::string> namespace_prefix;
   std::vector<BlockId> existing_block_ids;
   std::vector<BlockId> reusable_block_ids;
+  std::vector<std::string> reusable_block_summaries;
+  int preserve_reuse_percent = 70;
+  bool preserve_order = false;
   bool allow_id_collision = false;
 };
 

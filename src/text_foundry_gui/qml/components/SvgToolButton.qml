@@ -8,6 +8,7 @@ ToolButton {
 
     property url iconSource
     property string labelText: ""
+    property string toolTipText: ""
     property bool compact: false
     property color accentColor: ColorPalette.selection
 
@@ -43,8 +44,9 @@ ToolButton {
 
     ToolTip {
         parent: control
-        visible: control.compact && control.hovered && control.labelText.length > 0
-        text: control.labelText
+        visible: control.compact && control.hovered
+                 && (control.toolTipText.length > 0 || control.labelText.length > 0)
+        text: control.toolTipText.length > 0 ? control.toolTipText : control.labelText
         delay: 300
         timeout: 2000
     }

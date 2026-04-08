@@ -117,6 +117,30 @@ Page {
                         onEditingFinished: SessionVm.aiApiKey = text
                     }
 
+                    RowLayout {
+                        Layout.fillWidth: true
+                        spacing: General.spacingMedium
+
+                        Label {
+                            text: "HTTP timeout"
+                            font.bold: true
+                        }
+
+                        SpinBox {
+                            from: 5
+                            to: 300
+                            stepSize: 5
+                            value: SessionVm.aiHttpTimeoutSeconds
+                            editable: true
+                            onValueModified: SessionVm.aiHttpTimeoutSeconds = value
+                        }
+
+                        Label {
+                            text: SessionVm.aiHttpTimeoutSeconds + " s"
+                            opacity: 0.72
+                        }
+                    }
+
                     Label {
                         Layout.fillWidth: true
                         text: SessionVm.aiGenerationEnabled

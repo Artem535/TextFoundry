@@ -1,6 +1,7 @@
 #include "viewmodels/block_editor_view_model.h"
 
 #include <QCoreApplication>
+#include <QVariantMap>
 #include <algorithm>
 #include <ranges>
 #include <sstream>
@@ -8,6 +9,7 @@
 
 #include "app/session_view_model.h"
 #include "models/blocks_model.h"
+#include "prompt_constants.h"
 #include "tf/block.h"
 #include "tf/block_type.hpp"
 
@@ -100,40 +102,104 @@ BlockEditorViewModel* BlockEditorViewModel::instance() {
   return singleton;
 }
 
-bool BlockEditorViewModel::open() const { return open_; }
+bool BlockEditorViewModel::open() const { return !tabs_.empty(); }
 
-bool BlockEditorViewModel::createMode() const { return create_mode_; }
+QVariantList BlockEditorViewModel::tabEntries() const {
+  QVariantList out;
+  out.reserve(static_cast<qsizetype>(tabs_.size()));
+  for (size_t i = 0; i < tabs_.size(); ++i) {
+    const auto& tab = tabs_[i];
+    QVariantMap entry;
+    entry.insert(QStringLiteral("title"), tabTitle(tab));
+    entry.insert(QStringLiteral("subtitle"), tabSubtitle(tab));
+    entry.insert(QStringLiteral("dirty"), isDirty(tab));
+    entry.insert(QStringLiteral("createMode"), tab.create_mode);
+    entry.insert(QStringLiteral("blockId"), tab.block_id);
+    entry.insert(QStringLiteral("currentVersion"), tab.current_version);
+    entry.insert(QStringLiteral("current"), static_cast<int>(i) == current_tab_index_);
+    out.push_back(entry);
+  }
+  return out;
+}
+
+int BlockEditorViewModel::currentTabIndex() const { return current_tab_index_; }
+
+void BlockEditorViewModel::setCurrentTabIndex(int value) {
+  if (value < 0 || value >= static_cast<int>(tabs_.size()) ||
+      current_tab_index_ == value) {
+    return;
+  }
+  activateTab(value);
+}
+
+bool BlockEditorViewModel::createMode() const {
+  const auto* tab = currentTab();
+  return tab != nullptr && tab->create_mode;
+}
 
 QString BlockEditorViewModel::dialogTitle() const {
-  return create_mode_ ? QStringLiteral("Create Block")
+  return createMode() ? QStringLiteral("Create Block")
                       : QStringLiteral("Edit Block");
 }
 
 QString BlockEditorViewModel::saveButtonText() const {
-  return create_mode_ ? QStringLiteral("Create") : QStringLiteral("Save");
+  return createMode() ? QStringLiteral("Create") : QStringLiteral("Save");
 }
 
-QString BlockEditorViewModel::blockId() const { return block_id_; }
+QString BlockEditorViewModel::blockId() const {
+  const auto* tab = currentTab();
+  return tab != nullptr ? tab->block_id : QString{};
+}
 
-QString BlockEditorViewModel::currentVersion() const { return current_version_; }
+QString BlockEditorViewModel::currentVersion() const {
+  const auto* tab = currentTab();
+  return tab != nullptr ? tab->current_version : QString{};
+}
 
-QString BlockEditorViewModel::type() const { return type_; }
+QString BlockEditorViewModel::type() const {
+  const auto* tab = currentTab();
+  return tab != nullptr ? tab->type : QStringLiteral("domain");
+}
 
-QString BlockEditorViewModel::language() const { return language_; }
+QString BlockEditorViewModel::language() const {
+  const auto* tab = currentTab();
+  return tab != nullptr ? tab->language : QStringLiteral("en");
+}
 
-QString BlockEditorViewModel::description() const { return description_; }
+QString BlockEditorViewModel::description() const {
+  const auto* tab = currentTab();
+  return tab != nullptr ? tab->description : QString{};
+}
 
-QString BlockEditorViewModel::revisionComment() const { return revision_comment_; }
+QString BlockEditorViewModel::revisionComment() const {
+  const auto* tab = currentTab();
+  return tab != nullptr ? tab->revision_comment : QString{};
+}
 
-QString BlockEditorViewModel::tagsText() const { return tags_text_; }
+QString BlockEditorViewModel::tagsText() const {
+  const auto* tab = currentTab();
+  return tab != nullptr ? tab->tags_text : QString{};
+}
 
-QString BlockEditorViewModel::defaultsText() const { return defaults_text_; }
+QString BlockEditorViewModel::defaultsText() const {
+  const auto* tab = currentTab();
+  return tab != nullptr ? tab->defaults_text : QString{};
+}
 
-QString BlockEditorViewModel::templateText() const { return template_text_; }
+QString BlockEditorViewModel::templateText() const {
+  const auto* tab = currentTab();
+  return tab != nullptr ? tab->template_text : QString{};
+}
 
-QString BlockEditorViewModel::aiPromptText() const { return ai_prompt_text_; }
+QString BlockEditorViewModel::aiPromptText() const {
+  const auto* tab = currentTab();
+  return tab != nullptr ? tab->ai_prompt_text : QString{};
+}
 
-QString BlockEditorViewModel::bumpMode() const { return bump_mode_; }
+QString BlockEditorViewModel::bumpMode() const {
+  const auto* tab = currentTab();
+  return tab != nullptr ? tab->bump_mode : QStringLiteral("Minor");
+}
 
 QStringList BlockEditorViewModel::typeOptions() const {
   return {QStringLiteral("role"), QStringLiteral("system"),
@@ -149,7 +215,13 @@ QStringList BlockEditorViewModel::bumpOptions() const {
 QString BlockEditorViewModel::statusText() const { return status_text_; }
 
 bool BlockEditorViewModel::dirty() const {
-  return open_ && currentStateKey() != original_state_key_;
+  const auto* tab = currentTab();
+  return tab != nullptr && isDirty(*tab);
+}
+
+bool BlockEditorViewModel::anyDirty() const {
+  return std::ranges::any_of(tabs_,
+                             [this](const EditorTab& tab) { return isDirty(tab); });
 }
 
 bool BlockEditorViewModel::saving() const { return saving_; }
@@ -161,98 +233,170 @@ bool BlockEditorViewModel::aiGenerationAvailable() const {
 }
 
 void BlockEditorViewModel::setBlockId(const QString& value) {
-  if (block_id_ == value) return;
-  block_id_ = value;
+  auto* tab = currentTab();
+  if (tab == nullptr || tab->block_id == value) return;
+  tab->block_id = value;
+  emit tabsChanged();
   emit formChanged();
 }
 
 void BlockEditorViewModel::setType(const QString& value) {
-  if (type_ == value) return;
-  type_ = value;
+  auto* tab = currentTab();
+  if (tab == nullptr || tab->type == value) return;
+  tab->type = value;
+  emit tabsChanged();
   emit formChanged();
 }
 
 void BlockEditorViewModel::setLanguage(const QString& value) {
-  if (language_ == value) return;
-  language_ = value;
+  auto* tab = currentTab();
+  if (tab == nullptr || tab->language == value) return;
+  tab->language = value;
+  emit tabsChanged();
   emit formChanged();
 }
 
 void BlockEditorViewModel::setDescription(const QString& value) {
-  if (description_ == value) return;
-  description_ = value;
+  auto* tab = currentTab();
+  if (tab == nullptr || tab->description == value) return;
+  tab->description = value;
+  emit tabsChanged();
   emit formChanged();
 }
 
 void BlockEditorViewModel::setRevisionComment(const QString& value) {
-  if (revision_comment_ == value) return;
-  revision_comment_ = value;
+  auto* tab = currentTab();
+  if (tab == nullptr || tab->revision_comment == value) return;
+  tab->revision_comment = value;
+  emit tabsChanged();
   emit formChanged();
 }
 
 void BlockEditorViewModel::setTagsText(const QString& value) {
-  if (tags_text_ == value) return;
-  tags_text_ = value;
+  auto* tab = currentTab();
+  if (tab == nullptr || tab->tags_text == value) return;
+  tab->tags_text = value;
+  emit tabsChanged();
   emit formChanged();
 }
 
 void BlockEditorViewModel::setDefaultsText(const QString& value) {
-  if (defaults_text_ == value) return;
-  defaults_text_ = value;
+  auto* tab = currentTab();
+  if (tab == nullptr || tab->defaults_text == value) return;
+  tab->defaults_text = value;
+  emit tabsChanged();
   emit formChanged();
 }
 
 void BlockEditorViewModel::setTemplateText(const QString& value) {
-  if (template_text_ == value) return;
-  template_text_ = value;
+  auto* tab = currentTab();
+  if (tab == nullptr || tab->template_text == value) return;
+  tab->template_text = value;
+  emit tabsChanged();
   emit formChanged();
 }
 
 void BlockEditorViewModel::setAiPromptText(const QString& value) {
-  if (ai_prompt_text_ == value) return;
-  ai_prompt_text_ = value;
+  auto* tab = currentTab();
+  if (tab == nullptr || tab->ai_prompt_text == value) return;
+  tab->ai_prompt_text = value;
+  emit tabsChanged();
   emit formChanged();
 }
 
 void BlockEditorViewModel::setBumpMode(const QString& value) {
-  if (bump_mode_ == value) return;
-  bump_mode_ = value;
+  auto* tab = currentTab();
+  if (tab == nullptr || tab->bump_mode == value) return;
+  tab->bump_mode = value;
+  emit tabsChanged();
   emit formChanged();
 }
 
 void BlockEditorViewModel::openEditor() {
-  if (!loadSelectedBlock()) return;
-  create_mode_ = false;
-  open_ = true;
-  original_state_key_ = currentStateKey();
-  emit blockLoaded();
-  emit openChanged();
+  auto loaded_tab = loadSelectedBlockTab();
+  if (!loaded_tab.has_value()) return;
+
+  const int existing_index =
+      findExistingTab(loaded_tab->block_id, loaded_tab->current_version);
+  if (existing_index >= 0) {
+    activateTab(existing_index);
+    return;
+  }
+
+  const bool was_open = open();
+  tabs_.push_back(std::move(*loaded_tab));
+  current_tab_index_ = static_cast<int>(tabs_.size()) - 1;
+  emit tabsChanged();
+  emitCurrentTabChanged();
+  if (!was_open) emit openChanged();
 }
 
 void BlockEditorViewModel::openCreateEditor() {
-  resetForm();
-  create_mode_ = true;
-  open_ = true;
-  original_state_key_ = currentStateKey();
+  const int existing_create_index = findCreateTab();
+  if (existing_create_index >= 0) {
+    activateTab(existing_create_index);
+    return;
+  }
+
+  const bool was_open = open();
+  EditorTab tab = MakeDefaultTab();
+  tab.create_mode = true;
+  tab.original_state_key = currentStateKey(tab);
+  tabs_.push_back(std::move(tab));
+  current_tab_index_ = static_cast<int>(tabs_.size()) - 1;
   setStatusText(QStringLiteral("Enter block data and press Create."));
-  emit blockLoaded();
-  emit formChanged();
-  emit openChanged();
+  emit tabsChanged();
+  emitCurrentTabChanged();
+  if (!was_open) emit openChanged();
 }
 
 void BlockEditorViewModel::closeEditor() {
-  if (!open_) return;
-  open_ = false;
+  closeTab(current_tab_index_);
+}
+
+void BlockEditorViewModel::closeTab(int index) {
+  if (index < 0 || index >= static_cast<int>(tabs_.size())) return;
+  const bool was_open = open();
+  tabs_.erase(tabs_.begin() + index);
+  if (tabs_.empty()) {
+    current_tab_index_ = -1;
+    emit tabsChanged();
+    emitCurrentTabChanged();
+    if (was_open) emit openChanged();
+    return;
+  }
+
+  if (current_tab_index_ >= static_cast<int>(tabs_.size())) {
+    current_tab_index_ = static_cast<int>(tabs_.size()) - 1;
+  } else if (index < current_tab_index_) {
+    --current_tab_index_;
+  } else if (index == current_tab_index_) {
+    current_tab_index_ = std::min(index, static_cast<int>(tabs_.size()) - 1);
+  }
+
+  emit tabsChanged();
+  emitCurrentTabChanged();
+}
+
+void BlockEditorViewModel::closeAllEditors() {
+  if (!open()) return;
+  tabs_.clear();
+  current_tab_index_ = -1;
+  emit tabsChanged();
+  emitCurrentTabChanged();
   emit openChanged();
 }
 
 void BlockEditorViewModel::save() {
-  if (block_id_.trimmed().isEmpty()) {
+  auto* tab = currentTab();
+  if (tab == nullptr) return;
+
+  if (tab->block_id.trimmed().isEmpty()) {
     setStatusText(QStringLiteral("Block id is required."));
     return;
   }
 
-  auto defaults_result = ParseDefaults(defaults_text_);
+  auto defaults_result = ParseDefaults(tab->defaults_text);
   if (defaults_result.HasError()) {
     setStatusText(QString::fromStdString(defaults_result.error().message));
     return;
@@ -261,23 +405,23 @@ void BlockEditorViewModel::save() {
   saving_ = true;
   emit savingChanged();
 
-  BlockDraftBuilder builder(block_id_.toStdString());
-  builder.WithType(ParseBlockType(type_))
-      .WithLanguage(language_.toStdString())
-      .WithDescription(description_.toStdString())
-      .WithRevisionComment(revision_comment_.trimmed().toStdString())
-      .WithTemplate(Template(template_text_.toStdString()))
+  BlockDraftBuilder builder(tab->block_id.toStdString());
+  builder.WithType(ParseBlockType(tab->type))
+      .WithLanguage(tab->language.toStdString())
+      .WithDescription(tab->description.toStdString())
+      .WithRevisionComment(tab->revision_comment.trimmed().toStdString())
+      .WithTemplate(Template(tab->template_text.toStdString()))
       .WithDefaults(defaults_result.value());
 
-  for (const auto& tag : ParseTags(tags_text_)) {
+  for (const auto& tag : ParseTags(tab->tags_text)) {
     builder.WithTag(tag);
   }
 
-  auto result = create_mode_
+  auto result = tab->create_mode
                     ? session_->engine().PublishBlock(builder.build(),
-                                                     ParseBumpMode(bump_mode_))
+                                                     ParseBumpMode(tab->bump_mode))
                     : session_->engine().UpdateBlock(builder.build(),
-                                                    ParseBumpMode(bump_mode_));
+                                                    ParseBumpMode(tab->bump_mode));
 
   saving_ = false;
   emit savingChanged();
@@ -288,25 +432,34 @@ void BlockEditorViewModel::save() {
     return;
   }
 
-  blocks_->reload();
-  blocks_->selectBlock(block_id_);
+  if (!blocks_->syncLatestBlockNode(tab->block_id)) {
+    blocks_->reload();
+  }
+  blocks_->selectBlock(tab->block_id);
   blocks_->selectLatestVersion();
   setStatusText(QString("%1 %2 as version %3")
-                    .arg(create_mode_ ? QStringLiteral("Created")
+                    .arg(tab->create_mode ? QStringLiteral("Created")
                                       : QStringLiteral("Saved"),
-                         block_id_,
+                         tab->block_id,
                          QString::fromStdString(result.value().version().ToString())));
-  original_state_key_ = currentStateKey();
+  tab->current_version = QString::fromStdString(result.value().version().ToString());
+  tab->create_mode = false;
+  tab->revision_comment.clear();
+  tab->ai_prompt_text.clear();
+  tab->original_state_key = currentStateKey(*tab);
+  emit tabsChanged();
+  emitCurrentTabChanged();
   emit saved();
-  closeEditor();
 }
 
 void BlockEditorViewModel::generate() {
+  auto* tab = currentTab();
+  if (tab == nullptr) return;
   if (!session_->engine().HasBlockGenerator()) {
     setStatusText(QStringLiteral("Configure AI settings first."));
     return;
   }
-  if (ai_prompt_text_.trimmed().isEmpty()) {
+  if (tab->ai_prompt_text.trimmed().isEmpty()) {
     setStatusText(QStringLiteral("AI prompt is required."));
     return;
   }
@@ -315,16 +468,16 @@ void BlockEditorViewModel::generate() {
   emit generatingChanged();
 
   BlockGenerationRequest request{
-      .prompt = ai_prompt_text_.trimmed().toStdString(),
+      .prompt = tab->ai_prompt_text.trimmed().toStdString(),
       .allow_id_collision = false,
   };
-  if (!block_id_.trimmed().isEmpty()) {
-    request.preferred_id = block_id_.trimmed().toStdString();
+  if (!tab->block_id.trimmed().isEmpty()) {
+    request.preferred_id = tab->block_id.trimmed().toStdString();
   }
-  if (!language_.trimmed().isEmpty()) {
-    request.preferred_language = language_.trimmed().toStdString();
+  if (!tab->language.trimmed().isEmpty()) {
+    request.preferred_language = tab->language.trimmed().toStdString();
   }
-  request.preferred_type = ParseBlockType(type_);
+  request.preferred_type = ParseBlockType(tab->type);
   request.existing_block_ids = session_->engine().ListBlocks();
 
   auto result = session_->engine().GenerateBlockData(request);
@@ -339,30 +492,132 @@ void BlockEditorViewModel::generate() {
   }
 
   const auto& generated = result.value();
-  block_id_ = QString::fromStdString(generated.id);
-  type_ = QString::fromUtf8(BlockTypeToString(generated.type).data(),
+  tab->block_id = QString::fromStdString(generated.id);
+  tab->type = QString::fromUtf8(BlockTypeToString(generated.type).data(),
                             static_cast<int>(BlockTypeToString(generated.type).size()));
-  language_ = QString::fromStdString(generated.language);
-  description_ = QString::fromStdString(generated.description);
-  template_text_ = QString::fromStdString(generated.templ);
+  tab->language = QString::fromStdString(generated.language);
+  tab->description = QString::fromStdString(generated.description);
+  tab->template_text = QString::fromStdString(generated.templ);
 
   QStringList tags;
   for (const auto& tag : generated.tags) {
     tags.push_back(QString::fromStdString(tag));
   }
   std::sort(tags.begin(), tags.end());
-  tags_text_ = tags.join(QStringLiteral("\n"));
+  tab->tags_text = tags.join(QStringLiteral("\n"));
 
   QStringList defaults;
   for (const auto& [key, value] : generated.defaults) {
     defaults.push_back(QString::fromStdString(key + "=" + value));
   }
   std::sort(defaults.begin(), defaults.end());
-  defaults_text_ = defaults.join(QStringLiteral("\n"));
+  tab->defaults_text = defaults.join(QStringLiteral("\n"));
 
   setStatusText(QStringLiteral("AI suggestion loaded into the form."));
-  emit blockLoaded();
+  emit tabsChanged();
+  emitCurrentTabChanged();
   emit formChanged();
+}
+
+void BlockEditorViewModel::revise() {
+  auto* tab = currentTab();
+  if (tab == nullptr) return;
+  if (tab->create_mode) {
+    setStatusText(QStringLiteral("Revise is available only for existing blocks."));
+    return;
+  }
+  if (!session_->engine().HasBlockGenerator()) {
+    setStatusText(QStringLiteral("Configure AI settings first."));
+    return;
+  }
+  if (tab->ai_prompt_text.trimmed().isEmpty()) {
+    setStatusText(QStringLiteral("AI instruction is required."));
+    return;
+  }
+
+  generating_ = true;
+  emit generatingChanged();
+
+  QString revision_prompt;
+  revision_prompt +=
+      QString::fromUtf8(tf::ai::prompts::kReviseBlockIntro.data(),
+                        static_cast<qsizetype>(
+                            tf::ai::prompts::kReviseBlockIntro.size()));
+  revision_prompt += QString::fromUtf8(
+      tf::ai::prompts::kReviseBlockIdentityGuidance.data(),
+      static_cast<qsizetype>(
+          tf::ai::prompts::kReviseBlockIdentityGuidance.size()));
+  revision_prompt += QString::fromUtf8(
+      tf::ai::prompts::kReviseBlockPreservationGuidance.data(),
+      static_cast<qsizetype>(
+          tf::ai::prompts::kReviseBlockPreservationGuidance.size()));
+  revision_prompt += QString::fromUtf8(
+      tf::ai::prompts::kReviseBlockUserInstructionLabel.data(),
+      static_cast<qsizetype>(
+          tf::ai::prompts::kReviseBlockUserInstructionLabel.size()));
+  revision_prompt += tab->ai_prompt_text.trimmed();
+  revision_prompt += QString::fromUtf8(
+      tf::ai::prompts::kReviseBlockCurrentBlockLabel.data(),
+      static_cast<qsizetype>(
+          tf::ai::prompts::kReviseBlockCurrentBlockLabel.size()));
+  revision_prompt += QStringLiteral("Id: ") + tab->block_id + QStringLiteral("\n");
+  revision_prompt += QStringLiteral("Type: ") + tab->type + QStringLiteral("\n");
+  revision_prompt +=
+      QStringLiteral("Language: ") + tab->language + QStringLiteral("\n");
+  revision_prompt +=
+      QStringLiteral("Description:\n") + tab->description + QStringLiteral("\n\n");
+  revision_prompt += QStringLiteral("Tags:\n") + tab->tags_text +
+                     QStringLiteral("\n\n");
+  revision_prompt += QStringLiteral("Defaults:\n") + tab->defaults_text +
+                     QStringLiteral("\n\n");
+  revision_prompt += QStringLiteral("Template:\n") + tab->template_text +
+                     QStringLiteral("\n");
+
+  BlockGenerationRequest request{
+      .prompt = revision_prompt.toStdString(),
+      .preferred_id = tab->block_id.toStdString(),
+      .preferred_type = ParseBlockType(tab->type),
+      .preferred_language = tab->language.toStdString(),
+      .existing_block_ids = session_->engine().ListBlocks(),
+      .allow_id_collision = true,
+  };
+
+  auto result = session_->engine().GenerateBlockData(request);
+
+  generating_ = false;
+  emit generatingChanged();
+
+  if (result.HasError()) {
+    setStatusText(QString("Error: %1")
+                      .arg(QString::fromStdString(result.error().message)));
+    return;
+  }
+
+  const auto& generated = result.value();
+  tab->description = QString::fromStdString(generated.description);
+  tab->template_text = QString::fromStdString(generated.templ);
+
+  QStringList tags;
+  for (const auto& tag : generated.tags) {
+    tags.push_back(QString::fromStdString(tag));
+  }
+  std::sort(tags.begin(), tags.end());
+  if (!tags.isEmpty()) {
+    tab->tags_text = tags.join(QStringLiteral("\n"));
+  }
+
+  QStringList defaults;
+  for (const auto& [key, value] : generated.defaults) {
+    defaults.push_back(QString::fromStdString(key + "=" + value));
+  }
+  std::sort(defaults.begin(), defaults.end());
+  if (!defaults.isEmpty()) {
+    tab->defaults_text = defaults.join(QStringLiteral("\n"));
+  }
+
+  emit tabsChanged();
+  emitCurrentTabChanged();
+  setStatusText(QStringLiteral("AI revision loaded into the form. Review and save a new version."));
 }
 
 void BlockEditorViewModel::setStatusText(QString value) {
@@ -372,26 +627,15 @@ void BlockEditorViewModel::setStatusText(QString value) {
   emit statusTextChanged();
 }
 
-void BlockEditorViewModel::resetForm() {
-  block_id_.clear();
-  current_version_.clear();
-  type_ = QStringLiteral("domain");
-  language_ = QStringLiteral("en");
-  description_.clear();
-  revision_comment_.clear();
-  tags_text_.clear();
-  defaults_text_.clear();
-  template_text_.clear();
-  ai_prompt_text_.clear();
-  bump_mode_ = QStringLiteral("Minor");
-  original_state_key_.clear();
+BlockEditorViewModel::EditorTab BlockEditorViewModel::MakeDefaultTab() {
+  return EditorTab{};
 }
 
-bool BlockEditorViewModel::loadSelectedBlock() {
+std::optional<BlockEditorViewModel::EditorTab> BlockEditorViewModel::loadSelectedBlockTab() {
   const QString selected_id = blocks_->selectedBlockId();
   if (selected_id.isEmpty()) {
     setStatusText(QStringLiteral("Select a block first."));
-    return false;
+    return std::nullopt;
   }
 
   std::optional<Version> version;
@@ -411,7 +655,7 @@ bool BlockEditorViewModel::loadSelectedBlock() {
     }
     if (!version.has_value()) {
       setStatusText(QStringLiteral("Selected block version is invalid."));
-      return false;
+      return std::nullopt;
     }
   }
 
@@ -419,49 +663,112 @@ bool BlockEditorViewModel::loadSelectedBlock() {
   if (result.HasError()) {
     setStatusText(QString("Error: %1")
                       .arg(QString::fromStdString(result.error().message)));
-    return false;
+    return std::nullopt;
   }
 
   const auto& block = result.value();
-  block_id_ = selected_id;
-  current_version_ = QString::fromStdString(block.version().ToString());
-  type_ = QString::fromUtf8(BlockTypeToString(block.type()).data(),
+  EditorTab tab;
+  tab.block_id = selected_id;
+  tab.current_version = QString::fromStdString(block.version().ToString());
+  tab.type = QString::fromUtf8(BlockTypeToString(block.type()).data(),
                             static_cast<int>(BlockTypeToString(block.type()).size()));
-  language_ = QString::fromStdString(block.language());
-  description_ = QString::fromStdString(block.description());
-  revision_comment_ = QString::fromStdString(block.revision_comment());
-  template_text_ = QString::fromStdString(block.templ().Content());
+  tab.language = QString::fromStdString(block.language());
+  tab.description = QString::fromStdString(block.description());
+  tab.revision_comment = QString::fromStdString(block.revision_comment());
+  tab.template_text = QString::fromStdString(block.templ().Content());
 
   QStringList tags;
   for (const auto& tag : block.tags()) {
     tags.push_back(QString::fromStdString(tag));
   }
   std::sort(tags.begin(), tags.end());
-  tags_text_ = tags.join(QStringLiteral("\n"));
+  tab.tags_text = tags.join(QStringLiteral("\n"));
 
   QStringList defaults;
   for (const auto& [key, value] : block.defaults()) {
     defaults.push_back(QString::fromStdString(key + "=" + value));
   }
   std::sort(defaults.begin(), defaults.end());
-  defaults_text_ = defaults.join(QStringLiteral("\n"));
-
-  bump_mode_ = QStringLiteral("Minor");
-  create_mode_ = false;
+  tab.defaults_text = defaults.join(QStringLiteral("\n"));
+  tab.bump_mode = QStringLiteral("Minor");
+  tab.create_mode = false;
+  tab.original_state_key = currentStateKey(tab);
   setStatusText(QStringLiteral("Editing selected block."));
-  emit blockLoaded();
-  emit formChanged();
-  return true;
+  return tab;
 }
 
-QString BlockEditorViewModel::currentStateKey() const {
-  return block_id_ + QStringLiteral("\n") + current_version_ +
-         QStringLiteral("\n") + type_ + QStringLiteral("\n") + language_ +
-         QStringLiteral("\n") + description_ + QStringLiteral("\n") +
-         revision_comment_ + QStringLiteral("\n") + tags_text_ +
-         QStringLiteral("\n") + defaults_text_ + QStringLiteral("\n") +
-         template_text_ + QStringLiteral("\n") + ai_prompt_text_ +
-         QStringLiteral("\n") + bump_mode_;
+BlockEditorViewModel::EditorTab* BlockEditorViewModel::currentTab() {
+  if (current_tab_index_ < 0 || current_tab_index_ >= static_cast<int>(tabs_.size())) {
+    return nullptr;
+  }
+  return &tabs_[current_tab_index_];
+}
+
+const BlockEditorViewModel::EditorTab* BlockEditorViewModel::currentTab() const {
+  if (current_tab_index_ < 0 || current_tab_index_ >= static_cast<int>(tabs_.size())) {
+    return nullptr;
+  }
+  return &tabs_[current_tab_index_];
+}
+
+QString BlockEditorViewModel::currentStateKey(const EditorTab& tab) const {
+  return tab.block_id + QStringLiteral("\n") + tab.current_version +
+         QStringLiteral("\n") + tab.type + QStringLiteral("\n") + tab.language +
+         QStringLiteral("\n") + tab.description + QStringLiteral("\n") +
+         tab.revision_comment + QStringLiteral("\n") + tab.tags_text +
+         QStringLiteral("\n") + tab.defaults_text + QStringLiteral("\n") +
+         tab.template_text + QStringLiteral("\n") + tab.ai_prompt_text +
+         QStringLiteral("\n") + tab.bump_mode;
+}
+
+bool BlockEditorViewModel::isDirty(const EditorTab& tab) const {
+  return currentStateKey(tab) != tab.original_state_key;
+}
+
+QString BlockEditorViewModel::tabTitle(const EditorTab& tab) const {
+  if (tab.create_mode) {
+    return tab.block_id.trimmed().isEmpty() ? QStringLiteral("New Block")
+                                            : tab.block_id;
+  }
+  return tab.block_id.trimmed().isEmpty() ? QStringLiteral("Edit") : tab.block_id;
+}
+
+QString BlockEditorViewModel::tabSubtitle(const EditorTab& tab) const {
+  if (tab.create_mode) return QStringLiteral("draft");
+  return tab.current_version.trimmed().isEmpty() ? QStringLiteral("draft")
+                                                 : QStringLiteral("v") + tab.current_version;
+}
+
+void BlockEditorViewModel::activateTab(int index) {
+  if (index < 0 || index >= static_cast<int>(tabs_.size())) return;
+  if (current_tab_index_ == index) return;
+  current_tab_index_ = index;
+  emit tabsChanged();
+  emitCurrentTabChanged();
+}
+
+void BlockEditorViewModel::emitCurrentTabChanged() {
+  emit blockLoaded();
+  emit formChanged();
+}
+
+int BlockEditorViewModel::findExistingTab(const QString& blockId,
+                                          const QString& version) const {
+  for (size_t i = 0; i < tabs_.size(); ++i) {
+    const auto& tab = tabs_[i];
+    if (!tab.create_mode && tab.block_id == blockId &&
+        tab.current_version == version) {
+      return static_cast<int>(i);
+    }
+  }
+  return -1;
+}
+
+int BlockEditorViewModel::findCreateTab() const {
+  for (size_t i = 0; i < tabs_.size(); ++i) {
+    if (tabs_[i].create_mode) return static_cast<int>(i);
+  }
+  return -1;
 }
 
 }  // namespace tf::gui

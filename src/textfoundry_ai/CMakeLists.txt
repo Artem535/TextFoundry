@@ -6,6 +6,7 @@ add_library(textfoundry_ai_openai STATIC
     openai_compatible_block_generator.h
     openai_compatible_normalizer.cc
     openai_compatible_normalizer.h
+    prompt_constants.h
     qt_http_transport.cc
     qt_http_transport.h
 )
@@ -39,6 +40,7 @@ install(
     FILES
         ${CMAKE_CURRENT_SOURCE_DIR}/openai_compatible_block_generator.h
         ${CMAKE_CURRENT_SOURCE_DIR}/openai_compatible_normalizer.h
+        ${CMAKE_CURRENT_SOURCE_DIR}/prompt_constants.h
         ${CMAKE_CURRENT_SOURCE_DIR}/qt_http_transport.h
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/textfoundry_ai
 )

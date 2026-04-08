@@ -105,6 +105,7 @@ Item {
                     SvgToolButton {
                         iconSource: Icons.addSvg
                         labelText: "Insert \\n"
+                        toolTipText: "Insert newline separators between adjacent fragments."
                         compact: true
                         onClicked: CompositionEditorVm.insertNewlinesBetween()
                     }

@@ -1,8 +1,11 @@
 #pragma once
 
 #include <QObject>
+#include <optional>
 #include <QString>
 #include <QStringList>
+#include <QVariantList>
+#include <vector>
 #include <QtQml/qqml.h>
 
 #include "tf/engine.h"
@@ -17,6 +20,8 @@ class BlockEditorViewModel : public QObject {
   QML_SINGLETON
   QML_NAMED_ELEMENT(BlockEditorVm)
   Q_PROPERTY(bool open READ open NOTIFY openChanged)
+  Q_PROPERTY(QVariantList tabEntries READ tabEntries NOTIFY tabsChanged)
+  Q_PROPERTY(int currentTabIndex READ currentTabIndex WRITE setCurrentTabIndex NOTIFY tabsChanged)
   Q_PROPERTY(bool createMode READ createMode NOTIFY blockLoaded)
   Q_PROPERTY(QString dialogTitle READ dialogTitle NOTIFY blockLoaded)
   Q_PROPERTY(QString saveButtonText READ saveButtonText NOTIFY blockLoaded)
@@ -35,6 +40,7 @@ class BlockEditorViewModel : public QObject {
   Q_PROPERTY(QStringList bumpOptions READ bumpOptions CONSTANT)
   Q_PROPERTY(QString statusText READ statusText NOTIFY statusTextChanged)
   Q_PROPERTY(bool dirty READ dirty NOTIFY formChanged)
+  Q_PROPERTY(bool anyDirty READ anyDirty NOTIFY tabsChanged)
   Q_PROPERTY(bool saving READ saving NOTIFY savingChanged)
   Q_PROPERTY(bool generating READ generating NOTIFY generatingChanged)
   Q_PROPERTY(bool aiGenerationAvailable READ aiGenerationAvailable NOTIFY generationAvailabilityChanged)
@@ -46,6 +52,9 @@ class BlockEditorViewModel : public QObject {
   static BlockEditorViewModel* instance();
 
   bool open() const;
+  QVariantList tabEntries() const;
+  int currentTabIndex() const;
+  void setCurrentTabIndex(int value);
   bool createMode() const;
   QString dialogTitle() const;
   QString saveButtonText() const;
@@ -64,6 +73,7 @@ class BlockEditorViewModel : public QObject {
   QStringList bumpOptions() const;
   QString statusText() const;
   bool dirty() const;
+  bool anyDirty() const;
   bool saving() const;
   bool generating() const;
   bool aiGenerationAvailable() const;
@@ -82,11 +92,15 @@ class BlockEditorViewModel : public QObject {
   Q_INVOKABLE void openEditor();
   Q_INVOKABLE void openCreateEditor();
   Q_INVOKABLE void closeEditor();
+  Q_INVOKABLE void closeTab(int index);
+  Q_INVOKABLE void closeAllEditors();
   Q_INVOKABLE void save();
   Q_INVOKABLE void generate();
+  Q_INVOKABLE void revise();
 
  signals:
   void openChanged();
+  void tabsChanged();
   void blockLoaded();
   void formChanged();
   void statusTextChanged();
@@ -96,30 +110,43 @@ class BlockEditorViewModel : public QObject {
   void saved();
 
  private:
+  struct EditorTab {
+    bool create_mode = false;
+    QString block_id;
+    QString current_version;
+    QString type = QStringLiteral("domain");
+    QString language = QStringLiteral("en");
+    QString description;
+    QString revision_comment;
+    QString tags_text;
+    QString defaults_text;
+    QString template_text;
+    QString ai_prompt_text;
+    QString bump_mode = QStringLiteral("Minor");
+    QString original_state_key;
+  };
+
   void setStatusText(QString value);
-  void resetForm();
-  bool loadSelectedBlock();
-  QString currentStateKey() const;
+  static EditorTab MakeDefaultTab();
+  EditorTab* currentTab();
+  const EditorTab* currentTab() const;
+  QString currentStateKey(const EditorTab& tab) const;
+  bool isDirty(const EditorTab& tab) const;
+  QString tabTitle(const EditorTab& tab) const;
+  QString tabSubtitle(const EditorTab& tab) const;
+  std::optional<EditorTab> loadSelectedBlockTab();
+  void activateTab(int index);
+  void emitCurrentTabChanged();
+  int findExistingTab(const QString& blockId, const QString& version) const;
+  int findCreateTab() const;
 
   SessionViewModel* session_;
   BlocksModel* blocks_;
-  bool open_ = false;
-  bool create_mode_ = false;
   bool saving_ = false;
   bool generating_ = false;
-  QString block_id_;
-  QString current_version_;
-  QString type_ = QStringLiteral("domain");
-  QString language_ = QStringLiteral("en");
-  QString description_;
-  QString revision_comment_;
-  QString tags_text_;
-  QString defaults_text_;
-  QString template_text_;
-  QString ai_prompt_text_;
-  QString bump_mode_ = QStringLiteral("Minor");
   QString status_text_;
-  QString original_state_key_;
+  std::vector<EditorTab> tabs_;
+  int current_tab_index_ = -1;
 };
 
 }  // namespace tf::gui

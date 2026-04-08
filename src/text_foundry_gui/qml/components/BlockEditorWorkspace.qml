@@ -49,11 +49,25 @@ Item {
                 SvgToolButton {
                     iconSource: Icons.aiAssistSvg
                     labelText: BlockEditorVm.generating ? "Generating..." : "Generate"
+                    toolTipText: "Create a new block draft from the AI prompt."
                     compact: true
+                    visible: BlockEditorVm.createMode
                     enabled: !BlockEditorVm.generating
                              && !BlockEditorVm.saving
                              && BlockEditorVm.aiGenerationAvailable
                     onClicked: BlockEditorVm.generate()
+                }
+
+                SvgToolButton {
+                    iconSource: Icons.aiAssistSvg
+                    labelText: BlockEditorVm.generating ? "Rewriting..." : "AI Rewrite"
+                    toolTipText: "Rewrite the current block content with AI without saving yet."
+                    compact: true
+                    visible: !BlockEditorVm.createMode
+                    enabled: !BlockEditorVm.generating
+                             && !BlockEditorVm.saving
+                             && BlockEditorVm.aiGenerationAvailable
+                    onClicked: BlockEditorVm.revise()
                 }
 
                 SvgToolButton {
@@ -238,7 +252,7 @@ Item {
                             spacing: 4
 
                             Label {
-                                text: "AI Prompt"
+                                text: BlockEditorVm.createMode ? "AI Prompt" : "AI Instruction"
                                 font.bold: true
                             }
 
@@ -246,7 +260,9 @@ Item {
                                 width: parent.width
                                 height: 144
                                 text: BlockEditorVm.aiPromptText
-                                placeholderText: "Describe the block you want to generate"
+                                placeholderText: BlockEditorVm.createMode
+                                                 ? "Describe the block you want to generate"
+                                                 : "Describe the revision to apply"
                                 wrapMode: TextEdit.Wrap
                                 onTextChanged: if (text !== BlockEditorVm.aiPromptText) BlockEditorVm.aiPromptText = text
                             }

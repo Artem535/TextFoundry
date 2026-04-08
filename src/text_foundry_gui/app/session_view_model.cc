@@ -30,6 +30,7 @@ namespace {
 
 constexpr char kAiBaseUrlKey[] = "ai/base_url";
 constexpr char kAiModelKey[] = "ai/model";
+constexpr char kAiTimeoutSecondsKey[] = "ai/http_timeout_seconds";
 constexpr char kSecretService[] = "TextFoundry";
 constexpr char kSecretKey[] = "ai_api_key";
 
@@ -141,6 +142,10 @@ QString SessionViewModel::aiModel() const { return ai_model_; }
 
 QString SessionViewModel::aiApiKey() const { return ai_api_key_; }
 
+int SessionViewModel::aiHttpTimeoutSeconds() const {
+  return ai_http_timeout_seconds_;
+}
+
 bool SessionViewModel::aiGenerationEnabled() const {
   return engine_ != nullptr && engine_->HasBlockGenerator();
 }
@@ -153,6 +158,12 @@ void SessionViewModel::loadPersistentSettings() {
                      .toString();
   ai_model_ =
       settings.value(QString::fromLatin1(kAiModelKey), ai_model_).toString();
+  ai_http_timeout_seconds_ =
+      std::clamp(settings
+                     .value(QString::fromLatin1(kAiTimeoutSecondsKey),
+                            ai_http_timeout_seconds_)
+                     .toInt(),
+                 5, 300);
 
   const SecretToolResult secret =
       LookupSecret(QString::fromLatin1(kSecretService),
@@ -232,6 +243,16 @@ void SessionViewModel::setAiApiKey(const QString& value) {
   }
 }
 
+void SessionViewModel::setAiHttpTimeoutSeconds(const int value) {
+  const int clamped = std::clamp(value, 5, 300);
+  if (ai_http_timeout_seconds_ == clamped) return;
+  ai_http_timeout_seconds_ = clamped;
+  QSettings().setValue(QString::fromLatin1(kAiTimeoutSecondsKey),
+                       ai_http_timeout_seconds_);
+  emit aiHttpTimeoutSecondsChanged();
+  rebuildEngine();
+}
+
 void SessionViewModel::reload() { rebuildEngine(); }
 
 void SessionViewModel::publishStatus(const QString& value) {
@@ -254,7 +275,8 @@ void SessionViewModel::rebuildEngine() {
   engine_ = std::make_unique<tf::Engine>(std::move(config));
   if (!ai_base_url_.trimmed().isEmpty() && !ai_model_.trimmed().isEmpty() &&
       !ai_api_key_.trimmed().isEmpty()) {
-    auto transport = std::make_shared<tf::ai::QtHttpTransport>();
+    auto transport = std::make_shared<tf::ai::QtHttpTransport>(
+        std::chrono::seconds(ai_http_timeout_seconds_));
     auto generator = std::make_shared<tf::ai::OpenAiCompatibleBlockGenerator>(
         tf::ai::OpenAiCompatibleConfig{
             .base_url = ai_base_url_.trimmed().toStdString(),

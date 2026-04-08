@@ -91,6 +91,7 @@ class BlocksModel : public QAbstractItemModel {
   Q_INVOKABLE void selectLatestVersion();
   Q_INVOKABLE void deprecateSelected();
   Q_INVOKABLE void deleteSelected();
+  Q_INVOKABLE bool syncLatestBlockNode(const QString& block_id);
   Q_INVOKABLE QString highlightSearchText(const QString& text) const;
   Q_INVOKABLE QString highlightSearchContent(const QString& text) const;
 
@@ -121,9 +122,11 @@ class BlocksModel : public QAbstractItemModel {
   bool removeBlockNode(const QString& block_id);
   void pruneEmptyFolders(Node* start_parent);
   Node* ensureFolderPath(const QStringList& parts);
+  Node* ensureFolderPathIncremental(const QStringList& parts);
   Node* firstBlockNode(Node* node) const;
   Node* findBlockNode(const QString& block_id, Node* node) const;
   void sortTree(Node* node);
+  int insertRowForChild(Node* parent, const QString& label, bool is_folder) const;
   QModelIndex indexForNode(const Node* node) const;
   const Node* nodeFromIndex(const QModelIndex& index) const;
   Node* nodeFromIndex(const QModelIndex& index);

@@ -29,6 +29,7 @@ class BlockSliceViewModel : public QObject {
   Q_PROPERTY(QString dialogTitle READ dialogTitle NOTIFY formChanged)
   Q_PROPERTY(QString publishButtonText READ publishButtonText NOTIFY formChanged)
   Q_PROPERTY(bool updateMode READ updateMode NOTIFY formChanged)
+  Q_PROPERTY(int preserveStructurePercent READ preserveStructurePercent WRITE setPreserveStructurePercent NOTIFY formChanged)
   Q_PROPERTY(QString targetCompositionId READ targetCompositionId NOTIFY formChanged)
   Q_PROPERTY(QString targetCompositionVersion READ targetCompositionVersion NOTIFY formChanged)
   Q_PROPERTY(QString compositionPreviewId READ compositionPreviewId NOTIFY generatedChanged)
@@ -55,6 +56,7 @@ class BlockSliceViewModel : public QObject {
   QString dialogTitle() const;
   QString publishButtonText() const;
   bool updateMode() const;
+  int preserveStructurePercent() const;
   QString targetCompositionId() const;
   QString targetCompositionVersion() const;
   QString compositionPreviewId() const;
@@ -70,6 +72,7 @@ class BlockSliceViewModel : public QObject {
   void setNamespacePrefix(const QString& value);
   void setLanguage(const QString& value);
   void setRevisionComment(const QString& value);
+  void setPreserveStructurePercent(int value);
 
   Q_INVOKABLE void openDialog();
   Q_INVOKABLE void openUpdateDialog(const QString& compositionId,
@@ -94,6 +97,7 @@ class BlockSliceViewModel : public QObject {
   void setStatusText(QString value);
   std::optional<Composition> loadTargetComposition(QString* error_message) const;
   std::vector<BlockId> reusableBlockIdsForTarget() const;
+  std::vector<std::string> reusableBlockSummariesForTarget() const;
   std::vector<BlockId> reusableBlockIdsForNamespace() const;
   std::vector<BlockId> reusableBlockIdsForCurrentOperation() const;
   std::vector<BlockId> disallowedExistingBlockIds() const;
@@ -117,6 +121,7 @@ class BlockSliceViewModel : public QObject {
   QString namespace_prefix_;
   QString language_ = QStringLiteral("en");
   QString revision_comment_;
+  int preserve_structure_percent_ = 70;
   QString status_text_;
   QString target_composition_id_;
   QString target_composition_version_;

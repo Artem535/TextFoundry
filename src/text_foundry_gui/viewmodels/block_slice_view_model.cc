@@ -88,6 +88,24 @@ QString BuildSectionDescription(const QString& section_name) {
   return QStringLiteral("Extracted from the %1 section.").arg(section_name);
 }
 
+QString SummarizeText(QString text, const int max_length = 96) {
+  text.replace('\n', ' ');
+  text = text.simplified();
+  if (text.size() > max_length) {
+    text = text.left(max_length - 3) + QStringLiteral("...");
+  }
+  return text;
+}
+
+QString SummarizeMultiline(QString text, const int max_length = 220) {
+  text.replace('\r', '\n');
+  text = text.simplified();
+  if (text.size() > max_length) {
+    text = text.left(max_length - 3) + QStringLiteral("...");
+  }
+  return text;
+}
+
 QString UniqueBlockId(QString base_id, std::unordered_set<std::string>& used_ids) {
   QString candidate = std::move(base_id);
   int suffix = 2;
@@ -232,8 +250,8 @@ QString BlockSliceViewModel::revisionComment() const { return revision_comment_;
 
 QString BlockSliceViewModel::dialogTitle() const {
   return mode_ == Mode::UpdateComposition
-             ? QStringLiteral("AI Slice Update Composition")
-             : QStringLiteral("AI Slice Prompt Into Blocks");
+             ? QStringLiteral("Rewrite Prompt Into Blocks")
+             : QStringLiteral("Slice Prompt Into Blocks");
 }
 
 QString BlockSliceViewModel::publishButtonText() const {
@@ -243,6 +261,10 @@ QString BlockSliceViewModel::publishButtonText() const {
 
 bool BlockSliceViewModel::updateMode() const {
   return mode_ == Mode::UpdateComposition;
+}
+
+int BlockSliceViewModel::preserveStructurePercent() const {
+  return preserve_structure_percent_;
 }
 
 QString BlockSliceViewModel::targetCompositionId() const {
@@ -303,6 +325,14 @@ void BlockSliceViewModel::setLanguage(const QString& value) {
 void BlockSliceViewModel::setRevisionComment(const QString& value) {
   if (revision_comment_ == value) return;
   revision_comment_ = value;
+  emit formChanged();
+}
+
+void BlockSliceViewModel::setPreserveStructurePercent(int value) {
+  value = std::clamp(value, 10, 100);
+  if (preserve_structure_percent_ == value) return;
+  preserve_structure_percent_ = value;
+  invalidateGeneratedBlocks();
   emit formChanged();
 }
 
@@ -404,6 +434,9 @@ void BlockSliceViewModel::generate() {
       .source_text = source_prompt_text_.trimmed().toStdString(),
       .existing_block_ids = disallowed_ids,
       .reusable_block_ids = reusable_ids,
+      .reusable_block_summaries = reusableBlockSummariesForTarget(),
+      .preserve_reuse_percent = preserve_structure_percent_,
+      .preserve_order = updateMode(),
       .allow_id_collision = !reusable_ids.empty(),
   };
   if (!language_.trimmed().isEmpty()) {
@@ -614,6 +647,7 @@ void BlockSliceViewModel::resetForm() {
   namespace_prefix_.clear();
   language_ = QStringLiteral("en");
   revision_comment_.clear();
+  preserve_structure_percent_ = 70;
   target_composition_id_.clear();
   target_composition_version_.clear();
   generated_blocks_.clear();
@@ -644,16 +678,57 @@ QString BlockSliceViewModel::BuildGeneratedPreview() const {
   }
 
   QStringList lines;
+  std::unordered_set<std::string> reusable_ids;
+  if (updateMode()) {
+    const auto ids = reusableBlockIdsForCurrentOperation();
+    reusable_ids.insert(ids.begin(), ids.end());
+  }
+
   for (const auto& block : generated_blocks_) {
-    lines << QStringLiteral("%1 [%2]")
-                 .arg(QString::fromStdString(block.id), BlockTypeLabel(block.type));
-    if (!block.description.empty()) {
-      lines << QStringLiteral("  %1")
-                   .arg(QString::fromStdString(block.description));
-    }
-    if (!block.templ.empty()) {
-      lines << QStringLiteral("  ---");
-      lines << QString::fromStdString(block.templ);
+    const QString block_id = QString::fromStdString(block.id);
+    const bool reused_existing = reusable_ids.contains(block.id);
+
+    lines << QStringLiteral("%1 %2 [%3]")
+                 .arg(reused_existing ? QStringLiteral("UPDATE")
+                                      : QStringLiteral("NEW"),
+                      block_id, BlockTypeLabel(block.type));
+
+    if (reused_existing) {
+      const auto existing_result = session_->engine().LoadBlock(block.id);
+      if (!existing_result.HasError()) {
+        const auto& existing = existing_result.value();
+        const QString before_description =
+            QString::fromStdString(existing.description()).trimmed();
+        const QString after_description =
+            QString::fromStdString(block.description).trimmed();
+        if (!before_description.isEmpty() || !after_description.isEmpty()) {
+          lines << QStringLiteral("  before desc: %1")
+                       .arg(before_description.isEmpty()
+                                ? QStringLiteral("(empty)")
+                                : SummarizeMultiline(before_description, 140));
+          lines << QStringLiteral("  after desc:  %1")
+                       .arg(after_description.isEmpty()
+                                ? QStringLiteral("(empty)")
+                                : SummarizeMultiline(after_description, 140));
+        }
+
+        const QString before_template =
+            SummarizeMultiline(QString::fromStdString(existing.templ().Content()));
+        const QString after_template =
+            SummarizeMultiline(QString::fromStdString(block.templ));
+        lines << QStringLiteral("  before: %1").arg(before_template);
+        lines << QStringLiteral("  after:  %1").arg(after_template);
+      }
+    } else {
+      if (!block.description.empty()) {
+        lines << QStringLiteral("  desc: %1")
+                     .arg(SummarizeMultiline(
+                         QString::fromStdString(block.description), 140));
+      }
+      if (!block.templ.empty()) {
+        lines << QStringLiteral("  body: %1")
+                     .arg(SummarizeMultiline(QString::fromStdString(block.templ)));
+      }
     }
     lines << QString();
   }
@@ -752,6 +827,50 @@ std::vector<BlockId> BlockSliceViewModel::reusableBlockIdsForTarget() const {
   return ids;
 }
 
+std::vector<std::string> BlockSliceViewModel::reusableBlockSummariesForTarget() const {
+  if (!updateMode()) {
+    return {};
+  }
+
+  QString error_message;
+  auto composition = loadTargetComposition(&error_message);
+  if (!composition.has_value()) {
+    return {};
+  }
+
+  std::vector<std::string> summaries;
+  std::unordered_set<std::string> seen_ids;
+  for (const auto& fragment : composition->fragments()) {
+    if (!fragment.IsBlockRef()) {
+      continue;
+    }
+
+    const auto& block_ref = fragment.AsBlockRef();
+    const auto& block_id = block_ref.GetBlockId();
+    if (!seen_ids.insert(block_id).second) {
+      continue;
+    }
+
+    auto block_result = session_->engine().LoadBlock(block_id);
+    if (block_result.HasError()) {
+      summaries.push_back(block_id);
+      continue;
+    }
+
+    const auto& block = block_result.value();
+    QString summary = QString::fromStdString(block_id);
+    const QString description = QString::fromStdString(block.description()).trimmed();
+    const QString templ = QString::fromStdString(block.templ().Content()).trimmed();
+    QString body = !description.isEmpty() ? description : SummarizeText(templ);
+    if (!body.isEmpty()) {
+      summary += QStringLiteral(": ") + body;
+    }
+    summaries.push_back(summary.toStdString());
+  }
+
+  return summaries;
+}
+
 std::vector<BlockId> BlockSliceViewModel::reusableBlockIdsForNamespace() const {
   const QString prefix = namespace_prefix_.trimmed();
   if (prefix.isEmpty()) {
@@ -812,6 +931,49 @@ std::optional<QString> BlockSliceViewModel::validateGeneratedBlocks(
     if (disallowed_ids.contains(block.id)) {
       return QString("Generated block id already exists and cannot be reused: %1")
           .arg(QString::fromStdString(block.id));
+    }
+  }
+
+  if (updateMode()) {
+    const auto reusable_ids = reusableBlockIdsForTarget();
+    if (!reusable_ids.empty()) {
+      std::unordered_set<std::string> reusable_set(reusable_ids.begin(),
+                                                   reusable_ids.end());
+      int retained_count = 0;
+      QStringList retained_ids;
+      for (const auto& block : blocks) {
+        if (reusable_set.contains(block.id)) {
+          ++retained_count;
+          retained_ids.push_back(QString::fromStdString(block.id));
+        }
+      }
+
+      const int original_count = static_cast<int>(reusable_ids.size());
+      const int min_retained_count =
+          std::max(1, (original_count * preserve_structure_percent_ + 99) / 100);
+
+      if (retained_count < min_retained_count) {
+        return QStringLiteral(
+                   "Rewrite is too aggressive: preserved %1 of %2 existing blocks, "
+                   "but Preserve Structure requires at least %3.\n"
+                   "Retained blocks: %4")
+            .arg(retained_count)
+            .arg(original_count)
+            .arg(min_retained_count)
+            .arg(retained_ids.isEmpty() ? QStringLiteral("(none)")
+                                        : retained_ids.join(QStringLiteral(", ")));
+      }
+
+      const int generated_count = static_cast<int>(blocks.size());
+      if (generated_count < min_retained_count) {
+        return QStringLiteral(
+                   "Rewrite is too aggressive: generated only %1 blocks from %2 existing blocks.\n"
+                   "With Preserve Structure %3%%, expected at least %4 blocks.")
+            .arg(generated_count)
+            .arg(original_count)
+            .arg(preserve_structure_percent_)
+            .arg(min_retained_count);
+      }
     }
   }
 

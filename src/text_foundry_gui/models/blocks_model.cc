@@ -516,6 +516,51 @@ void BlocksModel::deleteSelected() {
   emit detailsTextChanged();
 }
 
+bool BlocksModel::syncLatestBlockNode(const QString& block_id) {
+  if (block_id.trimmed().isEmpty()) {
+    return false;
+  }
+  if (!search_text_.trimmed().isEmpty()) {
+    return false;
+  }
+
+  const bool should_hide = (!show_derived_blocks_ && IsDerivedBlockId(block_id));
+  if (should_hide) {
+    return removeBlockNode(block_id);
+  }
+
+  const auto latest_result = session_->engine().LoadBlock(block_id.toStdString());
+  if (latest_result.HasError() ||
+      latest_result.value().state() == BlockState::Deprecated) {
+    return removeBlockNode(block_id);
+  }
+
+  if (findBlockNode(block_id, root_.get()) != nullptr) {
+    return true;
+  }
+
+  const auto parts = block_id.split('.', Qt::SkipEmptyParts);
+  Node* folder = root_.get();
+  if (parts.size() > 1) {
+    folder = ensureFolderPathIncremental(parts.first(parts.size() - 1));
+  }
+
+  auto block = std::make_unique<Node>();
+  block->label = parts.isEmpty() ? block_id : parts.back();
+  block->full_path = block_id;
+  block->block_id = block_id;
+  block->match_snippet.clear();
+  block->is_folder = false;
+  block->parent = folder;
+
+  const QModelIndex parent_index = indexForNode(folder);
+  const int row = insertRowForChild(folder, block->label, false);
+  beginInsertRows(parent_index, row, row);
+  folder->children.insert(folder->children.begin() + row, std::move(block));
+  endInsertRows();
+  return true;
+}
+
 void BlocksModel::refreshTree() {
   beginResetModel();
   root_ = std::make_unique<Node>();
@@ -796,6 +841,37 @@ BlocksModel::Node* BlocksModel::ensureFolderPath(const QStringList& parts) {
   return current;
 }
 
+BlocksModel::Node* BlocksModel::ensureFolderPathIncremental(
+    const QStringList& parts) {
+  Node* current = root_.get();
+  QString full_path;
+  for (const auto& part : parts) {
+    full_path = full_path.isEmpty() ? part : full_path + "." + part;
+
+    auto it = std::find_if(current->children.begin(), current->children.end(),
+                           [&](const std::unique_ptr<Node>& child) {
+                             return child->is_folder && child->label == part;
+                           });
+    if (it == current->children.end()) {
+      auto folder = std::make_unique<Node>();
+      folder->label = part;
+      folder->full_path = full_path;
+      folder->is_folder = true;
+      folder->parent = current;
+
+      const QModelIndex parent_index = indexForNode(current);
+      const int row = insertRowForChild(current, part, true);
+      beginInsertRows(parent_index, row, row);
+      current->children.insert(current->children.begin() + row, std::move(folder));
+      endInsertRows();
+      current = current->children[static_cast<size_t>(row)].get();
+      continue;
+    }
+    current = it->get();
+  }
+  return current;
+}
+
 BlocksModel::Node* BlocksModel::firstBlockNode(Node* node) const {
   if (node == nullptr) return nullptr;
   if (!node->is_folder) return node;
@@ -830,6 +906,20 @@ void BlocksModel::sortTree(Node* node) {
   for (const auto& child : node->children) {
     sortTree(child.get());
   }
+}
+
+int BlocksModel::insertRowForChild(Node* parent, const QString& label,
+                                   const bool is_folder) const {
+  auto before_child = [&](const std::unique_ptr<Node>& existing) {
+    if (existing->is_folder != is_folder) {
+      return is_folder && !existing->is_folder;
+    }
+    return label.localeAwareCompare(existing->label) < 0;
+  };
+
+  const auto it = std::find_if(parent->children.begin(), parent->children.end(),
+                               before_child);
+  return static_cast<int>(std::distance(parent->children.begin(), it));
 }
 
 QModelIndex BlocksModel::indexForNode(const Node* node) const {

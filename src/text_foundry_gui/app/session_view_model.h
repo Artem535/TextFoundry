@@ -4,6 +4,7 @@
 #include <QString>
 #include <QtQml/qqml.h>
 
+#include <chrono>
 #include <memory>
 
 #include "tf/engine.h"
@@ -22,6 +23,7 @@ class SessionViewModel : public QObject {
   Q_PROPERTY(QString aiBaseUrl READ aiBaseUrl WRITE setAiBaseUrl NOTIFY aiBaseUrlChanged)
   Q_PROPERTY(QString aiModel READ aiModel WRITE setAiModel NOTIFY aiModelChanged)
   Q_PROPERTY(QString aiApiKey READ aiApiKey WRITE setAiApiKey NOTIFY aiApiKeyChanged)
+  Q_PROPERTY(int aiHttpTimeoutSeconds READ aiHttpTimeoutSeconds WRITE setAiHttpTimeoutSeconds NOTIFY aiHttpTimeoutSecondsChanged)
   Q_PROPERTY(bool aiGenerationEnabled READ aiGenerationEnabled NOTIFY engineReset)
   Q_PROPERTY(QString statusText READ statusText NOTIFY statusTextChanged)
 
@@ -37,6 +39,7 @@ class SessionViewModel : public QObject {
   QString aiBaseUrl() const;
   QString aiModel() const;
   QString aiApiKey() const;
+  int aiHttpTimeoutSeconds() const;
   bool aiGenerationEnabled() const;
   QString statusText() const;
 
@@ -48,6 +51,7 @@ class SessionViewModel : public QObject {
   void setAiBaseUrl(const QString& value);
   void setAiModel(const QString& value);
   void setAiApiKey(const QString& value);
+  void setAiHttpTimeoutSeconds(int value);
 
   Q_INVOKABLE void reload();
   Q_INVOKABLE void publishStatus(const QString& value);
@@ -64,6 +68,7 @@ class SessionViewModel : public QObject {
   void aiBaseUrlChanged();
   void aiModelChanged();
   void aiApiKeyChanged();
+  void aiHttpTimeoutSecondsChanged();
   void statusTextChanged();
   void engineReset();
 
@@ -81,6 +86,7 @@ class SessionViewModel : public QObject {
   QString ai_base_url_ = QStringLiteral("https://api.openai.com/v1");
   QString ai_model_ = QStringLiteral("gpt-4.1-mini");
   QString ai_api_key_;
+  int ai_http_timeout_seconds_ = 30;
   QString status_text_;
   std::unique_ptr<tf::Engine> engine_;
 };

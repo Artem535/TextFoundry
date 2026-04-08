@@ -5,6 +5,9 @@
 #include <rfl/json.hpp>
 #include <utility>
 
+#include "prompt_constants.h"
+#include "tf/logger.h"
+
 namespace tf::ai {
 namespace {
 
@@ -107,101 +110,91 @@ std::string JoinUrl(std::string base_url, const std::string& endpoint_path) {
   return base_url + endpoint_path;
 }
 
+std::string TruncateForLog(std::string_view text, std::size_t max_length = 1200) {
+  if (text.size() <= max_length) {
+    return std::string(text);
+  }
+  return std::string(text.substr(0, max_length)) + "... [truncated]";
+}
+
 std::string BuildSystemPrompt() {
-  return R"(You generate reusable TextFoundry blocks.
-Return only the structured block payload that matches the provided JSON schema.
-The block must be explicit, reusable, and safe to publish as a draft for later human review.
-Use stable dot-separated ids.
-Use "templ" for the block template field.
-Allowed type values: role, system, mission, safety, constraint, style, domain, meta.
-Choose only one of those exact strings for "type".)";
+  return std::string(prompts::kBlockGenerationSystemPrompt);
 }
 
 std::string BuildBatchSystemPrompt() {
-  return R"(You decompose prompt text into reusable TextFoundry blocks.
-Return only the structured payload that matches the provided JSON schema.
-Split the source into a small set of reusable blocks with clear boundaries.
-Prefer 3-8 blocks unless the source is genuinely simpler or more complex.
-Use stable dot-separated ids.
-Use "templ" for the block template field.
-Allowed type values: role, system, mission, safety, constraint, style, domain, meta.
-Choose only one of those exact strings for each block "type".
-Suggested mapping:
-- system: top-level system framing and operating mode
-- mission: goals, tasks, responsibilities, objectives
-- safety: safety rules, prohibitions, guardrails, escalation rules
-- role: persona or role behavior
-- constraint: hard behavioral constraints or output requirements
-- style: tone, formatting, response style
-- domain: factual domain knowledge or working context
-- meta: metadata or helper blocks
-Avoid creating duplicate or trivial blocks.)";
+  return std::string(prompts::kBlockBatchSystemPrompt);
 }
 
 std::string BuildUserPrompt(const BlockGenerationRequest& request) {
-  std::string prompt = "Generate one reusable TextFoundry block.\n";
-  prompt += "User request:\n" + request.prompt + "\n";
+  std::string prompt = std::string(prompts::kBlockGenerationUserIntro);
+  prompt += std::string(prompts::kBlockGenerationUserRequestLabel) +
+            request.prompt + "\n";
 
   if (request.preferred_id.has_value()) {
-    prompt += "Preferred id: " + *request.preferred_id + "\n";
+    prompt += std::string(prompts::kPreferredIdLabel) + *request.preferred_id +
+              "\n";
   }
   if (request.preferred_type.has_value()) {
-    prompt += "Preferred type: " +
+    prompt += std::string(prompts::kPreferredTypeLabel) +
               std::string(BlockTypeToString(*request.preferred_type)) + "\n";
   }
   if (request.preferred_language.has_value()) {
-    prompt += "Preferred language: " + *request.preferred_language + "\n";
+    prompt += std::string(prompts::kPreferredLanguageLabel) +
+              *request.preferred_language + "\n";
   }
   if (!request.existing_block_ids.empty()) {
-    prompt += "Existing block ids to avoid:\n";
+    prompt += std::string(prompts::kExistingBlockIdsToAvoidLabel);
     for (const auto& id : request.existing_block_ids) {
       prompt += "- " + id + "\n";
     }
   }
 
-  prompt +=
-      "Return defaults as a string-to-string object and tags as a flat array.\n"
-      "Allowed type values: role, system, mission, safety, constraint, style, domain, meta.";
+  prompt += std::string(prompts::kBlockGenerationUserOutro);
   return prompt;
 }
 
 std::string BuildBatchUserPrompt(const PromptSlicingRequest& request) {
-  std::string prompt =
-      "Decompose the following prompt text into reusable TextFoundry blocks.\n";
-  prompt += "Source text:\n" + request.source_text + "\n";
+  std::string prompt = std::string(prompts::kBatchUserIntro);
+  prompt += std::string(prompts::kBatchSourceTextLabel) + request.source_text +
+            "\n";
 
   if (request.namespace_prefix.has_value() &&
       !request.namespace_prefix->empty()) {
-    prompt += "Use this namespace prefix for generated ids when possible: " +
+    prompt += std::string(prompts::kNamespacePrefixLabel) +
               *request.namespace_prefix + "\n";
   }
   if (request.preferred_language.has_value() &&
       !request.preferred_language->empty()) {
-    prompt += "Preferred language: " + *request.preferred_language + "\n";
+    prompt += std::string(prompts::kPreferredLanguageLabel) +
+              *request.preferred_language + "\n";
   }
   if (!request.existing_block_ids.empty()) {
-    prompt += "Existing block ids to avoid:\n";
+    prompt += std::string(prompts::kExistingBlockIdsToAvoidLabel);
     for (const auto& id : request.existing_block_ids) {
       prompt += "- " + id + "\n";
     }
   }
   if (!request.reusable_block_ids.empty()) {
-    prompt += "Existing block ids that may be reused when the same logical "
-              "section is being updated:\n";
+    prompt += std::string(prompts::kReusableIdsLabel);
     for (const auto& id : request.reusable_block_ids) {
       prompt += "- " + id + "\n";
     }
-    prompt +=
-        "When a generated block matches one of those existing sections, reuse "
-        "that exact id.\n";
+    prompt += std::string(prompts::kReusableIdsGuidance);
+    prompt += std::string(prompts::kPreserveStrengthPrefix) +
+              std::to_string(request.preserve_reuse_percent) +
+              std::string(prompts::kPreserveStrengthSuffix);
+    if (request.preserve_order) {
+      prompt += std::string(prompts::kPreserveOrderGuidance);
+    }
+    if (!request.reusable_block_summaries.empty()) {
+      prompt += std::string(prompts::kCurrentStructureLabel);
+      for (const auto& summary : request.reusable_block_summaries) {
+        prompt += "- " + summary + "\n";
+      }
+    }
   }
 
-  prompt +=
-      "Return blocks as a flat array. Each block must be independently reusable.\n"
-      "Allowed type values: role, system, mission, safety, constraint, style, domain, meta.\n"
-      "Do not invent any other type values.\n"
-      "Block ids must be stable lowercase identifiers using dot-separated segments.\n"
-      "Do not return placeholder ids like _2, block_3, section_4, tmp, or draft.";
+  prompt += std::string(prompts::kBatchUserOutro);
   return prompt;
 }
 
@@ -237,6 +230,8 @@ Result<GeneratedBlockBatch> ParseGeneratedBatchPayload(
     const std::string& content) {
   const auto parsed = rfl::json::read<GeneratedBlockBatchPayload>(content);
   if (!parsed) {
+    TF_LOG_WARN("Failed to parse generated block batch payload content: {}",
+                TruncateForLog(content));
     return Result<GeneratedBlockBatch>(
         Error{ErrorCode::InvalidParamType,
               "Failed to parse generated block batch JSON payload"});
@@ -500,6 +495,8 @@ Result<GeneratedBlockBatch> OpenAiCompatibleBlockGenerator::ParseBatchResponse(
 
   const auto parsed = rfl::json::read<OpenAiChatCompletionResponse>(response.body);
   if (!parsed) {
+    TF_LOG_WARN("Failed to parse OpenAI-compatible batch response body: {}",
+                TruncateForLog(response.body));
     return Result<GeneratedBlockBatch>(
         Error{ErrorCode::InvalidParamType,
               "Failed to parse OpenAI-compatible response JSON"});
@@ -512,6 +509,8 @@ Result<GeneratedBlockBatch> OpenAiCompatibleBlockGenerator::ParseBatchResponse(
 
   const auto& message = parsed->choices.front().message;
   if (!message.content.has_value() || message.content->empty()) {
+    TF_LOG_WARN("OpenAI-compatible batch response missing message content. Body: {}",
+                TruncateForLog(response.body));
     return Result<GeneratedBlockBatch>(Error{
         ErrorCode::InvalidParamType,
         "OpenAI-compatible response does not contain message content"});
