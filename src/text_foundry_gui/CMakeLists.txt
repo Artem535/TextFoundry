@@ -62,6 +62,8 @@ qt_add_qml_module(textfoundry_gui
         qml/components/SvgToolButton.qml
         qml/components/TagChip.qml
         qml/components/CodePreview.qml
+        qml/components/BlockSliceDialog.qml
+        qml/components/BlockEditorWorkspace.qml
         qml/components/DragHandle.qml
         qml/components/CompositionEditorWindow.qml
         qml/components/CompositionEditorSidebar.qml

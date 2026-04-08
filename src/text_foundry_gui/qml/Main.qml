@@ -12,6 +12,7 @@ ApplicationWindow {
     color: ColorPalette.background
 
     property int currentTab: 0
+    property int blocksWorkspaceTab: BlockEditorVm.open ? 1 : 0
     property var navigationItems: [
         { title: "Blocks", subtitle: "Templates and blocks", icon: Icons.blocksSvg },
         { title: "Compositions", subtitle: "Prompt assembly", icon: Icons.compositionsSvg },
@@ -182,15 +183,112 @@ ApplicationWindow {
             }
         }
 
-        StackLayout {
+        ColumnLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true
-            currentIndex: root.currentTab
+            spacing: General.spacingMedium
 
-            BlocksPage {}
-            CompositionsPage {}
-            RenderPage {}
-            SettingsPage {}
+            Frame {
+                visible: root.currentTab === 0
+                Layout.fillWidth: true
+                padding: General.paddingSmall
+                background: Rectangle {
+                    color: ColorPalette.surface
+                    border.color: ColorPalette.border
+                    radius: General.radiusMedium
+                }
+
+                RowLayout {
+                    anchors.fill: parent
+                    spacing: General.spacingSmall
+
+                    Button {
+                        text: "Inspect"
+                        checkable: true
+                        checked: root.blocksWorkspaceTab === 0
+                        onClicked: root.blocksWorkspaceTab = 0
+                        background: Rectangle {
+                            radius: General.radiusMedium
+                            color: parent.checked ? ColorPalette.primary : ColorPalette.fieldBackground
+                            border.color: parent.checked ? "transparent" : ColorPalette.border
+                        }
+                        contentItem: Label {
+                            text: parent.text
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                            color: parent.checked ? ColorPalette.onPrimary : ColorPalette.textPrimary
+                            font.bold: true
+                        }
+                    }
+
+                    Button {
+                        visible: BlockEditorVm.open
+                        text: BlockEditorVm.createMode
+                              ? "New Block"
+                              : (BlockEditorVm.blockId.length > 0
+                                 ? "Edit " + BlockEditorVm.blockId
+                                 : "Edit")
+                        checkable: true
+                        checked: root.blocksWorkspaceTab === 1
+                        onClicked: root.blocksWorkspaceTab = 1
+                        background: Rectangle {
+                            radius: General.radiusMedium
+                            color: parent.checked ? ColorPalette.primary : ColorPalette.fieldBackground
+                            border.color: parent.checked ? "transparent" : ColorPalette.border
+                        }
+                        contentItem: Label {
+                            text: parent.text
+                            horizontalAlignment: Text.AlignHCenter
+                            verticalAlignment: Text.AlignVCenter
+                            color: parent.checked ? ColorPalette.onPrimary : ColorPalette.textPrimary
+                            font.bold: true
+                            elide: Text.ElideRight
+                        }
+                    }
+
+                    SvgToolButton {
+                        visible: BlockEditorVm.open
+                        compact: true
+                        iconSource: Icons.closeSvg
+                        labelText: "Close"
+                        onClicked: BlockEditorVm.closeEditor()
+                    }
+
+                    Item {
+                        Layout.fillWidth: true
+                    }
+                }
+            }
+
+            StackLayout {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                currentIndex: root.currentTab
+
+                BlocksPage {
+                    rightPaneTab: root.blocksWorkspaceTab
+                }
+                CompositionsPage {}
+                RenderPage {}
+                SettingsPage {}
+            }
+        }
+    }
+
+    BlockSliceDialog {}
+
+    Connections {
+        target: BlockEditorVm
+
+        function onSaved() {
+            root.blocksWorkspaceTab = 0
+        }
+
+        function onOpenChanged() {
+            if (BlockEditorVm.open)
+                root.blocksWorkspaceTab = 1
+            else if (root.blocksWorkspaceTab !== 0)
+                root.blocksWorkspaceTab = 0
         }
     }
 }

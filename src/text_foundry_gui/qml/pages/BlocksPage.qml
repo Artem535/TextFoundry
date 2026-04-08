@@ -6,6 +6,7 @@ import TextFoundry
 
 Page {
     id: root
+    property int rightPaneTab: 0
 
     background: Rectangle {
         color: ColorPalette.background
@@ -85,6 +86,7 @@ Page {
 
                             function rememberExpandedFolders() {
                                 const remembered = {}
+                                let visibleRow = -1
 
                                 function visit(parentIndex) {
                                     const count = BlocksModel.rowCount(parentIndex)
@@ -97,11 +99,14 @@ Page {
                                         if (!isFolder)
                                             continue
 
+                                        visibleRow += 1
                                         const fullPath = BlocksModel.data(index, BlocksModel.FullPathRole)
-                                        if (blocksTree.isExpanded(row, parentIndex))
+                                        const expanded = blocksTree.isExpanded(visibleRow)
+                                        if (expanded)
                                             remembered[fullPath] = true
 
-                                        visit(index)
+                                        if (expanded)
+                                            visit(index)
                                     }
                                 }
 
@@ -110,6 +115,8 @@ Page {
                             }
 
                             function restoreExpandedFolders() {
+                                let visibleRow = -1
+
                                 function visit(parentIndex) {
                                     const count = BlocksModel.rowCount(parentIndex)
                                     for (let row = 0; row < count; ++row) {
@@ -121,11 +128,14 @@ Page {
                                         if (!isFolder)
                                             continue
 
+                                        visibleRow += 1
                                         const fullPath = BlocksModel.data(index, BlocksModel.FullPathRole)
-                                        if (expandedFolders[fullPath])
-                                            blocksTree.expand(row, parentIndex)
+                                        const shouldExpand = !!expandedFolders[fullPath]
+                                        if (shouldExpand)
+                                            blocksTree.expand(visibleRow)
 
-                                        visit(index)
+                                        if (shouldExpand)
+                                            visit(index)
                                     }
                                 }
 
@@ -184,6 +194,7 @@ Page {
                                     const modelIndex = blocksTree.index(row, column)
                                     blocksTree.selectionModel.setCurrentIndex(
                                                 modelIndex, ItemSelectionModel.ClearAndSelect)
+                                    BlocksModel.selectTreeItem(model.fullPath, isFolder, blockId)
                                     if (isFolder) {
                                         blocksTree.rememberExpandedFolders()
                                         blocksTree.toggleExpanded(row)
@@ -197,6 +208,62 @@ Page {
                                         BlocksModel.selectBlock(blockId)
                                     }
                                 }
+
+                                TapHandler {
+                                    acceptedButtons: Qt.RightButton
+                                    gesturePolicy: TapHandler.ReleaseWithinBounds
+                                    onTapped: function(eventPoint) {
+                                        const modelIndex = blocksTree.index(row, column)
+                                        blocksTree.selectionModel.setCurrentIndex(
+                                                    modelIndex, ItemSelectionModel.ClearAndSelect)
+                                        BlocksModel.selectTreeItem(model.fullPath, isFolder, blockId)
+                                        if (!isFolder)
+                                            BlocksModel.selectBlock(blockId)
+                                        blockContextMenu.popup(eventPoint.position.x,
+                                                               eventPoint.position.y)
+                                    }
+                                }
+
+                                Menu {
+                                    id: blockContextMenu
+
+                                    MenuItem {
+                                        text: isFolder ? "Delete Folder" : "Delete"
+                                        onTriggered: {
+                                            blocksTree.rememberExpandedFolders()
+                                            BlocksModel.deleteSelected()
+                                        }
+                                    }
+
+                                    MenuItem {
+                                        text: "Edit"
+                                        visible: !isFolder
+                                        onTriggered: BlockEditorVm.openEditor()
+                                    }
+
+                                    MenuItem {
+                                        text: "Deprecate"
+                                        visible: !isFolder
+                                        onTriggered: {
+                                            blocksTree.rememberExpandedFolders()
+                                            BlocksModel.deprecateSelected()
+                                        }
+                                    }
+
+                                    MenuItem {
+                                        text: isFolder
+                                              ? (blocksTree.isExpanded(row) ? "Collapse" : "Expand")
+                                              : "AI Slice"
+                                        onTriggered: {
+                                            if (isFolder) {
+                                                blocksTree.rememberExpandedFolders()
+                                                blocksTree.toggleExpanded(row)
+                                            } else {
+                                                BlockSliceVm.openDialog()
+                                            }
+                                        }
+                                    }
+                                }
                             }
 
                             ScrollBar.vertical: ScrollBar {}
@@ -207,10 +274,12 @@ Page {
                                 target: BlocksModel
 
                                 function onTreeReloaded() {
-                                    if (BlocksModel.searchText.trim().length > 0)
-                                        blocksTree.expandRecursively()
-                                    else
-                                        blocksTree.restoreExpandedFolders()
+                                    Qt.callLater(function() {
+                                        if (BlocksModel.searchText.trim().length > 0)
+                                            blocksTree.expandRecursively()
+                                        else
+                                            blocksTree.restoreExpandedFolders()
+                                    })
                                 }
                             }
                         }
@@ -307,222 +376,261 @@ Page {
                     Layout.fillWidth: true
 
                     Label {
-                        text: "Details"
+                        text: root.rightPaneTab === 0 ? "Inspect" : "Block Editor"
                         color: ColorPalette.primary
                         font.bold: true
                     }
 
                     Item { Layout.fillWidth: true }
 
-                    SvgToolButton {
-                        compact: true
-                        iconSource: Icons.addSvg
-                        labelText: "New"
-                        onClicked: BlockEditorVm.openCreateEditor()
-                    }
-
-                    SvgToolButton {
-                        compact: true
-                        iconSource: Icons.aiAssistSvg
-                        labelText: "AI Slice"
-                        enabled: BlockSliceVm.aiGenerationAvailable
-                        onClicked: BlockSliceVm.openDialog()
-                    }
-
-                    SvgToolButton {
-                        compact: true
-                        iconSource: Icons.reloadSvg
-                        labelText: "Reload"
-                        onClicked: BlocksModel.reload()
-                    }
-
-                    CheckBox {
-                        text: "Show Derived"
-                        checked: BlocksModel.showDerivedBlocks
-                        onToggled: BlocksModel.showDerivedBlocks = checked
-                    }
-
-                    SvgToolButton {
-                        compact: true
-                        iconSource: Icons.editSvg
-                        labelText: "Edit"
-                        enabled: BlocksModel.selectedBlockId.length > 0
-                        onClicked: BlockEditorVm.openEditor()
-                    }
-
-                    SvgToolButton {
-                        compact: true
-                        iconSource: Icons.deprecateSvg
-                        labelText: "Deprecate"
-                        enabled: BlocksModel.selectedBlockId.length > 0
-                        onClicked: BlocksModel.deprecateSelected()
+                    Loader {
+                        active: root.rightPaneTab === 0
+                        visible: active
+                        sourceComponent: inspectToolbar
                     }
                 }
 
-                GridLayout {
+                StackLayout {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
-                    columns: 2
-                    rowSpacing: General.spacingMedium
-                    columnSpacing: General.spacingMedium
+                    currentIndex: root.rightPaneTab
 
-                    Rectangle {
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        Layout.preferredWidth: 340
-                        Layout.minimumWidth: 300
-                        Layout.maximumWidth: 420
-                        radius: General.radiusSmall
-                        color: ColorPalette.fieldBackground
-                        border.color: ColorPalette.borderStrong
-
-                        ScrollView {
+                    Item {
+                        GridLayout {
                             anchors.fill: parent
-                            anchors.margins: General.paddingMedium
-                            clip: true
+                            columns: 2
+                            rowSpacing: General.spacingMedium
+                            columnSpacing: General.spacingMedium
 
-                            ColumnLayout {
-                                width: Math.max(0, parent.availableWidth)
-                                spacing: General.spacingMedium
-
-                                GridLayout {
-                                    Layout.fillWidth: true
-                                    columns: 2
-                                    rowSpacing: General.spacingMedium
-                                    columnSpacing: General.spacingLarge
-
-                                    DetailField {
-                                        Layout.columnSpan: 2
-                                        label: "Id"
-                                        value: BlocksModel.selectedBlockId
-                                    }
-
-                                    DetailField {
-                                        label: "Version"
-                                        value: BlocksModel.selectedBlockVersion
-                                    }
-
-                                    DetailField {
-                                        label: "Type"
-                                        value: BlocksModel.selectedBlockType
-                                    }
-
-                                    DetailField {
-                                        label: "Language"
-                                        value: BlocksModel.selectedBlockLanguage
-                                    }
-                                }
-
-                                DetailField {
-                                    label: "Description"
-                                    value: BlocksModel.highlightSearchText(BlocksModel.selectedBlockDescription)
-                                    placeholder: "No description"
-                                    richText: true
-                                }
-
-                                DetailField {
-                                    label: "Revision Comment"
-                                    value: BlocksModel.highlightSearchText(BlocksModel.selectedBlockRevisionComment)
-                                    placeholder: "No revision comment"
-                                    richText: true
-                                }
-
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 4
-
-                                    Label {
-                                        text: "Tags"
-                                        font.bold: true
-                                    }
-
-                                    Flow {
-                                        Layout.fillWidth: true
-                                        width: parent.width
-                                        spacing: General.spacingSmall
-
-                                        Repeater {
-                                            model: BlocksModel.selectedBlockTags
-
-                                            delegate: TagChip {
-                                                required property string modelData
-                                                text: modelData
-                                            }
-                                        }
-                                    }
-
-                                    Label {
-                                        visible: BlocksModel.selectedBlockTags.length === 0
-                                        text: "No tags"
-                                        opacity: 0.72
-                                    }
-                                }
-
-                                ColumnLayout {
-                                    Layout.fillWidth: true
-                                    spacing: 4
-
-                                    Label {
-                                        text: "Defaults"
-                                        font.bold: true
-                                    }
-
-                                    Flow {
-                                        Layout.fillWidth: true
-                                        width: parent.width
-                                        spacing: General.spacingSmall
-
-                                        Repeater {
-                                            model: BlocksModel.selectedBlockDefaults
-
-                                            delegate: TagChip {
-                                                required property string modelData
-                                                text: modelData
-                                            }
-                                        }
-                                    }
-
-                                    Label {
-                                        visible: BlocksModel.selectedBlockDefaults.length === 0
-                                        text: "No defaults"
-                                        opacity: 0.72
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    Rectangle {
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        Layout.preferredWidth: 820
-                        Layout.minimumWidth: 620
-                        radius: General.radiusSmall
-                        color: ColorPalette.fieldBackground
-                        border.color: ColorPalette.borderStrong
-
-                        ColumnLayout {
-                            anchors.fill: parent
-                            anchors.margins: General.paddingMedium
-                            Layout.fillWidth: true
-                            Layout.fillHeight: true
-                            spacing: 4
-
-                            Label {
-                                text: "Template"
-                                font.bold: true
-                            }
-
-                            Loader {
+                            Rectangle {
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
-                                active: true
-                                sourceComponent: BlocksModel.searchText.trim().length > 0
-                                                 ? highlightedTemplatePreview
-                                                 : plainTemplatePreview
+                                Layout.preferredWidth: 340
+                                Layout.minimumWidth: 300
+                                Layout.maximumWidth: 420
+                                radius: General.radiusSmall
+                                color: ColorPalette.fieldBackground
+                                border.color: ColorPalette.borderStrong
+
+                                ScrollView {
+                                    anchors.fill: parent
+                                    anchors.margins: General.paddingMedium
+                                    clip: true
+
+                                    ColumnLayout {
+                                        width: Math.max(0, parent.availableWidth)
+                                        spacing: General.spacingMedium
+
+                                        GridLayout {
+                                            Layout.fillWidth: true
+                                            columns: 2
+                                            rowSpacing: General.spacingMedium
+                                            columnSpacing: General.spacingLarge
+
+                                            DetailField {
+                                                Layout.columnSpan: 2
+                                                label: "Id"
+                                                value: BlocksModel.selectedBlockId
+                                            }
+
+                                            DetailField {
+                                                label: "Version"
+                                                value: BlocksModel.selectedBlockVersion
+                                            }
+
+                                            DetailField {
+                                                label: "Type"
+                                                value: BlocksModel.selectedBlockType
+                                            }
+
+                                            DetailField {
+                                                label: "Language"
+                                                value: BlocksModel.selectedBlockLanguage
+                                            }
+                                        }
+
+                                        DetailField {
+                                            label: "Description"
+                                            value: BlocksModel.highlightSearchText(BlocksModel.selectedBlockDescription)
+                                            placeholder: "No description"
+                                            richText: true
+                                        }
+
+                                        DetailField {
+                                            label: "Revision Comment"
+                                            value: BlocksModel.highlightSearchText(BlocksModel.selectedBlockRevisionComment)
+                                            placeholder: "No revision comment"
+                                            richText: true
+                                        }
+
+                                        ColumnLayout {
+                                            Layout.fillWidth: true
+                                            spacing: 4
+
+                                            Label {
+                                                text: "Tags"
+                                                font.bold: true
+                                            }
+
+                                            Flow {
+                                                Layout.fillWidth: true
+                                                width: parent.width
+                                                spacing: General.spacingSmall
+
+                                                Repeater {
+                                                    model: BlocksModel.selectedBlockTags
+
+                                                    delegate: TagChip {
+                                                        required property string modelData
+                                                        text: modelData
+                                                    }
+                                                }
+                                            }
+
+                                            Label {
+                                                visible: BlocksModel.selectedBlockTags.length === 0
+                                                text: "No tags"
+                                                opacity: 0.72
+                                            }
+                                        }
+
+                                        ColumnLayout {
+                                            Layout.fillWidth: true
+                                            spacing: 4
+
+                                            Label {
+                                                text: "Defaults"
+                                                font.bold: true
+                                            }
+
+                                            Flow {
+                                                Layout.fillWidth: true
+                                                width: parent.width
+                                                spacing: General.spacingSmall
+
+                                                Repeater {
+                                                    model: BlocksModel.selectedBlockDefaults
+
+                                                    delegate: TagChip {
+                                                        required property string modelData
+                                                        text: modelData
+                                                    }
+                                                }
+                                            }
+
+                                            Label {
+                                                visible: BlocksModel.selectedBlockDefaults.length === 0
+                                                text: "No defaults"
+                                                opacity: 0.72
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            Rectangle {
+                                Layout.fillWidth: true
+                                Layout.fillHeight: true
+                                Layout.preferredWidth: 820
+                                Layout.minimumWidth: 620
+                                radius: General.radiusSmall
+                                color: ColorPalette.fieldBackground
+                                border.color: ColorPalette.borderStrong
+
+                                ColumnLayout {
+                                    anchors.fill: parent
+                                    anchors.margins: General.paddingMedium
+                                    Layout.fillWidth: true
+                                    Layout.fillHeight: true
+                                    spacing: 4
+
+                                    Label {
+                                        text: "Template"
+                                        font.bold: true
+                                    }
+
+                                    Loader {
+                                        Layout.fillWidth: true
+                                        Layout.fillHeight: true
+                                        active: true
+                                        sourceComponent: BlocksModel.searchText.trim().length > 0
+                                                         ? highlightedTemplatePreview
+                                                         : plainTemplatePreview
+                                    }
+                                }
                             }
                         }
                     }
+
+                    BlockEditorWorkspace {}
+                }
+            }
+        }
+    }
+
+    Component {
+        id: inspectToolbar
+
+        RowLayout {
+            SvgToolButton {
+                compact: true
+                iconSource: Icons.addSvg
+                labelText: "New"
+                onClicked: BlockEditorVm.openCreateEditor()
+            }
+
+            SvgToolButton {
+                compact: true
+                iconSource: Icons.aiAssistSvg
+                labelText: "AI Slice"
+                enabled: BlockSliceVm.aiGenerationAvailable
+                onClicked: BlockSliceVm.openDialog()
+            }
+
+            SvgToolButton {
+                compact: true
+                iconSource: Icons.reloadSvg
+                labelText: "Reload"
+                onClicked: {
+                    blocksTree.rememberExpandedFolders()
+                    BlocksModel.reload()
+                }
+            }
+
+            CheckBox {
+                text: "Show Derived"
+                checked: BlocksModel.showDerivedBlocks
+                onToggled: BlocksModel.showDerivedBlocks = checked
+            }
+
+            SvgToolButton {
+                compact: true
+                iconSource: Icons.editSvg
+                labelText: "Edit"
+                enabled: BlocksModel.selectedBlockId.length > 0
+                onClicked: BlockEditorVm.openEditor()
+            }
+
+            SvgToolButton {
+                compact: true
+                iconSource: Icons.deprecateSvg
+                labelText: "Deprecate"
+                enabled: BlocksModel.selectedBlockId.length > 0
+                onClicked: {
+                    blocksTree.rememberExpandedFolders()
+                    BlocksModel.deprecateSelected()
+                }
+            }
+
+            SvgToolButton {
+                compact: true
+                iconSource: Icons.removeSvg
+                labelText: BlocksModel.selectedTreeIsFolder ? "Delete Folder" : "Delete"
+                enabled: BlocksModel.selectedTreePath.length > 0
+                         || BlocksModel.selectedBlockId.length > 0
+                onClicked: {
+                    blocksTree.rememberExpandedFolders()
+                    BlocksModel.deleteSelected()
                 }
             }
         }
@@ -563,541 +671,10 @@ Page {
         }
     }
 
-    Dialog {
-        id: slicePromptDialog
-        parent: Overlay.overlay
-        x: Math.round((parent.width - width) / 2)
-        y: Math.round((parent.height - height) / 2)
-        width: Math.min(parent.width - 64, 1040)
-        height: Math.min(parent.height - 64, 780)
-        modal: true
-        dim: true
-        visible: BlockSliceVm.open
-        title: "AI Slice Prompt Into Blocks"
-        standardButtons: Dialog.NoButton
-        onClosed: BlockSliceVm.closeDialog()
-
-        background: Rectangle {
-            radius: General.radiusMedium
-            color: ColorPalette.surface
-            border.color: ColorPalette.border
-        }
-
-        contentItem: ColumnLayout {
-            spacing: General.spacingMedium
-
-            RowLayout {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                spacing: General.spacingMedium
-
-                Frame {
-                    Layout.preferredWidth: 360
-                    Layout.fillHeight: true
-                    background: Rectangle {
-                        radius: General.radiusMedium
-                        color: ColorPalette.fieldBackground
-                        border.color: ColorPalette.border
-                    }
-
-                    ScrollView {
-                        id: sliceScroll
-                        anchors.fill: parent
-                        clip: true
-
-                        Column {
-                            width: sliceScroll.availableWidth
-                            spacing: General.spacingMedium
-
-                            ColumnLayout {
-                                width: parent.width
-                                spacing: 4
-
-                                Label {
-                                    text: "Namespace Prefix"
-                                    font.bold: true
-                                }
-
-                                TextField {
-                                    width: parent.width
-                                    text: BlockSliceVm.namespacePrefix
-                                    placeholderText: "team.prompt"
-                                    onTextEdited: BlockSliceVm.namespacePrefix = text
-                                }
-                            }
-
-                            ColumnLayout {
-                                width: parent.width
-                                spacing: 4
-
-                                Label {
-                                    text: "Language"
-                                    font.bold: true
-                                }
-
-                                TextField {
-                                    width: parent.width
-                                    text: BlockSliceVm.language
-                                    placeholderText: "en"
-                                    onTextEdited: BlockSliceVm.language = text
-                                }
-                            }
-
-                            ColumnLayout {
-                                width: parent.width
-                                spacing: 4
-
-                                Label {
-                                    text: "Source Prompt"
-                                    font.bold: true
-                                }
-
-                                TextArea {
-                                    width: parent.width
-                                    height: 420
-                                    text: BlockSliceVm.sourcePromptText
-                                    placeholderText: "Paste the full prompt you want to decompose"
-                                    wrapMode: TextEdit.Wrap
-                                    onTextChanged: if (text !== BlockSliceVm.sourcePromptText) BlockSliceVm.sourcePromptText = text
-                                }
-                            }
-                        }
-                    }
-                }
-
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    spacing: 4
-
-                    ColumnLayout {
-                        Layout.fillWidth: true
-                        spacing: 4
-
-                        RowLayout {
-                            Layout.fillWidth: true
-
-                            Label {
-                                text: "Composition Preview"
-                                font.bold: true
-                            }
-
-                            Item { Layout.fillWidth: true }
-
-                            Label {
-                                text: BlockSliceVm.compositionPreviewId
-                                opacity: 0.72
-                                visible: BlockSliceVm.compositionPreviewId.length > 0
-                            }
-                        }
-
-                        CodePreview {
-                            Layout.fillWidth: true
-                            Layout.preferredHeight: 180
-                            text: BlockSliceVm.compositionPreviewText
-                            definition: "Markdown"
-                        }
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-
-                        Label {
-                            text: "Generated Blocks"
-                            font.bold: true
-                        }
-
-                        Item { Layout.fillWidth: true }
-
-                        Label {
-                            text: BlockSliceVm.generatedCount > 0
-                                  ? BlockSliceVm.generatedCount + " blocks"
-                                  : ""
-                            opacity: 0.72
-                        }
-                    }
-
-                    CodePreview {
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        Layout.minimumHeight: 320
-                        text: BlockSliceVm.generatedPreviewText
-                        definition: "Markdown"
-                    }
-                }
-            }
-
-            Label {
-                text: BlockSliceVm.statusText
-                Layout.fillWidth: true
-                wrapMode: Text.WordWrap
-                opacity: 0.72
-            }
-
-            RowLayout {
-                Layout.fillWidth: true
-                spacing: General.spacingSmall
-
-                Item { Layout.fillWidth: true }
-
-                SvgToolButton {
-                    iconSource: Icons.closeSvg
-                    labelText: "Cancel"
-                    onClicked: slicePromptDialog.close()
-                }
-
-                SvgToolButton {
-                    iconSource: Icons.aiAssistSvg
-                    labelText: BlockSliceVm.generating ? "Generating..." : "Generate"
-                    enabled: !BlockSliceVm.generating
-                             && !BlockSliceVm.publishing
-                             && BlockSliceVm.aiGenerationAvailable
-                    onClicked: BlockSliceVm.generate()
-                }
-
-                SvgToolButton {
-                    iconSource: Icons.saveSvg
-                    labelText: BlockSliceVm.publishing ? "Publishing..." : "Publish All"
-                    enabled: !BlockSliceVm.generating
-                             && !BlockSliceVm.publishing
-                             && BlockSliceVm.generatedCount > 0
-                    onClicked: BlockSliceVm.publishAll()
-                }
-            }
-        }
-    }
-
-    Dialog {
-        id: editBlockDialog
-        parent: Overlay.overlay
-        x: Math.round((parent.width - width) / 2)
-        y: Math.round((parent.height - height) / 2)
-        width: Math.min(parent.width - 64, 960)
-        height: Math.min(parent.height - 64, 760)
-        modal: true
-        dim: true
-        visible: BlockEditorVm.open
-        title: BlockEditorVm.dialogTitle
-        standardButtons: Dialog.NoButton
-        onClosed: BlockEditorVm.closeEditor()
-
-        background: Rectangle {
-            radius: General.radiusMedium
-            color: ColorPalette.surface
-            border.color: ColorPalette.border
-        }
-
-        contentItem: ColumnLayout {
-            spacing: General.spacingMedium
-
-            RowLayout {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                spacing: General.spacingMedium
-
-                Frame {
-                    Layout.preferredWidth: 320
-                    Layout.fillHeight: true
-                    background: Rectangle {
-                        radius: General.radiusMedium
-                        color: ColorPalette.fieldBackground
-                        border.color: ColorPalette.border
-                    }
-
-                    ScrollView {
-                        id: metadataScroll
-                        anchors.fill: parent
-                        clip: true
-
-                        Column {
-                            width: metadataScroll.availableWidth
-                            spacing: General.spacingMedium
-
-                            DetailField {
-                                width: parent.width
-                                label: "Id"
-                                value: ""
-                                visible: !BlockEditorVm.createMode
-                            }
-
-                            ColumnLayout {
-                                width: parent.width
-                                visible: BlockEditorVm.createMode
-                                spacing: 4
-
-                                Label {
-                                    text: "Id"
-                                    font.bold: true
-                                }
-
-                                TextField {
-                                    width: parent.width
-                                    text: BlockEditorVm.blockId
-                                    placeholderText: "namespace.block_id"
-                                    onTextEdited: BlockEditorVm.blockId = text
-                                }
-                            }
-
-                            DetailField {
-                                width: parent.width
-                                label: "Base Version"
-                                value: BlockEditorVm.currentVersion
-                                visible: !BlockEditorVm.createMode
-                            }
-
-                            ColumnLayout {
-                                width: parent.width
-                                spacing: 4
-
-                                Label {
-                                    text: "Revision Comment"
-                                    font.bold: true
-                                }
-
-                                TextArea {
-                                    width: parent.width
-                                    height: 84
-                                    text: BlockEditorVm.revisionComment
-                                    placeholderText: BlockEditorVm.createMode
-                                                     ? "Optional note for the first published version"
-                                                     : "What changed in this new version?"
-                                    wrapMode: TextEdit.Wrap
-                                    onTextChanged: if (text !== BlockEditorVm.revisionComment) BlockEditorVm.revisionComment = text
-                                }
-                            }
-
-                            ColumnLayout {
-                                width: parent.width
-                                spacing: 4
-
-                                Label {
-                                    text: "Type"
-                                    font.bold: true
-                                }
-
-                                ComboBox {
-                                    width: parent.width
-                                    model: BlockEditorVm.typeOptions
-                                    currentIndex: Math.max(0, BlockEditorVm.typeOptions.indexOf(BlockEditorVm.type))
-                                    onActivated: BlockEditorVm.type = currentText
-                                }
-                            }
-
-                            ColumnLayout {
-                                width: parent.width
-                                spacing: 4
-
-                                Label {
-                                    text: "Version Bump"
-                                    font.bold: true
-                                }
-
-                                ComboBox {
-                                    width: parent.width
-                                    model: BlockEditorVm.bumpOptions
-                                    currentIndex: Math.max(0, BlockEditorVm.bumpOptions.indexOf(BlockEditorVm.bumpMode))
-                                    onActivated: BlockEditorVm.bumpMode = currentText
-                                }
-                            }
-
-                            ColumnLayout {
-                                width: parent.width
-                                spacing: 4
-
-                                Label {
-                                    text: "Language"
-                                    font.bold: true
-                                }
-
-                                TextField {
-                                    width: parent.width
-                                    text: BlockEditorVm.language
-                                    onTextEdited: BlockEditorVm.language = text
-                                }
-                            }
-
-                            ColumnLayout {
-                                width: parent.width
-                                spacing: 4
-
-                                Label {
-                                    text: "Description"
-                                    font.bold: true
-                                }
-
-                                TextArea {
-                                    width: parent.width
-                                    height: 72
-                                    text: BlockEditorVm.description
-                                    wrapMode: TextEdit.Wrap
-                                    onTextChanged: if (text !== BlockEditorVm.description) BlockEditorVm.description = text
-                                }
-                            }
-
-                            ColumnLayout {
-                                width: parent.width
-                                spacing: 4
-
-                                Label {
-                                    text: "AI Prompt"
-                                    font.bold: true
-                                }
-
-                                TextArea {
-                                    width: parent.width
-                                    height: 120
-                                    text: BlockEditorVm.aiPromptText
-                                    placeholderText: "Describe the block you want to generate"
-                                    wrapMode: TextEdit.Wrap
-                                    onTextChanged: if (text !== BlockEditorVm.aiPromptText) BlockEditorVm.aiPromptText = text
-                                }
-                            }
-
-                            ColumnLayout {
-                                width: parent.width
-                                spacing: 4
-
-                                Label {
-                                    text: "Tags"
-                                    font.bold: true
-                                }
-
-                                TextArea {
-                                    width: parent.width
-                                    height: 120
-                                    text: BlockEditorVm.tagsText
-                                    placeholderText: "one tag per line"
-                                    wrapMode: TextEdit.Wrap
-                                    onTextChanged: if (text !== BlockEditorVm.tagsText) BlockEditorVm.tagsText = text
-                                }
-                            }
-
-                            ColumnLayout {
-                                width: parent.width
-                                spacing: 4
-
-                                Label {
-                                    text: "Defaults"
-                                    font.bold: true
-                                }
-
-                                TextArea {
-                                    width: parent.width
-                                    height: 120
-                                    text: BlockEditorVm.defaultsText
-                                    placeholderText: "key=value"
-                                    wrapMode: TextEdit.Wrap
-                                    onTextChanged: if (text !== BlockEditorVm.defaultsText) BlockEditorVm.defaultsText = text
-                                }
-                            }
-                        }
-                    }
-                }
-
-                ColumnLayout {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    spacing: 4
-
-                    Label {
-                        text: "Template Editor"
-                        font.bold: true
-                    }
-
-                    Frame {
-                        id: templateEditorFrame
-                        Layout.fillWidth: true
-                        Layout.fillHeight: true
-                        Layout.minimumHeight: 520
-                        padding: General.paddingMedium
-                        background: Rectangle {
-                            radius: General.radiusMedium
-                            color: ColorPalette.fieldBackground
-                            border.color: ColorPalette.borderStrong
-                        }
-
-                        ScrollView {
-                            id: templateEditorScroll
-                            anchors.fill: parent
-                            clip: true
-                            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
-
-                            TextEdit {
-                                id: templateEditor
-                                width: templateEditorScroll.availableWidth
-                                text: BlockEditorVm.templateText
-                                wrapMode: TextEdit.Wrap
-                                selectByMouse: true
-                                font.family: General.monospaceFamily
-                                font.pixelSize: SessionVm.previewFontSize
-                                color: templateEditorFrame.palette.windowText
-                                selectedTextColor: templateEditorFrame.palette.highlightedText
-                                selectionColor: templateEditorFrame.palette.highlight
-                                onTextChanged: if (text !== BlockEditorVm.templateText) BlockEditorVm.templateText = text
-                            }
-                        }
-                    }
-                }
-            }
-
-            SyntaxHighlighter {
-                textEdit: templateEditor
-                definition: "Markdown"
-                theme: Repository.defaultTheme(ColorPalette.darkTheme
-                                               ? Repository.DarkTheme
-                                               : Repository.LightTheme)
-            }
-
-            Label {
-                text: BlockEditorVm.statusText
-                Layout.fillWidth: true
-                wrapMode: Text.WordWrap
-                opacity: 0.72
-            }
-
-            RowLayout {
-                Layout.fillWidth: true
-
-                Item { Layout.fillWidth: true }
-
-                SvgToolButton {
-                    iconSource: Icons.closeSvg
-                    labelText: "Cancel"
-                    onClicked: editBlockDialog.close()
-                }
-
-                SvgToolButton {
-                    iconSource: Icons.aiAssistSvg
-                    labelText: BlockEditorVm.generating ? "Generating..." : "Generate"
-                    enabled: !BlockEditorVm.generating
-                             && !BlockEditorVm.saving
-                             && BlockEditorVm.aiGenerationAvailable
-                    onClicked: BlockEditorVm.generate()
-                }
-
-                SvgToolButton {
-                    iconSource: Icons.saveSvg
-                    labelText: BlockEditorVm.saving ? "Saving..." : BlockEditorVm.saveButtonText
-                    enabled: !BlockEditorVm.saving && !BlockEditorVm.generating
-                    onClicked: BlockEditorVm.save()
-                }
-            }
-        }
-    }
-
     Connections {
         target: BlockEditorVm
 
         function onSaved() {
-            editBlockDialog.close()
-        }
-    }
-
-    Connections {
-        target: BlockSliceVm
-
-        function onPublished() {
-            slicePromptDialog.close()
         }
     }
 }
