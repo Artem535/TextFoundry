@@ -565,6 +565,7 @@ void RenderViewModel::setNormalizedOutputText(QString value) {
 void RenderViewModel::setStatusText(QString value) {
   if (status_text_ == value) return;
   status_text_ = std::move(value);
+  session_->publishStatus(status_text_);
   emit statusTextChanged();
 }
 

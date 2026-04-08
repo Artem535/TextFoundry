@@ -50,6 +50,7 @@ class SessionViewModel : public QObject {
   void setAiApiKey(const QString& value);
 
   Q_INVOKABLE void reload();
+  Q_INVOKABLE void publishStatus(const QString& value);
 
   tf::Engine& engine();
   const tf::Engine& engine() const;

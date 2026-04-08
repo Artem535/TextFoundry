@@ -266,6 +266,7 @@ Page {
                             anchors.fill: parent
                             anchors.margins: General.paddingMedium
                             clip: true
+                            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
                             ColumnLayout {
                                 width: Math.max(0, parent.availableWidth)
@@ -566,15 +567,6 @@ Page {
                                     }
                                 }
 
-                                DetailField {
-                                    label: "Status"
-                                    value: RenderVm.statusText
-                                }
-
-                                DetailField {
-                                    label: "Normalization"
-                                    value: RenderVm.normalizationStatusText
-                                }
                             }
                         }
                     }

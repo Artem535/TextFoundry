@@ -429,6 +429,10 @@ QStringList CompositionEditorViewModel::editorModes() const {
 
 QString CompositionEditorViewModel::statusText() const { return status_text_; }
 
+bool CompositionEditorViewModel::dirty() const {
+  return open_ && currentStateKey() != original_state_key_;
+}
+
 bool CompositionEditorViewModel::saving() const { return saving_; }
 
 void CompositionEditorViewModel::setCompositionId(const QString& value) {
@@ -510,6 +514,7 @@ void CompositionEditorViewModel::openCreateEditor() {
   loadAvailableBlocks();
   create_mode_ = true;
   open_ = true;
+  original_state_key_ = currentStateKey();
   setStatusText(QStringLiteral("Assemble the composition and press Create."));
   emit editorChanged();
   emit openChanged();
@@ -519,6 +524,7 @@ void CompositionEditorViewModel::openEditor() {
   if (!loadSelectedComposition()) return;
   create_mode_ = false;
   open_ = true;
+  original_state_key_ = currentStateKey();
   emit editorChanged();
   emit openChanged();
 }
@@ -881,6 +887,7 @@ void CompositionEditorViewModel::save() {
                                       : QStringLiteral("Saved"),
                          composition_id_,
                          QString::fromStdString(result.value().version().ToString())));
+  original_state_key_ = currentStateKey();
   emit saved();
   closeEditor();
 }
@@ -899,6 +906,7 @@ void CompositionEditorViewModel::resetForm() {
   selected_fragment_index_ = -1;
   insert_mode_ = InsertMode::None;
   editor_mode_ = QStringLiteral("Block");
+  original_state_key_.clear();
 }
 
 bool CompositionEditorViewModel::loadSelectedComposition() {
@@ -973,6 +981,7 @@ bool CompositionEditorViewModel::loadSelectedComposition() {
 
   fragments_model_.setFragments(std::move(fragments));
   setStatusText(QStringLiteral("Editing selected version. Saving will publish a new latest version."));
+  original_state_key_ = currentStateKey();
   return true;
 }
 
@@ -1039,7 +1048,24 @@ void CompositionEditorViewModel::clearFragmentEditorFields() {
 void CompositionEditorViewModel::setStatusText(QString value) {
   if (status_text_ == value) return;
   status_text_ = std::move(value);
+  session_->publishStatus(status_text_);
   emit statusTextChanged();
+}
+
+QString CompositionEditorViewModel::currentStateKey() const {
+  QStringList lines;
+  lines << composition_id_ << current_version_ << description_ << revision_comment_
+        << bump_mode_ << block_ref_block_id_ << block_ref_version_
+        << block_ref_params_ << static_text_ << separator_type_
+        << QString::number(static_cast<int>(insert_mode_));
+
+  for (const auto& fragment : fragments_model_.fragments()) {
+    lines << QString::number(static_cast<int>(fragment.kind))
+          << fragment.block_id << fragment.version << fragment.params
+          << fragment.text << fragment.separator;
+  }
+
+  return lines.join(QStringLiteral("\n"));
 }
 
 int CompositionEditorViewModel::insertIndexForNewFragment() const {

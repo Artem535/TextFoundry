@@ -13,6 +13,8 @@ ApplicationWindow {
 
     property int currentTab: 0
     property int blocksWorkspaceTab: BlockEditorVm.open ? 1 : 0
+    property int pendingNavigationTab: -1
+    property bool pendingCloseBlockEditor: false
     property var navigationItems: [
         { title: "Blocks", subtitle: "Templates and blocks", icon: Icons.blocksSvg },
         { title: "Compositions", subtitle: "Prompt assembly", icon: Icons.compositionsSvg },
@@ -30,6 +32,53 @@ ApplicationWindow {
     palette.highlight: ColorPalette.primary
     palette.highlightedText: ColorPalette.onPrimary
     palette.placeholderText: ColorPalette.placeholderText
+
+    function hasDirtyEditor() {
+        return (BlockEditorVm.open && BlockEditorVm.dirty)
+                || (CompositionEditorVm.open && CompositionEditorVm.dirty)
+    }
+
+    function requestNavigationTab(index) {
+        if (currentTab === index)
+            return
+
+        if (hasDirtyEditor()) {
+            pendingNavigationTab = index
+            pendingCloseBlockEditor = false
+            discardChangesDialog.open()
+            return
+        }
+
+        currentTab = index
+    }
+
+    function requestCloseBlockEditor() {
+        if (BlockEditorVm.open && BlockEditorVm.dirty) {
+            pendingNavigationTab = -1
+            pendingCloseBlockEditor = true
+            discardChangesDialog.open()
+            return
+        }
+
+        BlockEditorVm.closeEditor()
+    }
+
+    function applyPendingDiscardAction() {
+        if (pendingCloseBlockEditor) {
+            pendingCloseBlockEditor = false
+            BlockEditorVm.closeEditor()
+        }
+
+        if (pendingNavigationTab >= 0) {
+            const targetTab = pendingNavigationTab
+            pendingNavigationTab = -1
+            if (BlockEditorVm.open)
+                BlockEditorVm.closeEditor()
+            if (CompositionEditorVm.open)
+                CompositionEditorVm.closeEditor()
+            currentTab = targetTab
+        }
+    }
 
     header: ToolBar {
         padding: General.headerPadding
@@ -124,7 +173,7 @@ ApplicationWindow {
                                 rightPadding: General.paddingMedium
                                 topPadding: General.paddingSmall
                                 bottomPadding: General.paddingSmall
-                                onClicked: root.currentTab = index
+                                onClicked: root.requestNavigationTab(index)
 
                                 background: Rectangle {
                                     radius: General.radiusMedium
@@ -251,11 +300,37 @@ ApplicationWindow {
                         compact: true
                         iconSource: Icons.closeSvg
                         labelText: "Close"
-                        onClicked: BlockEditorVm.closeEditor()
+                        onClicked: root.requestCloseBlockEditor()
                     }
 
                     Item {
                         Layout.fillWidth: true
+                    }
+
+                    RowLayout {
+                        visible: root.currentTab === 0 && root.blocksWorkspaceTab === 0
+                        spacing: General.spacingSmall
+
+                        SvgToolButton {
+                            compact: true
+                            iconSource: Icons.addSvg
+                            labelText: "New"
+                            onClicked: BlockEditorVm.openCreateEditor()
+                        }
+
+                        SvgToolButton {
+                            compact: true
+                            iconSource: Icons.aiAssistSvg
+                            labelText: "AI Slice"
+                            enabled: BlockSliceVm.aiGenerationAvailable
+                            onClicked: BlockSliceVm.openDialog()
+                        }
+
+                        CheckBox {
+                            text: "Show Derived"
+                            checked: BlocksModel.showDerivedBlocks
+                            onToggled: BlocksModel.showDerivedBlocks = checked
+                        }
                     }
                 }
             }
@@ -266,6 +341,7 @@ ApplicationWindow {
                 currentIndex: root.currentTab
 
                 BlocksPage {
+                    id: blocksPage
                     rightPaneTab: root.blocksWorkspaceTab
                 }
                 CompositionsPage {}
@@ -276,6 +352,62 @@ ApplicationWindow {
     }
 
     BlockSliceDialog {}
+
+    Dialog {
+        id: discardChangesDialog
+        parent: Overlay.overlay
+        x: Math.round((parent.width - width) / 2)
+        y: Math.round((parent.height - height) / 2)
+        width: Math.min(parent.width - 64, 460)
+        modal: true
+        dim: true
+        title: "Discard Changes"
+        standardButtons: Dialog.NoButton
+
+        background: Rectangle {
+            color: ColorPalette.surface
+            border.color: ColorPalette.border
+            radius: General.radiusMedium
+        }
+
+        contentItem: ColumnLayout {
+            spacing: General.spacingMedium
+
+            Label {
+                Layout.fillWidth: true
+                text: "You have unsaved editor changes. Continue and discard them?"
+                wrapMode: Text.WordWrap
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+
+                Item {
+                    Layout.fillWidth: true
+                }
+
+                SvgToolButton {
+                    iconSource: Icons.closeSvg
+                    labelText: "Cancel"
+                    onClicked: {
+                        pendingNavigationTab = -1
+                        pendingCloseBlockEditor = false
+                        discardChangesDialog.close()
+                    }
+                }
+
+                SvgToolButton {
+                    iconSource: Icons.removeSvg
+                    labelText: "Discard"
+                    accentColor: ColorPalette.danger
+                    onClicked: {
+                        discardChangesDialog.close()
+                        root.applyPendingDiscardAction()
+                    }
+                }
+            }
+        }
+    }
 
     Connections {
         target: BlockEditorVm

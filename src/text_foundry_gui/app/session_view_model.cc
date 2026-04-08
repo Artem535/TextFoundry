@@ -234,6 +234,10 @@ void SessionViewModel::setAiApiKey(const QString& value) {
 
 void SessionViewModel::reload() { rebuildEngine(); }
 
+void SessionViewModel::publishStatus(const QString& value) {
+  setStatusText(value);
+}
+
 tf::Engine& SessionViewModel::engine() { return *engine_; }
 
 const tf::Engine& SessionViewModel::engine() const { return *engine_; }

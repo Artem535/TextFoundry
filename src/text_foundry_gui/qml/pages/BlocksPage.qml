@@ -7,6 +7,33 @@ import TextFoundry
 Page {
     id: root
     property int rightPaneTab: 0
+    property string pendingDeleteTitle: ""
+    property string pendingDeleteMessage: ""
+
+    function collapseAllFolders() {
+        blocksTree.expandedFolders = ({})
+        blocksTree.collapseRecursively()
+    }
+
+    function expandAllFolders() {
+        blocksTree.expandRecursively()
+        blocksTree.rememberExpandedFolders()
+    }
+
+    function confirmDeleteSelection() {
+        const isFolder = BlocksModel.selectedTreeIsFolder
+        const targetLabel = isFolder
+                ? BlocksModel.selectedTreePath
+                : BlocksModel.selectedBlockId
+        if (!targetLabel || targetLabel.length === 0)
+            return
+
+        pendingDeleteTitle = isFolder ? "Delete Folder" : "Delete Block"
+        pendingDeleteMessage = isFolder
+                ? "Delete folder '" + targetLabel + "' and all removable blocks inside it?"
+                : "Delete block '" + targetLabel + "'?"
+        deleteConfirmDialog.open()
+    }
 
     background: Rectangle {
         color: ColorPalette.background
@@ -65,9 +92,41 @@ Page {
                         anchors.margins: General.paddingSmall
                         spacing: General.spacingSmall
 
-                        Label {
-                            text: "Blocks"
-                            font.bold: true
+                        RowLayout {
+                            Layout.fillWidth: true
+
+                            Label {
+                                text: "Blocks"
+                                font.bold: true
+                            }
+
+                            Item {
+                                Layout.fillWidth: true
+                            }
+
+                            SvgToolButton {
+                                compact: true
+                                iconSource: Icons.folderOpenSvg
+                                labelText: "Expand All"
+                                onClicked: root.expandAllFolders()
+                            }
+
+                            SvgToolButton {
+                                compact: true
+                                iconSource: Icons.folderSvg
+                                labelText: "Collapse All"
+                                onClicked: root.collapseAllFolders()
+                            }
+
+                            SvgToolButton {
+                                compact: true
+                                iconSource: Icons.reloadSvg
+                                labelText: "Reload"
+                                onClicked: {
+                                    blocksTree.rememberExpandedFolders()
+                                    BlocksModel.reload()
+                                }
+                            }
                         }
 
                         TreeView {
@@ -231,7 +290,7 @@ Page {
                                         text: isFolder ? "Delete Folder" : "Delete"
                                         onTriggered: {
                                             blocksTree.rememberExpandedFolders()
-                                            BlocksModel.deleteSelected()
+                                            root.confirmDeleteSelection()
                                         }
                                     }
 
@@ -372,24 +431,6 @@ Page {
                 anchors.margins: General.paddingMedium
                 spacing: General.spacingMedium
 
-                RowLayout {
-                    Layout.fillWidth: true
-
-                    Label {
-                        text: root.rightPaneTab === 0 ? "Inspect" : "Block Editor"
-                        color: ColorPalette.primary
-                        font.bold: true
-                    }
-
-                    Item { Layout.fillWidth: true }
-
-                    Loader {
-                        active: root.rightPaneTab === 0
-                        visible: active
-                        sourceComponent: inspectToolbar
-                    }
-                }
-
                 StackLayout {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
@@ -416,10 +457,21 @@ Page {
                                     anchors.fill: parent
                                     anchors.margins: General.paddingMedium
                                     clip: true
+                                    ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
                                     ColumnLayout {
                                         width: Math.max(0, parent.availableWidth)
                                         spacing: General.spacingMedium
+
+                                        RowLayout {
+                                            Layout.fillWidth: true
+
+                                            Label {
+                                                text: "Details"
+                                                color: ColorPalette.primary
+                                                font.bold: true
+                                            }
+                                        }
 
                                         GridLayout {
                                             Layout.fillWidth: true
@@ -544,9 +596,50 @@ Page {
                                     Layout.fillHeight: true
                                     spacing: 4
 
-                                    Label {
-                                        text: "Template"
-                                        font.bold: true
+                                    RowLayout {
+                                        Layout.fillWidth: true
+
+                                        Label {
+                                            text: "Template"
+                                            font.bold: true
+                                        }
+
+                                        Item {
+                                            Layout.fillWidth: true
+                                        }
+
+                                        SvgToolButton {
+                                            compact: true
+                                            iconSource: Icons.editSvg
+                                            labelText: "Edit"
+                                            enabled: BlocksModel.selectedBlockId.length > 0
+                                            onClicked: BlockEditorVm.openEditor()
+                                        }
+
+                                        SvgToolButton {
+                                            compact: true
+                                            iconSource: Icons.deprecateSvg
+                                            labelText: "Deprecate"
+                                            accentColor: ColorPalette.warning
+                                            enabled: BlocksModel.selectedBlockId.length > 0
+                                            onClicked: {
+                                                blocksTree.rememberExpandedFolders()
+                                                BlocksModel.deprecateSelected()
+                                            }
+                                        }
+
+                                        SvgToolButton {
+                                            compact: true
+                                            iconSource: Icons.removeSvg
+                                            labelText: BlocksModel.selectedTreeIsFolder ? "Delete Folder" : "Delete"
+                                            accentColor: ColorPalette.danger
+                                            enabled: BlocksModel.selectedTreePath.length > 0
+                                                     || BlocksModel.selectedBlockId.length > 0
+                                            onClicked: {
+                                                blocksTree.rememberExpandedFolders()
+                                                root.confirmDeleteSelection()
+                                            }
+                                        }
                                     }
 
                                     Loader {
@@ -563,74 +656,6 @@ Page {
                     }
 
                     BlockEditorWorkspace {}
-                }
-            }
-        }
-    }
-
-    Component {
-        id: inspectToolbar
-
-        RowLayout {
-            SvgToolButton {
-                compact: true
-                iconSource: Icons.addSvg
-                labelText: "New"
-                onClicked: BlockEditorVm.openCreateEditor()
-            }
-
-            SvgToolButton {
-                compact: true
-                iconSource: Icons.aiAssistSvg
-                labelText: "AI Slice"
-                enabled: BlockSliceVm.aiGenerationAvailable
-                onClicked: BlockSliceVm.openDialog()
-            }
-
-            SvgToolButton {
-                compact: true
-                iconSource: Icons.reloadSvg
-                labelText: "Reload"
-                onClicked: {
-                    blocksTree.rememberExpandedFolders()
-                    BlocksModel.reload()
-                }
-            }
-
-            CheckBox {
-                text: "Show Derived"
-                checked: BlocksModel.showDerivedBlocks
-                onToggled: BlocksModel.showDerivedBlocks = checked
-            }
-
-            SvgToolButton {
-                compact: true
-                iconSource: Icons.editSvg
-                labelText: "Edit"
-                enabled: BlocksModel.selectedBlockId.length > 0
-                onClicked: BlockEditorVm.openEditor()
-            }
-
-            SvgToolButton {
-                compact: true
-                iconSource: Icons.deprecateSvg
-                labelText: "Deprecate"
-                enabled: BlocksModel.selectedBlockId.length > 0
-                onClicked: {
-                    blocksTree.rememberExpandedFolders()
-                    BlocksModel.deprecateSelected()
-                }
-            }
-
-            SvgToolButton {
-                compact: true
-                iconSource: Icons.removeSvg
-                labelText: BlocksModel.selectedTreeIsFolder ? "Delete Folder" : "Delete"
-                enabled: BlocksModel.selectedTreePath.length > 0
-                         || BlocksModel.selectedBlockId.length > 0
-                onClicked: {
-                    blocksTree.rememberExpandedFolders()
-                    BlocksModel.deleteSelected()
                 }
             }
         }
@@ -667,6 +692,58 @@ Page {
                 color: highlightedTemplateScroll.palette.windowText
                 selectedTextColor: highlightedTemplateScroll.palette.highlightedText
                 selectionColor: highlightedTemplateScroll.palette.highlight
+            }
+        }
+    }
+
+    Dialog {
+        id: deleteConfirmDialog
+        parent: Overlay.overlay
+        x: Math.round((parent.width - width) / 2)
+        y: Math.round((parent.height - height) / 2)
+        width: Math.min(parent.width - 64, 440)
+        modal: true
+        dim: true
+        title: root.pendingDeleteTitle
+        standardButtons: Dialog.NoButton
+
+        background: Rectangle {
+            radius: General.radiusMedium
+            color: ColorPalette.surface
+            border.color: ColorPalette.border
+        }
+
+        contentItem: ColumnLayout {
+            spacing: General.spacingMedium
+
+            Label {
+                Layout.fillWidth: true
+                text: root.pendingDeleteMessage
+                wrapMode: Text.WordWrap
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+
+                Item {
+                    Layout.fillWidth: true
+                }
+
+                SvgToolButton {
+                    iconSource: Icons.closeSvg
+                    labelText: "Cancel"
+                    onClicked: deleteConfirmDialog.close()
+                }
+
+                SvgToolButton {
+                    iconSource: Icons.removeSvg
+                    labelText: "Delete"
+                    accentColor: ColorPalette.danger
+                    onClicked: {
+                        deleteConfirmDialog.close()
+                        BlocksModel.deleteSelected()
+                    }
+                }
             }
         }
     }

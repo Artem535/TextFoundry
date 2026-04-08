@@ -41,6 +41,8 @@ Item {
 
     property color selection: systemPalette.highlight
     property color onSelection: systemPalette.highlightedText
+    property color warning: darkTheme ? "#d9a441" : "#9a5a00"
+    property color danger: darkTheme ? "#e56a6a" : "#b42318"
 
     property color headerBackground: surface
     property color footerBackground: surface

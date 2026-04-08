@@ -160,7 +160,12 @@ Item {
                         iconSource: Icons.backSvg
                         labelText: "Back"
                         Layout.alignment: Qt.AlignVCenter
-                        onClicked: CompositionEditorVm.closeEditor()
+                        onClicked: {
+                            if (CompositionEditorVm.dirty)
+                                closeConfirmDialog.open()
+                            else
+                                CompositionEditorVm.closeEditor()
+                        }
                     }
 
                     SvgToolButton {
@@ -316,12 +321,57 @@ Item {
                             }
                         }
                     }
+                }
+            }
+        }
+    }
 
-                    Label {
-                        text: CompositionEditorVm.statusText
-                        Layout.fillWidth: true
-                        wrapMode: Text.WordWrap
-                        opacity: 0.72
+    Dialog {
+        id: closeConfirmDialog
+        parent: Overlay.overlay
+        x: Math.round((parent.width - width) / 2)
+        y: Math.round((parent.height - height) / 2)
+        width: Math.min(parent.width - 64, 460)
+        modal: true
+        dim: true
+        title: "Discard Changes"
+        standardButtons: Dialog.NoButton
+
+        background: Rectangle {
+            radius: General.radiusMedium
+            color: ColorPalette.surface
+            border.color: ColorPalette.border
+        }
+
+        contentItem: ColumnLayout {
+            spacing: General.spacingMedium
+
+            Label {
+                Layout.fillWidth: true
+                text: "You have unsaved composition changes. Close the editor and discard them?"
+                wrapMode: Text.WordWrap
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+
+                Item {
+                    Layout.fillWidth: true
+                }
+
+                SvgToolButton {
+                    iconSource: Icons.closeSvg
+                    labelText: "Cancel"
+                    onClicked: closeConfirmDialog.close()
+                }
+
+                SvgToolButton {
+                    iconSource: Icons.removeSvg
+                    labelText: "Discard"
+                    accentColor: ColorPalette.danger
+                    onClicked: {
+                        closeConfirmDialog.close()
+                        CompositionEditorVm.closeEditor()
                     }
                 }
             }

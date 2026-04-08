@@ -148,6 +148,10 @@ QStringList BlockEditorViewModel::bumpOptions() const {
 
 QString BlockEditorViewModel::statusText() const { return status_text_; }
 
+bool BlockEditorViewModel::dirty() const {
+  return open_ && currentStateKey() != original_state_key_;
+}
+
 bool BlockEditorViewModel::saving() const { return saving_; }
 
 bool BlockEditorViewModel::generating() const { return generating_; }
@@ -220,6 +224,7 @@ void BlockEditorViewModel::openEditor() {
   if (!loadSelectedBlock()) return;
   create_mode_ = false;
   open_ = true;
+  original_state_key_ = currentStateKey();
   emit blockLoaded();
   emit openChanged();
 }
@@ -228,6 +233,7 @@ void BlockEditorViewModel::openCreateEditor() {
   resetForm();
   create_mode_ = true;
   open_ = true;
+  original_state_key_ = currentStateKey();
   setStatusText(QStringLiteral("Enter block data and press Create."));
   emit blockLoaded();
   emit formChanged();
@@ -290,6 +296,7 @@ void BlockEditorViewModel::save() {
                                       : QStringLiteral("Saved"),
                          block_id_,
                          QString::fromStdString(result.value().version().ToString())));
+  original_state_key_ = currentStateKey();
   emit saved();
   closeEditor();
 }
@@ -361,6 +368,7 @@ void BlockEditorViewModel::generate() {
 void BlockEditorViewModel::setStatusText(QString value) {
   if (status_text_ == value) return;
   status_text_ = std::move(value);
+  session_->publishStatus(status_text_);
   emit statusTextChanged();
 }
 
@@ -376,6 +384,7 @@ void BlockEditorViewModel::resetForm() {
   template_text_.clear();
   ai_prompt_text_.clear();
   bump_mode_ = QStringLiteral("Minor");
+  original_state_key_.clear();
 }
 
 bool BlockEditorViewModel::loadSelectedBlock() {
@@ -443,6 +452,16 @@ bool BlockEditorViewModel::loadSelectedBlock() {
   emit blockLoaded();
   emit formChanged();
   return true;
+}
+
+QString BlockEditorViewModel::currentStateKey() const {
+  return block_id_ + QStringLiteral("\n") + current_version_ +
+         QStringLiteral("\n") + type_ + QStringLiteral("\n") + language_ +
+         QStringLiteral("\n") + description_ + QStringLiteral("\n") +
+         revision_comment_ + QStringLiteral("\n") + tags_text_ +
+         QStringLiteral("\n") + defaults_text_ + QStringLiteral("\n") +
+         template_text_ + QStringLiteral("\n") + ai_prompt_text_ +
+         QStringLiteral("\n") + bump_mode_;
 }
 
 }  // namespace tf::gui

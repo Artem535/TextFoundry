@@ -6,83 +6,74 @@ import TextFoundry
 
 Item {
     id: editorRoot
-
-    Rectangle {
-        anchors.fill: parent
-        color: ColorPalette.background
-    }
+    property bool closeRequested: false
 
     ColumnLayout {
         anchors.fill: parent
         spacing: General.spacingMedium
 
-        Frame {
+        RowLayout {
             Layout.fillWidth: true
-            padding: General.paddingMedium
-            background: Rectangle {
-                radius: General.radiusMedium
-                color: ColorPalette.surface
-                border.color: ColorPalette.border
+            spacing: General.spacingSmall
+
+            RowLayout {
+                Layout.alignment: Qt.AlignVCenter
+                spacing: General.spacingSmall
+
+                Label {
+                    text: BlockEditorVm.dialogTitle
+                    font.bold: true
+                    color: ColorPalette.primary
+                    Layout.alignment: Qt.AlignVCenter
+                }
+
+                Label {
+                    text: BlockEditorVm.createMode
+                          ? "new block"
+                          : (BlockEditorVm.currentVersion.length > 0
+                             ? "base " + BlockEditorVm.currentVersion
+                             : "draft")
+                    opacity: 0.72
+                    Layout.alignment: Qt.AlignVCenter
+                }
+            }
+
+            Item {
+                Layout.fillWidth: true
             }
 
             RowLayout {
-                anchors.fill: parent
+                Layout.alignment: Qt.AlignVCenter
                 spacing: General.spacingSmall
 
-                RowLayout {
-                    Layout.alignment: Qt.AlignVCenter
-                    spacing: General.spacingSmall
+                SvgToolButton {
+                    iconSource: Icons.aiAssistSvg
+                    labelText: BlockEditorVm.generating ? "Generating..." : "Generate"
+                    compact: true
+                    enabled: !BlockEditorVm.generating
+                             && !BlockEditorVm.saving
+                             && BlockEditorVm.aiGenerationAvailable
+                    onClicked: BlockEditorVm.generate()
+                }
 
-                    Label {
-                        text: BlockEditorVm.dialogTitle
-                        font.bold: true
-                        color: ColorPalette.primary
-                        Layout.alignment: Qt.AlignVCenter
-                    }
-
-                    Label {
-                        text: BlockEditorVm.createMode
-                              ? "new block"
-                              : (BlockEditorVm.currentVersion.length > 0
-                                 ? "base " + BlockEditorVm.currentVersion
-                                 : "draft")
-                        opacity: 0.72
-                        Layout.alignment: Qt.AlignVCenter
+                SvgToolButton {
+                    iconSource: Icons.backSvg
+                    labelText: "Back"
+                    compact: true
+                    onClicked: {
+                        if (BlockEditorVm.dirty)
+                            closeConfirmDialog.open()
+                        else
+                            BlockEditorVm.closeEditor()
                     }
                 }
 
-                Item {
-                    Layout.fillWidth: true
-                }
-
-                RowLayout {
-                    Layout.alignment: Qt.AlignVCenter
-                    spacing: General.spacingSmall
-
-                    SvgToolButton {
-                        iconSource: Icons.aiAssistSvg
-                        labelText: BlockEditorVm.generating ? "Generating..." : "Generate"
-                        compact: true
-                        enabled: !BlockEditorVm.generating
-                                 && !BlockEditorVm.saving
-                                 && BlockEditorVm.aiGenerationAvailable
-                        onClicked: BlockEditorVm.generate()
-                    }
-
-                    SvgToolButton {
-                        iconSource: Icons.backSvg
-                        labelText: "Back"
-                        compact: true
-                        onClicked: BlockEditorVm.closeEditor()
-                    }
-
-                    SvgToolButton {
-                        iconSource: Icons.saveSvg
-                        labelText: BlockEditorVm.saving ? "Saving..." : BlockEditorVm.saveButtonText
-                        compact: true
-                        enabled: !BlockEditorVm.saving && !BlockEditorVm.generating
-                        onClicked: BlockEditorVm.save()
-                    }
+                SvgToolButton {
+                    iconSource: Icons.saveSvg
+                    labelText: BlockEditorVm.saving ? "Saving..." : BlockEditorVm.saveButtonText
+                    compact: true
+                    enabled: !BlockEditorVm.saving && !BlockEditorVm.generating
+                    onClicked: BlockEditorVm.save()
                 }
             }
         }
@@ -108,6 +99,7 @@ Item {
                     anchors.fill: parent
                     anchors.margins: General.paddingMedium
                     clip: true
+                    ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
                     Column {
                         width: metadataScroll.availableWidth
@@ -342,12 +334,57 @@ Item {
                             onTextChanged: if (text !== BlockEditorVm.templateText) BlockEditorVm.templateText = text
                         }
                     }
+                }
+            }
+        }
+    }
 
-                    Label {
-                        text: BlockEditorVm.statusText
-                        Layout.fillWidth: true
-                        wrapMode: Text.WordWrap
-                        opacity: 0.72
+    Dialog {
+        id: closeConfirmDialog
+        parent: Overlay.overlay
+        x: Math.round((parent.width - width) / 2)
+        y: Math.round((parent.height - height) / 2)
+        width: Math.min(parent.width - 64, 440)
+        modal: true
+        dim: true
+        title: "Discard Changes"
+        standardButtons: Dialog.NoButton
+
+        background: Rectangle {
+            radius: General.radiusMedium
+            color: ColorPalette.surface
+            border.color: ColorPalette.border
+        }
+
+        contentItem: ColumnLayout {
+            spacing: General.spacingMedium
+
+            Label {
+                Layout.fillWidth: true
+                text: "You have unsaved block changes. Close the editor and discard them?"
+                wrapMode: Text.WordWrap
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+
+                Item {
+                    Layout.fillWidth: true
+                }
+
+                SvgToolButton {
+                    iconSource: Icons.closeSvg
+                    labelText: "Cancel"
+                    onClicked: closeConfirmDialog.close()
+                }
+
+                SvgToolButton {
+                    iconSource: Icons.removeSvg
+                    labelText: "Discard"
+                    accentColor: ColorPalette.danger
+                    onClicked: {
+                        closeConfirmDialog.close()
+                        BlockEditorVm.closeEditor()
                     }
                 }
             }

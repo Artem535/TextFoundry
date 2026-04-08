@@ -9,6 +9,7 @@ ToolButton {
     property url iconSource
     property string labelText: ""
     property bool compact: false
+    property color accentColor: ColorPalette.selection
 
     text: labelText
     hoverEnabled: true
@@ -21,8 +22,8 @@ ToolButton {
 
         SvgIcon {
             source: control.iconSource
-            color: control.enabled ? ColorPalette.selection
-                                   : Qt.alpha(ColorPalette.selection, 0.45)
+            color: control.enabled ? control.accentColor
+                                   : Qt.alpha(control.accentColor, 0.45)
             iconWidth: 16
             iconHeight: 16
             Layout.alignment: Qt.AlignVCenter
@@ -32,8 +33,8 @@ ToolButton {
             visible: !control.compact
             text: control.labelText
             Layout.alignment: Qt.AlignVCenter
-            color: control.enabled ? ColorPalette.selection
-                                   : Qt.alpha(ColorPalette.selection, 0.45)
+            color: control.enabled ? control.accentColor
+                                   : Qt.alpha(control.accentColor, 0.45)
             font.pixelSize: 15
             elide: Text.ElideRight
             verticalAlignment: Text.AlignVCenter

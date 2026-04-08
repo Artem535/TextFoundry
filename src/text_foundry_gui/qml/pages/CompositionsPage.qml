@@ -5,7 +5,18 @@ import TextFoundry
 
 Page {
     id: root
+    property string pendingDeleteTitle: ""
+    property string pendingDeleteMessage: ""
     readonly property bool detailsStacked: detailsFrame.width < 1180
+
+    function confirmDeleteSelected() {
+        if (CompositionsVm.selectedCompositionId.length === 0)
+            return
+
+        pendingDeleteTitle = "Delete Composition"
+        pendingDeleteMessage = "Delete composition '" + CompositionsVm.selectedCompositionId + "'?"
+        deleteConfirmDialog.open()
+    }
 
     background: Rectangle {
         color: ColorPalette.background
@@ -34,10 +45,32 @@ Page {
                     Layout.fillWidth: true
                     spacing: General.spacingSmall
 
-                    Label {
-                        text: "Compositions"
-                        color: ColorPalette.primary
-                        font.bold: true
+                    RowLayout {
+                        Layout.fillWidth: true
+
+                        Label {
+                            text: "Compositions"
+                            color: ColorPalette.primary
+                            font.bold: true
+                        }
+
+                        Item {
+                            Layout.fillWidth: true
+                        }
+
+                        SvgToolButton {
+                            compact: true
+                            iconSource: Icons.addSvg
+                            labelText: "New"
+                            onClicked: CompositionEditorVm.openCreateEditor()
+                        }
+
+                        SvgToolButton {
+                            compact: true
+                            iconSource: Icons.reloadSvg
+                            labelText: "Reload"
+                            onClicked: CompositionsVm.reload()
+                        }
                     }
 
                     TextField {
@@ -125,7 +158,7 @@ Page {
 
                                     MenuItem {
                                         text: "Delete"
-                                        onTriggered: CompositionsVm.deleteSelected()
+                                        onTriggered: root.confirmDeleteSelected()
                                     }
                                 }
                             }
@@ -271,75 +304,6 @@ Page {
                         color: ColorPalette.primary
                         font.bold: true
                     }
-
-                    Item {
-                        Layout.fillWidth: true
-                    }
-
-                    SvgToolButton {
-                        compact: true
-                        iconSource: Icons.addSvg
-                        labelText: "New"
-                        onClicked: CompositionEditorVm.openCreateEditor()
-                    }
-
-                    SvgToolButton {
-                        compact: true
-                        iconSource: Icons.editSvg
-                        labelText: "Edit"
-                        enabled: CompositionsVm.selectedCompositionId.length > 0
-                        onClicked: CompositionEditorVm.openEditor()
-                    }
-
-                    SvgToolButton {
-                        compact: true
-                        iconSource: Icons.sliceSvg
-                        labelText: "AI Slice"
-                        enabled: CompositionsVm.selectedCompositionId.length > 0
-                                 && BlockSliceVm.aiGenerationAvailable
-                        onClicked: BlockSliceVm.openUpdateDialog(
-                                       CompositionsVm.selectedCompositionId,
-                                       CompositionsVm.selectedVersion)
-                    }
-
-                    SvgToolButton {
-                        compact: true
-                        iconSource: Icons.reloadSvg
-                        labelText: "Use Latest Blocks"
-                        enabled: CompositionsVm.selectedCompositionId.length > 0
-                        onClicked: CompositionsVm.updateBlocksToLatest()
-                    }
-
-                    SvgToolButton {
-                        compact: true
-                        iconSource: Icons.deprecateSvg
-                        labelText: "Deprecate"
-                        enabled: CompositionsVm.selectedCompositionId.length > 0
-                        onClicked: CompositionsVm.deprecateSelected()
-                    }
-
-                    SvgToolButton {
-                        compact: true
-                        iconSource: Icons.removeSvg
-                        labelText: "Delete"
-                        enabled: CompositionsVm.selectedCompositionId.length > 0
-                        onClicked: CompositionsVm.deleteSelected()
-                    }
-
-                    SvgToolButton {
-                        compact: true
-                        iconSource: Icons.copySvg
-                        labelText: "Compare Latest"
-                        enabled: CompositionsVm.selectedVersions.indexOf(CompositionsVm.selectedVersion) > 0
-                        onClicked: CompositionsVm.openCompareWithLatest()
-                    }
-
-                    SvgToolButton {
-                        compact: true
-                        iconSource: Icons.reloadSvg
-                        labelText: "Reload"
-                        onClicked: CompositionsVm.reload()
-                    }
                 }
 
                 GridLayout {
@@ -365,6 +329,7 @@ Page {
                             anchors.fill: parent
                             anchors.margins: General.paddingMedium
                             clip: true
+                            ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
                             ColumnLayout {
                                 width: Math.max(0, parent.availableWidth)
@@ -739,6 +704,7 @@ Page {
                                     text: CompositionsVm.normalizationStatusText
                                     wrapMode: Text.WordWrap
                                     opacity: 0.72
+                                    visible: false
                                 }
 
                                 Label {
@@ -746,6 +712,7 @@ Page {
                                     Layout.fillWidth: true
                                     wrapMode: Text.WordWrap
                                     opacity: 0.72
+                                    visible: false
                                 }
                             }
                         }
@@ -765,9 +732,70 @@ Page {
                             anchors.margins: General.paddingMedium
                             spacing: 4
 
-                            Label {
-                                text: "Content"
-                                font.bold: true
+                            RowLayout {
+                                Layout.fillWidth: true
+
+                                Label {
+                                    text: "Content"
+                                    font.bold: true
+                                }
+
+                                Item {
+                                    Layout.fillWidth: true
+                                }
+
+                                SvgToolButton {
+                                    compact: true
+                                    iconSource: Icons.editSvg
+                                    labelText: "Edit"
+                                    enabled: CompositionsVm.selectedCompositionId.length > 0
+                                    onClicked: CompositionEditorVm.openEditor()
+                                }
+
+                                SvgToolButton {
+                                    compact: true
+                                    iconSource: Icons.sliceSvg
+                                    labelText: "AI Slice"
+                                    enabled: CompositionsVm.selectedCompositionId.length > 0
+                                             && BlockSliceVm.aiGenerationAvailable
+                                    onClicked: BlockSliceVm.openUpdateDialog(
+                                                   CompositionsVm.selectedCompositionId,
+                                                   CompositionsVm.selectedVersion)
+                                }
+
+                                SvgToolButton {
+                                    compact: true
+                                    iconSource: Icons.reloadSvg
+                                    labelText: "Use Latest Blocks"
+                                    enabled: CompositionsVm.selectedCompositionId.length > 0
+                                    onClicked: CompositionsVm.updateBlocksToLatest()
+                                }
+
+                                SvgToolButton {
+                                    compact: true
+                                    iconSource: Icons.copySvg
+                                    labelText: "Compare Latest"
+                                    enabled: CompositionsVm.selectedVersions.indexOf(CompositionsVm.selectedVersion) > 0
+                                    onClicked: CompositionsVm.openCompareWithLatest()
+                                }
+
+                                SvgToolButton {
+                                    compact: true
+                                    iconSource: Icons.deprecateSvg
+                                    labelText: "Deprecate"
+                                    accentColor: ColorPalette.warning
+                                    enabled: CompositionsVm.selectedCompositionId.length > 0
+                                    onClicked: CompositionsVm.deprecateSelected()
+                                }
+
+                                SvgToolButton {
+                                    compact: true
+                                    iconSource: Icons.removeSvg
+                                    labelText: "Delete"
+                                    accentColor: ColorPalette.danger
+                                    enabled: CompositionsVm.selectedCompositionId.length > 0
+                                    onClicked: root.confirmDeleteSelected()
+                                }
                             }
 
                             Frame {
@@ -811,6 +839,58 @@ Page {
 
         function onSaved() {
             CompositionEditorVm.closeEditor()
+        }
+    }
+
+    Dialog {
+        id: deleteConfirmDialog
+        parent: Overlay.overlay
+        x: Math.round((parent.width - width) / 2)
+        y: Math.round((parent.height - height) / 2)
+        width: Math.min(parent.width - 64, 440)
+        modal: true
+        dim: true
+        title: root.pendingDeleteTitle
+        standardButtons: Dialog.NoButton
+
+        background: Rectangle {
+            radius: General.radiusMedium
+            color: ColorPalette.surface
+            border.color: ColorPalette.border
+        }
+
+        contentItem: ColumnLayout {
+            spacing: General.spacingMedium
+
+            Label {
+                Layout.fillWidth: true
+                text: root.pendingDeleteMessage
+                wrapMode: Text.WordWrap
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
+
+                Item {
+                    Layout.fillWidth: true
+                }
+
+                SvgToolButton {
+                    iconSource: Icons.closeSvg
+                    labelText: "Cancel"
+                    onClicked: deleteConfirmDialog.close()
+                }
+
+                SvgToolButton {
+                    iconSource: Icons.removeSvg
+                    labelText: "Delete"
+                    accentColor: ColorPalette.danger
+                    onClicked: {
+                        deleteConfirmDialog.close()
+                        CompositionsVm.deleteSelected()
+                    }
+                }
+            }
         }
     }
 

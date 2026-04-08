@@ -92,6 +92,7 @@ class CompositionEditorViewModel : public QObject {
   Q_PROPERTY(QString editorMode READ editorMode WRITE setEditorMode NOTIFY editorChanged)
   Q_PROPERTY(QStringList editorModes READ editorModes CONSTANT)
   Q_PROPERTY(QString statusText READ statusText NOTIFY statusTextChanged)
+  Q_PROPERTY(bool dirty READ dirty NOTIFY editorChanged)
   Q_PROPERTY(bool saving READ saving NOTIFY savingChanged)
 
  public:
@@ -131,6 +132,7 @@ class CompositionEditorViewModel : public QObject {
   QString editorMode() const;
   QStringList editorModes() const;
   QString statusText() const;
+  bool dirty() const;
   bool saving() const;
 
   void setCompositionId(const QString& value);
@@ -183,6 +185,7 @@ class CompositionEditorViewModel : public QObject {
   void clearFragmentEditorFields();
   void setStatusText(QString value);
   int insertIndexForNewFragment() const;
+  QString currentStateKey() const;
 
   [[nodiscard]] std::optional<FragmentSpec> buildFragmentFromEditor(
       FragmentSpec::Kind kind, QString* error_message) const;
@@ -212,6 +215,7 @@ class CompositionEditorViewModel : public QObject {
   InsertMode insert_mode_ = InsertMode::None;
   QString editor_mode_ = QStringLiteral("Block");
   QString status_text_;
+  QString original_state_key_;
   std::optional<FragmentSpec> clipboard_fragment_;
 };
 

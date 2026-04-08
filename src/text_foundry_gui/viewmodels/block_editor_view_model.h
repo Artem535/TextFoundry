@@ -34,6 +34,7 @@ class BlockEditorViewModel : public QObject {
   Q_PROPERTY(QStringList typeOptions READ typeOptions CONSTANT)
   Q_PROPERTY(QStringList bumpOptions READ bumpOptions CONSTANT)
   Q_PROPERTY(QString statusText READ statusText NOTIFY statusTextChanged)
+  Q_PROPERTY(bool dirty READ dirty NOTIFY formChanged)
   Q_PROPERTY(bool saving READ saving NOTIFY savingChanged)
   Q_PROPERTY(bool generating READ generating NOTIFY generatingChanged)
   Q_PROPERTY(bool aiGenerationAvailable READ aiGenerationAvailable NOTIFY generationAvailabilityChanged)
@@ -62,6 +63,7 @@ class BlockEditorViewModel : public QObject {
   QStringList typeOptions() const;
   QStringList bumpOptions() const;
   QString statusText() const;
+  bool dirty() const;
   bool saving() const;
   bool generating() const;
   bool aiGenerationAvailable() const;
@@ -97,6 +99,7 @@ class BlockEditorViewModel : public QObject {
   void setStatusText(QString value);
   void resetForm();
   bool loadSelectedBlock();
+  QString currentStateKey() const;
 
   SessionViewModel* session_;
   BlocksModel* blocks_;
@@ -116,6 +119,7 @@ class BlockEditorViewModel : public QObject {
   QString ai_prompt_text_;
   QString bump_mode_ = QStringLiteral("Minor");
   QString status_text_;
+  QString original_state_key_;
 };
 
 }  // namespace tf::gui
