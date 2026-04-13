@@ -1,5 +1,7 @@
 = Block Generation Document Set
 
+== 1. Coverage Summary
+
 Покрытие функции сейчас разложено так:
 
 * продуктовый intent — `PRD`
@@ -7,8 +9,15 @@
 * контракт — `Service Spec`
 * эксплуатация — `Runbook`
 
+== 2. Cross-Document Gaps
+
 Что ещё требуется усилить:
 
 * формальный benchmark set
 * versioned prompt governance
 * quality thresholds для release readiness
+
+== 3. Next Updates
+
+* синхронизировать prompt governance с provider implementation
+* собрать representative review corpus

@@ -1,9 +1,18 @@
 = Composition Rewrite Security Note
 
+== 1. Data Sensitivity
+
+Composition content can include role, safety and constraint blocks, so rewrite
+requests may carry sensitive operational instructions.
+
+== 2. Key Risks
+
 Риски:
 
 * composition content уходит во внешний provider
 * неправильный rewrite может затронуть safety / constraint blocks
+
+== 3. Required Controls
 
 Меры:
 

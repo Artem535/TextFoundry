@@ -1,8 +1,40 @@
 = Prompt Slicing ADR
 
+== 1. Context
+
+Нужно зафиксировать, как prompt slicing связан с batch generation и почему
+проверки preservation вынесены в workflow слой.
+
+== 2. Alternatives Considered
+
+* чисто deterministic slicing
+* single-block generation repeated in loop without batch contract
+* auto-apply generated batch without validation
+
+== 3. Decision
+
 Текущее решение:
 
 * prompt slicing использует тот же generator abstraction, что и single block
   generation
 * часть валидации делается на клиентской стороне GUI workflow
 * aggressive rewrite ограничивается preservation checks
+
+== 4. Chosen Architecture Slice
+
+* batch request comes through engine contract
+* GUI validates ids and update safety before persistence
+* source prompt remains primary input artifact
+
+== 5. Consequences
+
+* migration workflow ускоряется
+* часть correctness гарантий живёт вне provider
+* slicing quality остаётся sensitive к quality source prompt
+
+== 6. Risks and Mitigations
+
+* risk: duplicate ids
+  mitigation: validation gate
+* risk: destructive update mode
+  mitigation: preservation checks and manual review

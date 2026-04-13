@@ -1,7 +1,39 @@
 = Composition Rewrite ADR
 
+== 1. Context
+
+Нужно зафиксировать, почему composition rewrite оформлен как preview/apply
+workflow, а не как one-shot overwrite.
+
+== 2. Alternatives Considered
+
+* direct overwrite of composition
+* rewrite as plain normalized text only
+* GUI-only mutation without engine preview contract
+
+== 3. Decision
+
 Текущее решение:
 
 * rewrite делается как patch-oriented workflow, а не как blind overwrite
 * preview обязателен перед apply
 * engine хранит границу между suggestion и mutation
+
+== 4. Chosen Architecture Slice
+
+* rewriter produces preview first
+* engine owns apply over approved preview
+* GUI is responsible for human review
+
+== 5. Consequences
+
+* mutation remains inspectable
+* more steps in UX, but safer workflow
+* preservation quality becomes a first-class concern
+
+== 6. Risks and Mitigations
+
+* risk: preview too hard to interpret
+  mitigation: explicit patch-oriented UI
+* risk: over-aggressive structural changes
+  mitigation: preservation guidance and evaluation set

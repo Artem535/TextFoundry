@@ -1,7 +1,19 @@
 = Normalization Prompt Template
 
+== 1. Prompt Purpose
+
+Prompt contract должен менять semantic style without unnecessary drift from the
+source meaning.
+
+== 2. Required Prompt Elements
+
 Prompt contract должен фиксировать:
 
 * target semantic changes
 * правила сохранения смысла
 * запрет на избыточные изменения вне requested style shift
+
+== 3. Output Contract
+
+* output must be a rewritten text, not explanation
+* composition normalization must remain reviewable

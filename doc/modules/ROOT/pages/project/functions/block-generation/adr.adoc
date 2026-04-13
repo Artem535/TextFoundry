@@ -1,12 +1,45 @@
 = Block Generation ADR
 
+== 1. Context
+
+Функция уже существует в коде как explicit AI-authoring workflow. Нужно
+зафиксировать, почему генерация блока вынесена в отдельный adapter layer и
+почему результат не сохраняется автоматически.
+
+== 2. Alternatives Considered
+
+* встроить генерацию прямо в `Renderer`
+* генерировать и сразу публиковать новый block version
+* вынести всю логику только в GUI без engine contract
+
+== 3. Decision
+
 Текущее зафиксированное решение:
 
 * генерация вынесена в adapter interface, а не зашита в core renderer
 * provider-specific logic живёт в `textfoundry_ai`
 * review step обязателен перед сохранением результата в хранилище
 
-Открытый planned-вопрос:
+== 4. Chosen Architecture Slice
+
+* `Engine` задаёт orchestration contract
+* `IBlockGenerator` отделяет core от provider implementation
+* GUI использует результат как draft suggestion
+
+== 5. Consequences
+
+* deterministic render path остаётся чистым
+* generation легко отключается без потери core functionality
+* качество результата зависит от внешнего provider и prompt policy
+
+== 6. Risks and Mitigations
+
+* risk: low-quality drafts
+  mitigation: mandatory review-before-save
+* risk: provider lock-in
+  mitigation: adapter abstraction
+
+== 7. Open Question
 
 * нужно ли поддерживать несколько провайдеров и routing policy поверх одного
   `IBlockGenerator`

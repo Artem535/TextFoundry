@@ -1,10 +1,36 @@
 = Normalization Delivery Plan
 
+== 1. Delivery Scope
+
+Scope covers text normalization, composition normalization and explicit style
+rewrite workflows.
+
+== 2. Current Status
+
 Текущий статус:
 
 * базовый text and composition normalization уже реализован
+
+== 3. Workstreams and Owners
+
+* engine owner: normalization contracts
+* AI owner: prompt policy and provider behavior
+* GUI owner: render/composition UX
+
+== 4. Rollout Steps
 
 Следующие шаги:
 
 * формализовать style acceptance наборы
 * добавить regression corpus по tone / tense / language cases
+
+== 5. Blockers and Risks
+
+* отсутствие formal semantic benchmark set
+* sensitivity to ambiguous style requests
+
+== 6. Readiness Checklist
+
+* representative style cases prepared
+* UI clearly indicates explicit action
+* provider failures degrade to raw output cleanly

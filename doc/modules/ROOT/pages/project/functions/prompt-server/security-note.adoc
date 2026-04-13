@@ -1,5 +1,12 @@
 = Prompt Server Security Note
 
+== 1. Security Scope
+
+Server exposes published prompt assets to clients, so the primary risks are
+access control, data boundary violations and unsafe parameter handling.
+
+== 2. Key Requirements
+
 Ключевые требования:
 
 * только published data

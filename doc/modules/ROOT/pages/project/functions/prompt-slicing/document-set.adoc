@@ -1,8 +1,17 @@
 = Prompt Slicing Document Set
 
+== 1. Coverage Summary
+
 Минимальный комплект для функции уже создан.
+
+== 2. Cross-Document Gaps
 
 Следующие документы требуют усиления:
 
 * benchmark examples для slicing quality
 * explicit prompt schema и negative cases
+
+== 3. Next Updates
+
+* связать representative prompts с evaluation corpus
+* выделить update-mode specific acceptance rules

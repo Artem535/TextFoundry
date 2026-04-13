@@ -1,12 +1,44 @@
 = Block Generation Delivery Plan
 
+== 1. Delivery Scope
+
+Scope этой функции включает engine integration, GUI authoring workflow, prompt
+policy и минимальный quality loop.
+
+== 2. Current Status
+
 Текущий delivery status:
 
 * базовый workflow уже реализован в GUI и engine
 * нужен отдельный formal quality loop для оценки результата
+
+== 3. Workstreams and Owners
+
+* engine owner: contract and orchestration
+* AI owner: prompt policy and provider behavior
+* GUI owner: review and edit workflow
+
+== 4. Dependency Map
+
+* provider configuration
+* generator adapter
+* block editor workflow
+
+== 5. Rollout Steps
 
 Следующие шаги:
 
 * формализовать acceptance наборы
 * завести prompt versions
 * описать fallback policy при ошибках генерации
+
+== 6. Blockers and Risks
+
+* отсутствие formal benchmark set
+* качество зависит от provider behavior
+
+== 7. Readiness Checklist
+
+* representative prompts collected
+* review workflow remains stable
+* failures are understandable to user

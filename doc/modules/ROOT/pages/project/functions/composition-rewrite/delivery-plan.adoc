@@ -1,10 +1,36 @@
 = Composition Rewrite Delivery Plan
 
+== 1. Delivery Scope
+
+Scope includes preview generation, explicit apply and review UX for composition
+rewrite.
+
+== 2. Current Status
+
 Текущий статус:
 
 * preview/apply workflow уже реализован
+
+== 3. Workstreams and Owners
+
+* engine owner: preview/apply contract
+* AI owner: rewriter policy
+* GUI owner: patch review UX
+
+== 4. Rollout Steps
 
 Следующие шаги:
 
 * formalize preservation thresholds
 * собрать golden compositions для regression checks
+
+== 5. Blockers and Risks
+
+* no formal preservation benchmark yet
+* preview usability may vary by composition complexity
+
+== 6. Readiness Checklist
+
+* preview/apply consistency tested
+* representative compositions collected
+* preservation rules agreed

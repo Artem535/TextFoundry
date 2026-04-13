@@ -1,12 +1,37 @@
 = Prompt Server Delivery Plan
 
+== 1. Delivery Scope
+
+Scope covers runtime API, repository boundary, deployment and access control.
+
+== 2. Current Status
+
 Статус:
 
 * capability запланирована
 * в кодовой базе пока не реализована
+
+== 3. Workstreams and Owners
+
+* platform owner: service runtime
+* core owner: published repository access
+* security owner: access control
+
+== 4. Rollout Steps
 
 Предварительные этапы:
 
 * выделить API contract
 * formalize repository access model
 * определить deployment topology
+
+== 5. Blockers and Risks
+
+* нет реализованного server runtime
+* не сформирована final API compatibility policy
+
+== 6. Readiness Checklist
+
+* published-only model proven in tests
+* deployment topology agreed
+* security review passed

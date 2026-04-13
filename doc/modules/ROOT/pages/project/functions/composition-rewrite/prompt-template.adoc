@@ -1,7 +1,19 @@
 = Composition Rewrite Prompt Template
 
+== 1. Prompt Purpose
+
+Prompt contract должен produce preservation-aware patch suggestions over an
+existing composition.
+
+== 2. Required Prompt Elements
+
 Prompt contract должен фиксировать:
 
 * допустимую силу rewrite
 * правила preservation existing blocks
 * expected patch-oriented output format
+
+== 3. Output Contract
+
+* output should map to preview/patch model
+* output must not imply blind overwrite

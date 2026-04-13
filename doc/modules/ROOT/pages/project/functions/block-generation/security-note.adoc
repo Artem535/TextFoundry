@@ -1,10 +1,29 @@
 = Block Generation Security Note
 
+== 1. Data Sensitivity
+
+В input могут попадать внутренние формулировки, domain-specific правила и
+черновые инструкции.
+
+== 2. Key Risks
+
 Риски:
 
 * пользовательский prompt может содержать чувствительные данные
 * внешний provider видит содержимое инструкции
 * generated content может включать нежелательные или небезопасные фрагменты
+
+== 3. Storage and Retention
+
+* prompt payload уходит во внешний provider boundary
+* политика retention зависит от выбранного provider
+
+== 4. Access and Logging
+
+* не логировать секреты и API key
+* не сохранять чувствительный prompt content без необходимости
+
+== 5. Required Controls
 
 Базовые меры:
 

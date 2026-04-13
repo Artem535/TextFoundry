@@ -1,5 +1,12 @@
 = Block Generation Prompt Template
 
+== 1. Prompt Purpose
+
+Prompt contract должен превращать instruction в reviewable block draft, а не в
+final published artifact.
+
+== 2. Required Prompt Elements
+
 В prompt contract должны фиксироваться:
 
 * назначение блока
@@ -7,6 +14,13 @@
 * ограничения на output structure
 * требования к placeholders и defaults
 * expected review model: suggestion, not auto-commit
+
+== 3. Output Contract
+
+* provider response должен быть пригоден к сборке `GeneratedBlockData`
+* output не должен предполагать auto-save
+
+== 4. Governance
 
 Текущий runtime использует provider-specific prompt assembly в модуле
 `textfoundry_ai`.

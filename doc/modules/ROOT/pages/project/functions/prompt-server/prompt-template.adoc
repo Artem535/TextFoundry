@@ -3,6 +3,13 @@
 Для server capability prompt-template как отдельный runtime prompt может и не
 понадобиться. Пока страница сохранена для единообразия pipeline.
 
+== 1. Prompt Purpose
+
+If this capability later introduces runtime wrappers, they must stay within the
+deterministic published-asset contract.
+
+== 2. Constraints
+
 Если server будет поддерживать built-in prompt wrappers, они должны быть:
 
 * deterministic

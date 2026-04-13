@@ -1,6 +1,15 @@
 = Prompt Server Document Set
 
+== 1. Coverage Summary
+
 Функция пока находится в planned-state.
+
+== 2. Cross-Document Gaps
 
 Минимальный набор placeholder-документов уже создан, чтобы future work не
 размазывался по общей документации.
+
+== 3. Next Updates
+
+* convert placeholders to final contracts when implementation starts
+* align service spec with deployment and security decisions

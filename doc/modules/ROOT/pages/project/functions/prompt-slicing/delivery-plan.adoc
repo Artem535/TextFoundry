@@ -1,11 +1,36 @@
 = Prompt Slicing Delivery Plan
 
+== 1. Delivery Scope
+
+Scope включает long-prompt decomposition, update mode and review workflow in GUI.
+
+== 2. Current Status
+
 Текущий статус:
 
 * основной workflow уже есть в GUI
 * нужны формальные acceptance criteria и curated examples
 
+== 3. Workstreams and Owners
+
+* AI owner: slicing prompt policy
+* engine owner: batch generation contract
+* GUI owner: validation and review UX
+
+== 4. Rollout Steps
+
 Следующие шаги:
 
 * собрать набор реальных prompt examples
 * описать quality gates для generate/update режимов
+
+== 5. Blockers and Risks
+
+* слабая representative dataset coverage
+* зависимость от source prompt quality
+
+== 6. Readiness Checklist
+
+* curated prompt set prepared
+* duplicate-id validation tested
+* update-mode preservation criteria agreed

@@ -1,7 +1,39 @@
 = Normalization ADR
 
+== 1. Context
+
+Нужно зафиксировать, почему semantic rewrite остаётся отдельным explicit слоем,
+а не частью базового renderer.
+
+== 2. Alternatives Considered
+
+* automatic normalization during render
+* hidden rewrite inside style application
+* provider-specific normalization only in GUI
+
+== 3. Decision
+
 Текущее решение:
 
 * semantic rewrite вынесен в explicit workflow
 * `SemanticStyle` не означает automatic transformation
 * engine проверяет наличие configured normalizer перед вызовом
+
+== 4. Chosen Architecture Slice
+
+* deterministic render path remains separate
+* normalizer accessed through engine contracts
+* UI initiates normalization explicitly
+
+== 5. Consequences
+
+* базовый core remains reproducible
+* normalization can be disabled safely
+* users must manage explicit review of rewritten output
+
+== 6. Risks and Mitigations
+
+* risk: users expect automatic style application
+  mitigation: keep explicit naming and UI affordances
+* risk: semantic drift
+  mitigation: reviewable output and evaluation corpus

@@ -1,8 +1,19 @@
 = Prompt Slicing Prompt Template
 
+== 1. Prompt Purpose
+
+Prompt contract должен декомпозировать source prompt в coherent block set.
+
+== 2. Required Prompt Elements
+
 Prompt contract должен фиксировать:
 
 * требуемый формат batch output
 * правила именования ids
 * ожидания по сохранению intent
 * политику preservation для update mode
+
+== 3. Output Contract
+
+* output должен быть парсируемым как `GeneratedBlockBatch`
+* update mode должен содержать preservation-aware guidance

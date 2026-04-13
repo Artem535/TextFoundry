@@ -1,9 +1,23 @@
 = Normalization Security Note
 
+== 1. Data Sensitivity
+
+Normalization sends rendered or source text to an external provider, so content
+classification matters.
+
+== 2. Key Risks
+
 Риски:
 
 * во внешний provider уходит raw or rendered text
 * normalized output может менять чувствительные формулировки
+
+== 3. Access and Logging
+
+* avoid logging sensitive prompt payloads
+* do not persist secrets in AI configuration traces
+
+== 4. Required Controls
 
 Меры:
 

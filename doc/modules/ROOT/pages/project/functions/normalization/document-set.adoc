@@ -1,8 +1,17 @@
 = Normalization Document Set
 
+== 1. Coverage Summary
+
 Минимальный pipeline для функции создан.
+
+== 2. Cross-Document Gaps
 
 Нужны дополнительные артефакты:
 
 * curated semantic regression set
 * explicit prompt versioning
+
+== 3. Next Updates
+
+* sync evaluation corpus with real tone/language examples
+* formalize prompt governance

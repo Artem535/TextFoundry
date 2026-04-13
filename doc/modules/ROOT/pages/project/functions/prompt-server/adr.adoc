@@ -1,7 +1,32 @@
 = Prompt Server ADR
 
+== 1. Context
+
+Prompt Server остаётся planned capability, но его architectural boundary уже
+нужно фиксировать, чтобы он не смешался с authoring surfaces.
+
+== 2. Alternatives Considered
+
+* expose authoring engine directly to clients
+* allow server access to drafts
+* embed server behavior into GUI/runtime clients separately
+
+== 3. Decision
+
 Уже зафиксированные архитектурные решения:
 
 * server planned как отдельная граница, а не как часть GUI
 * доступ только к published сущностям
 * server не должен становиться authoring surface
+
+== 4. Chosen Architecture Slice
+
+* runtime API over published assets
+* repository access restricted by published-only policy
+* deterministic render path in delivery runtime
+
+== 5. Consequences
+
+* cleaner separation between authoring and delivery
+* additional operational surface to maintain
+* stronger need for authn/authz and compatibility policy
