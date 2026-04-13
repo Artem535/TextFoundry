@@ -26,7 +26,11 @@ ui:
     snapshot: true
 
 asciidoc:
+  extensions:
+    - asciidoctor-kroki
+
   attributes:
+    kroki-fetch-diagram: true
     page-pagination: ''
     sectanchors: ''
     toc: left

@@ -5,11 +5,13 @@
   "scripts": {
     "docs:sync": "bash ./scripts/sync_antora_docs.sh",
     "docs:build": "npm run docs:sync && antora antora-playbook.yml",
-    "docs:serve": "npm run docs:sync && antora --fetch antora-playbook.yml"
+    "docs:build:fetch": "npm run docs:sync && antora --fetch antora-playbook.yml",
+    "docs:serve": "npm run docs:build && serve build/site"
   },
   "devDependencies": {
-    "@antora/cli": "3.1.13",
-    "@antora/lunr-extension": "^1.0.0-alpha.13",
-    "@antora/site-generator": "3.1.13"
+    "antora": "3.1.14",
+    "asciidoctor-kroki": "0.18.1",
+    "@antora/lunr-extension": "1.0.0-alpha.13",
+    "serve": "14.2.6"
   }
 }
