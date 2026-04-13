@@ -26,6 +26,7 @@ The following files remain the primary source documents:
 
 * `doc/prd.adoc`
 * `doc/status.adoc`
+* `doc/spec-kit.adoc`
 * `doc/doc.adoc`
 
 Before each Antora build, `scripts/sync_antora_docs.sh` copies these files into

@@ -9,4 +9,5 @@ mkdir -p "${TARGET_DIR}"
 
 cp "${ROOT_DIR}/doc/prd.adoc" "${TARGET_DIR}/prd.adoc"
 cp "${ROOT_DIR}/doc/status.adoc" "${TARGET_DIR}/status.adoc"
+cp "${ROOT_DIR}/doc/spec-kit.adoc" "${TARGET_DIR}/spec-kit.adoc"
 cp "${ROOT_DIR}/doc/doc.adoc" "${TARGET_DIR}/api.adoc"

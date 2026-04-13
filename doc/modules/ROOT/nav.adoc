@@ -1,4 +1,5 @@
 * xref:index.adoc[Overview]
 * xref:prd.adoc[PRD]
 * xref:status.adoc[Implementation Status]
+* xref:spec-kit.adoc[Spec Kit]
 * xref:api.adoc[API Reference]

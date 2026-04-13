@@ -1,0 +1,3 @@
+= Spec Kit
+
+include::partial$generated/spec-kit.adoc[leveloffset=+1]
