@@ -1,0 +1,9 @@
+= 4.2. Бэкенд
+
+Страница предназначена для backend / service-side workstream.
+
+Для текущего проекта сюда особенно логично относить:
+
+* service boundary для будущего prompt server
+* integration contracts
+* storage and orchestration concerns

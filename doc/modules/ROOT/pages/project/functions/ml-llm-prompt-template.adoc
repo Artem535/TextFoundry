@@ -1,0 +1,11 @@
+= 9. ML/LLM Prompt Template
+
+Страница предназначена для результата skill `ml-llm-prompt-template`.
+
+Здесь публикуются production-grade prompt artifacts:
+
+* system prompt
+* input variables
+* output contract
+* semantic rules
+* examples and negative cases

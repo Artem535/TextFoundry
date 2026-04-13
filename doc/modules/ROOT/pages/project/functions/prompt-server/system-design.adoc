@@ -1,0 +1,51 @@
+= Prompt Server System Design
+
+Статус: planned, not implemented.
+
+== 1. Executive Summary
+
+Prompt Server задуман как deterministic delivery boundary поверх published
+assets. Он должен отделить authoring system от runtime consumption и работать
+только с published data.
+
+== 2. Context and Scope
+
+* In scope: read-only resolve/render API, parameter validation, published-only access
+* Out of scope: authoring, draft mutation, automatic semantic rewrite
+
+== 3. Requirements Summary
+
+* Functional: resolve published assets, render with parameters, expose runtime API
+* NFR: reproducibility, access control, no authoring side effects
+
+== 4. Components and Integrations
+
+Предполагаемые компоненты:
+
+* server API
+* published repository access
+* renderer
+* optional parameter validation layer
+
+== 5. Key System Scenario
+
+Поток:
+
+[source,mermaid]
+----
+flowchart LR
+  Client --> Server["Prompt Server API"]
+  Server --> Published["Published Repository"]
+  Published --> Renderer["Renderer"]
+  Renderer --> Server
+  Server --> Client
+----
+
+== 6. Reliability and Degradation
+
+* published repository unavailability should fail closed
+* service should not fallback to draft data
+
+== 7. Operations Summary
+
+* server работает только с published данными и deterministic rendering

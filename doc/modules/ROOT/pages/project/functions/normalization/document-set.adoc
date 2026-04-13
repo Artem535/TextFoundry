@@ -1,0 +1,8 @@
+= Normalization Document Set
+
+Минимальный pipeline для функции создан.
+
+Нужны дополнительные артефакты:
+
+* curated semantic regression set
+* explicit prompt versioning

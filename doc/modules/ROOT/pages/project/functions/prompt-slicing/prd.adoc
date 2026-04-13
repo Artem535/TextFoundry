@@ -1,0 +1,62 @@
+= Prompt Slicing PRD
+
+== 1. Goal and Business Context
+
+* Business problem: большие raw prompts трудно переносить в block model вручную.
+* Service goal: быстро разложить длинный prompt на reviewable block suggestions.
+* Expected effect: ускорить migration from raw prompt to structured composition.
+
+== 2. Problem Statement
+
+* Current state: перенос сложных prompt assets делается вручную.
+* Pain points: медленная декомпозиция, ошибки в ids, потеря структуры.
+* Why ML/LLM is needed: длинный prompt лучше сначала интерпретировать семантически.
+
+== 3. Users and Use Cases
+
+* Primary users: prompt authors migrating existing prompts
+* Main use cases:
+* initial slicing нового большого prompt
+* update existing composition from updated source prompt
+* bootstrap новой block library из legacy assets
+
+== 4. Scope and Non-Goals
+
+=== In Scope
+
+* batch generation of block suggestions
+* update mode with preservation expectations
+* review before save/apply
+
+=== Out of Scope
+
+* automatic apply without user review
+* deterministic parsing of every arbitrary format
+
+== 5. Success Criteria and KPI
+
+* long prompt can be converted into a usable block set
+* generated ids and blocks are reviewable and mostly saveable
+* update mode preserves enough existing structure to remain useful
+
+== 6. Requirements Summary
+
+* system MUST support batch suggestion flow
+* system MUST validate duplicate ids and reuse collisions
+* user MUST review generated blocks before persistence
+
+== 7. Assumptions and Constraints
+
+* quality depends on source prompt quality
+* provider has no direct write access to storage
+* current workflow is GUI-first
+
+== 8. Dependencies and Stakeholders
+
+* Dependencies: `PromptSlicingRequest`, generator adapter, GUI dialog
+* Stakeholders: prompt authors, AI workflow owner, composition workflow owner
+
+== 9. Pilot / Release Acceptance
+
+* Pilot: representative legacy prompts can be decomposed into usable blocks
+* Release: update mode is stable enough for repeated review cycles

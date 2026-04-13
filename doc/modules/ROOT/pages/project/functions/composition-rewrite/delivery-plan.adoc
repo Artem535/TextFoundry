@@ -1,0 +1,10 @@
+= Composition Rewrite Delivery Plan
+
+Текущий статус:
+
+* preview/apply workflow уже реализован
+
+Следующие шаги:
+
+* formalize preservation thresholds
+* собрать golden compositions для regression checks

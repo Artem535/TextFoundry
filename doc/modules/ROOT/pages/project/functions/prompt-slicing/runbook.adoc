@@ -1,0 +1,44 @@
+= Prompt Slicing Runbook
+
+== 1. Operational Overview
+
+* Service owner: AI migration workflow owner
+* Criticality: medium
+
+== 2. Ownership and Support Model
+
+* Primary owner: AI authoring/generator owner
+* Secondary owner: GUI composition workflow owner
+
+== 3. Key Signals and Alerts
+
+* provider errors
+* validation failures for duplicate ids
+* repeated user rejection of generated batches
+
+== 4. Common Failure Modes
+
+* empty or noisy input -> poor decomposition
+* id collisions -> apply blocked
+* over-aggressive update -> preservation warnings
+
+== 5. Incident Response
+
+* verify generator config
+* inspect validation output
+* rerun on reduced prompt or switch to manual editing
+
+== 6. Degradation Modes
+
+* disable AI slicing
+* keep manual block creation and composition editing
+
+== 7. Recovery and Validation
+
+* rerun on a known representative prompt
+* confirm generated batch passes validation
+
+== 8. Escalation Contacts
+
+* Team Lead: AI workflow owner
+* GUI owner: slicing dialog owner

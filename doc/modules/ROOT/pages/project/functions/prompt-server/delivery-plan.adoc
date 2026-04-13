@@ -1,0 +1,12 @@
+= Prompt Server Delivery Plan
+
+Статус:
+
+* capability запланирована
+* в кодовой базе пока не реализована
+
+Предварительные этапы:
+
+* выделить API contract
+* formalize repository access model
+* определить deployment topology

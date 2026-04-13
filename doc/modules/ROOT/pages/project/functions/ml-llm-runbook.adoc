@@ -1,0 +1,11 @@
+= 7. ML/LLM Runbook
+
+Страница предназначена для результата skill `ml-llm-runbook`.
+
+Здесь публикуются:
+
+* ownership and support model
+* alerting and signals
+* common failures
+* incident response
+* recovery checks

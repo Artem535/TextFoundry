@@ -1,0 +1,63 @@
+= Prompt Server PRD
+
+== 1. Goal and Business Context
+
+* Business problem: delivery-side clients не должны ходить в authoring workflow напрямую.
+* Service goal: дать published-only runtime for prompt resolution.
+* Why now: capability уже описана в PRD как целевая архитектура.
+
+== 2. Problem Statement
+
+* Current state: server capability отсутствует, доступ идёт через локальные authoring surfaces.
+* Pain points: нет выделенного delivery runtime и published-only boundary.
+* Why ML/LLM is needed: функция обслуживает prompt assets для LLM use cases, но сама должна оставаться deterministic.
+
+== 3. Users and Use Cases
+
+* Primary users: external/internal clients consuming published prompt assets
+* Main use cases:
+* resolve composition by id and version
+* render with runtime parameters
+* consume published prompt library in read-only mode
+
+== 4. Scope and Non-Goals
+
+=== In Scope
+
+* published-only read access
+* composition resolution and render
+* parameter validation
+
+=== Out of Scope
+
+* authoring UI
+* draft mutation
+* implicit AI rewrite
+
+== 5. Success Criteria and KPI
+
+* clients can consume published assets without touching drafts
+* render behavior is reproducible
+* service boundary cleanly separates authoring from delivery
+
+== 6. Requirements Summary
+
+* service MUST expose published-only access
+* service MUST not mutate draft or published authoring state
+* service MUST stay deterministic by default
+
+== 7. Assumptions and Constraints
+
+* capability is planned, not implemented
+* storage model already distinguishes published entities
+* server should not become hidden editor
+
+== 8. Dependencies and Stakeholders
+
+* Dependencies: published repository access, renderer, API layer
+* Stakeholders: platform owner, prompt authors, downstream clients
+
+== 9. Pilot / Release Acceptance
+
+* Pilot: published-only resolve/render contract works on representative assets
+* Release: operational, security and compatibility constraints are formalized

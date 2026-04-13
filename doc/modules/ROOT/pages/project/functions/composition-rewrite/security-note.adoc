@@ -1,0 +1,11 @@
+= Composition Rewrite Security Note
+
+Риски:
+
+* composition content уходит во внешний provider
+* неправильный rewrite может затронуть safety / constraint blocks
+
+Меры:
+
+* preview-before-apply
+* review sensitive blocks отдельно

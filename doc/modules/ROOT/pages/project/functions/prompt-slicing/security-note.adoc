@@ -1,0 +1,12 @@
+= Prompt Slicing Security Note
+
+Риски:
+
+* source prompt может содержать конфиденциальный контент
+* provider получает полный raw input
+* generated decomposition может раскрывать лишнюю структуру
+
+Меры:
+
+* классифицировать input sensitivity
+* использовать review-before-apply

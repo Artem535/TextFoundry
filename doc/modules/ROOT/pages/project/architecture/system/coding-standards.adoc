@@ -1,0 +1,12 @@
+= 8. Стандарты качества кода
+
+Раздел предназначен для инженерных стандартов:
+
+* code style и naming conventions
+* требования к review
+* testing policy
+* documentation rules
+* требования к contracts и backward compatibility
+
+Часть этих правил уже живёт в практиках проекта и может быть дополнительно
+синхронизирована с `spec kit` constitution.

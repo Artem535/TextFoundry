@@ -1,0 +1,10 @@
+= 3. Схема деплоя
+
+Этот раздел предназначен для deployment topology, окружений и runtime
+размещения компонентов.
+
+Для текущего проекта особенно важно отделять:
+
+* desktop / local application deployment
+* локальные AI adapters
+* будущий `Prompt Server`, если он будет вынесен в отдельный runtime

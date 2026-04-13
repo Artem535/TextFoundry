@@ -1,0 +1,45 @@
+= Composition Rewrite Runbook
+
+== 1. Operational Overview
+
+* Service owner: composition AI workflow owner
+* Criticality: medium
+
+== 2. Ownership and Support Model
+
+* Primary owner: rewriter / AI adapter owner
+* Secondary owner: composition editor owner
+
+== 3. Key Signals and Alerts
+
+* repeated preview failures
+* provider errors
+* high rate of rejected previews
+
+== 4. Common Failure Modes
+
+* stale composition snapshot
+* no configured rewriter
+* overly aggressive patch set
+
+== 5. Incident Response
+
+* verify rewrite configuration
+* verify source composition snapshot
+* inspect preview output before any apply
+* switch to manual editing if needed
+
+== 6. Degradation Modes
+
+* disable rewrite workflow
+* continue manual composition editing
+
+== 7. Recovery and Validation
+
+* rerun preview on a known representative composition
+* confirm preview/apply pair remains consistent
+
+== 8. Escalation Contacts
+
+* Team Lead: composition workflow owner
+* AI owner: rewriter owner

@@ -1,0 +1,11 @@
+= Prompt Slicing Delivery Plan
+
+Текущий статус:
+
+* основной workflow уже есть в GUI
+* нужны формальные acceptance criteria и curated examples
+
+Следующие шаги:
+
+* собрать набор реальных prompt examples
+* описать quality gates для generate/update режимов

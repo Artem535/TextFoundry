@@ -1,0 +1,18 @@
+= 1. ML/LLM PRD
+
+Страница предназначена для результата skill `ml-llm-prd`.
+
+Сюда публикуется продуктовый scope AI / ML функциональности проекта:
+
+* пользовательские сценарии
+* capability boundaries
+* KPI и критерии успеха
+* in-scope / out-of-scope
+
+Для `TextFoundry` сюда в первую очередь должны лечь:
+
+* block generation
+* normalization
+* composition rewrite
+* AI-assisted editing workflows
+* будущий prompt server как planned capability

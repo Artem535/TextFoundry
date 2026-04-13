@@ -1,0 +1,13 @@
+= 6. Схема потоков
+
+Этот раздел зарезервирован под sequence diagrams и сценарные потоки.
+
+Приоритетные потоки для `TextFoundry`:
+
+* render path
+* AI-assisted rewrite path
+* prompt slicing path
+* GUI editing flow
+* future prompt-server request flow
+
+Все sequence diagrams в этом разделе должны оформляться в `mermaid`.

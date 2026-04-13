@@ -1,0 +1,11 @@
+= Prompt Slicing
+
+Функция отвечает за декомпозицию исходного prompt или большого текста в набор
+предлагаемых блоков.
+
+Текущее состояние:
+
+* реализована через `PromptSlicingRequest`
+* использует batch generation path
+* доступна из GUI как `BlockSliceDialog`
+* поддерживает generate и update composition режимы

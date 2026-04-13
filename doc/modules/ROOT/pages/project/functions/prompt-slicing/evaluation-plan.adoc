@@ -1,0 +1,49 @@
+= Prompt Slicing Evaluation Plan
+
+== 1. Evaluation Goal
+
+* quality means preserving intent while producing usable block decomposition
+* main risks: missing sections, wrong grouping, invalid ids, destructive update mode
+
+== 2. Quality Dimensions
+
+* coverage of source intent
+* block boundary quality
+* id validity
+* preservation in update mode
+
+== 3. Acceptance Criteria
+
+* critical sections of source prompt remain represented
+* generated block set is saveable after light review
+* update mode does not aggressively replace too much structure
+
+== 4. Dataset Strategy
+
+* legacy long prompts
+* structured prompts with obvious sections
+* noisy prompts with mixed formatting
+* negative cases for collisions and under-specified inputs
+
+== 5. Offline Evaluation
+
+* manual decomposition comparison
+* structural review of ids and suggested blocks
+
+== 6. Manual Review
+
+* reviewer checks coverage, grouping quality and review effort
+
+== 7. Thresholds and Decision Rule
+
+* go when typical prompts can be migrated without full manual rewrite
+* no-go when generated sets are structurally unusable
+
+== 8. Regression Policy
+
+* regression: loss of coverage, worse preservation, more invalid ids
+
+== 9. Post-Release Quality Review
+
+* collect failed slicing examples
+* update prompt policy and curated benchmark prompts

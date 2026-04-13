@@ -1,0 +1,14 @@
+= 3.2. Архитектурные решения
+
+Раздел предназначен под Architecture Decision Records.
+
+Основной кандидат на наполнение:
+
+* результат skill `ml-llm-adr`
+
+Типовые решения для фиксации:
+
+* provider strategy для AI adapters
+* storage strategy
+* prompt-server boundaries
+* fallback и degradation policy

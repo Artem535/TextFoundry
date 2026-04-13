@@ -1,0 +1,56 @@
+= Block Generation System Design
+
+== 1. Executive Summary
+
+Функция строит AI-assisted draft generation для одного блока и сохраняет
+границу между suggestion и mutation. Генерация идёт через adapter layer,
+а публикация и versioning остаются в core workflow.
+
+== 2. Context and Scope
+
+* In scope: single-block generation, provider call, review in GUI
+* Out of scope: auto-publish, hidden generation in render path
+* Assumption: provider возвращает структуру, пригодную для конвертации в draft
+
+== 3. Requirements Summary
+
+* Functional: generate block data, convert to draft, show result in editor
+* NFR: понятные ошибки, opt-in execution, отсутствие влияния на deterministic mode
+
+== 4. Components and Integrations
+
+Компоненты:
+
+* GUI block editor
+* `tf::Engine`
+* `IBlockGenerator`
+* `OpenAiCompatibleBlockGenerator`
+* HTTP transport
+
+== 5. Key System Scenario
+
+Поток:
+
+[source,mermaid]
+----
+flowchart LR
+  User["User Instruction"] --> GUI["GUI Block Editor"]
+  GUI --> Engine["Engine.GenerateBlockData / GenerateBlockDraft"]
+  Engine --> Generator["IBlockGenerator"]
+  Generator --> Provider["OpenAI-compatible API"]
+  Provider --> Generator
+  Generator --> Engine
+  Engine --> GUI
+----
+
+== 6. Reliability and Degradation
+
+* при отсутствии generator engine возвращает explicit error
+* при ошибке provider пользователь остаётся в ручном authoring workflow
+* generated output не должен автоматически записываться в storage
+
+== 7. Operations Summary
+
+* функция explicit и opt-in
+* результат сначала попадает в draft/workspace
+* сохранение новой версии остаётся отдельным действием пользователя

@@ -1,0 +1,7 @@
+= Normalization ADR
+
+Текущее решение:
+
+* semantic rewrite вынесен в explicit workflow
+* `SemanticStyle` не означает automatic transformation
+* engine проверяет наличие configured normalizer перед вызовом

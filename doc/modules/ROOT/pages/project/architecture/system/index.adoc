@@ -1,0 +1,10 @@
+= 3.1. Архитектура системы
+
+Это системный контур документации: high-level architecture, data flow, API,
+deployment и инженерные стандарты.
+
+Для AI / ML delivery pipeline сюда в первую очередь ложатся:
+
+* `System Design`
+* `Service Spec`
+* модели данных и схемы потоков

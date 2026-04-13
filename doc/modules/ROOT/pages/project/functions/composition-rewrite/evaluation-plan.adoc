@@ -1,0 +1,48 @@
+= Composition Rewrite Evaluation Plan
+
+== 1. Evaluation Goal
+
+* quality means the rewrite is useful while preserving enough structure to remain safe
+* main risks: destructive rewrite, low-clarity preview, incorrect patch application
+
+== 2. Quality Dimensions
+
+* preservation of existing blocks
+* patch clarity
+* semantic usefulness of rewrite
+* safety of apply step
+
+== 3. Acceptance Criteria
+
+* preview clearly explains proposed changes
+* preserved fraction of important blocks remains acceptable
+* apply result matches approved preview
+
+== 4. Dataset Strategy
+
+* representative compositions with mixed block types
+* cases with safety and constraint blocks
+* update cases where only part of composition should change
+
+== 5. Offline Evaluation
+
+* compare preview output to expected preservation goals
+* inspect applied result against preview
+
+== 6. Manual Review
+
+* reviewers check clarity, preservation and semantic improvement
+
+== 7. Thresholds and Decision Rule
+
+* go when rewrite stays reviewable and mostly preserves intended structure
+* no-go when destructive patches are frequent
+
+== 8. Regression Policy
+
+* regression: lower preservation, worse preview clarity, mismatch between preview and apply
+
+== 9. Post-Release Quality Review
+
+* collect failed rewrite cases
+* refine preservation prompts and golden compositions

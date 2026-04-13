@@ -1,0 +1,47 @@
+= Prompt Server Evaluation Plan
+
+== 1. Evaluation Goal
+
+* quality means the server stays deterministic, read-only and contract-stable
+* main risks: accidental draft access, inconsistent render behavior, weak validation
+
+== 2. Quality Dimensions
+
+* access boundary correctness
+* render reproducibility
+* API contract stability
+
+== 3. Acceptance Criteria
+
+* published-only access is enforced
+* same input yields same render output
+* parameter validation is predictable and testable
+
+== 4. Dataset Strategy
+
+* representative published assets
+* valid and invalid parameter sets
+* not-found and forbidden access cases
+
+== 5. Offline Evaluation
+
+* contract tests
+* deterministic render replay
+
+== 6. Manual Review
+
+* architecture and security review before go-live
+
+== 7. Thresholds and Decision Rule
+
+* go only if published-only boundary is proven in tests
+* no-go if service can access drafts or render unreproducibly
+
+== 8. Regression Policy
+
+* regression: broken access boundary or changed deterministic output for same inputs
+
+== 9. Post-Release Quality Review
+
+* track access boundary incidents
+* review compatibility after API changes

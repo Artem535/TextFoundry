@@ -1,0 +1,8 @@
+= Prompt Slicing ADR
+
+Текущее решение:
+
+* prompt slicing использует тот же generator abstraction, что и single block
+  generation
+* часть валидации делается на клиентской стороне GUI workflow
+* aggressive rewrite ограничивается preservation checks

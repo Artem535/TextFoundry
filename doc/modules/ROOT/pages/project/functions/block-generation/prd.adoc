@@ -1,0 +1,66 @@
+= Block Generation PRD
+
+== 1. Goal and Business Context
+
+* Business problem: создание блоков вручную замедляет первичное наполнение библиотеки.
+* Service goal: сократить путь от идеи до `Block Draft`.
+* Why now: генерация уже поддерживается в engine и GUI, но требует формализации.
+* Expected effect: быстрее создавать role, constraint, style и domain blocks.
+
+== 2. Problem Statement
+
+* Current state: пользователь заполняет все поля блока вручную.
+* Pain points: повторяющаяся структура, долгое первичное drafting.
+* Why current approach is insufficient: ручной ввод замедляет authoring workflow.
+* Why ML/LLM is needed: свободная инструкция хорошо подходит для initial draft generation.
+
+== 3. Users and Use Cases
+
+* Primary users: авторы блоков в GUI.
+* Internal users: команда, поддерживающая prompt library.
+* Main use cases:
+* создать новый блок по идее на естественном языке
+* получить черновик структуры блока для ручной доработки
+* быстро подготовить альтернативную версию существующего блока
+
+== 4. Scope and Non-Goals
+
+=== In Scope
+
+* генерация `GeneratedBlockData` и `BlockDraft`
+* использование optional hints по типу, языку и тегам
+* review-before-save workflow
+
+=== Out of Scope
+
+* автоматическая публикация
+* скрытый вызов из `Render()`
+* массовая batch-декомпозиция prompt в несколько блоков
+
+== 5. Success Criteria and KPI
+
+* пользователь получает пригодный черновик без ручного заполнения всех полей с нуля
+* generated output проходит базовую валидацию структуры
+* результат требует редактирования, но не полного переписывания в большинстве типовых кейсов
+
+== 6. Requirements Summary
+
+* Engine MUST вызывать generator только по явному запросу.
+* Система MUST возвращать draft-like результат, а не сразу published block.
+* Пользователь MUST иметь возможность проверить и отредактировать результат.
+
+== 7. Assumptions and Constraints
+
+* функция зависит от внешнего OpenAI-compatible endpoint
+* итоговая публикация остаётся ручной
+* deterministic render path не должен зависеть от availability AI provider
+
+== 8. Dependencies and Stakeholders
+
+* Dependencies: `IBlockGenerator`, HTTP transport, provider API, GUI editor
+* Stakeholders: prompt author, delivery owner, архитектурный owner AI layer
+
+== 9. Pilot / Release Acceptance
+
+* Pilot acceptance: usable draft generation for representative block types
+* Release acceptance: стабильный review workflow и понятные failure messages

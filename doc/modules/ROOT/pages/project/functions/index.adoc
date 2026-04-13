@@ -1,0 +1,42 @@
+= 3.1. Функции
+
+Этот раздел выделен как отдельная publish-папка для результатов skills из
+`ML LLM Delivery Pipeline`.
+
+Правило размещения:
+
+* каждый skill публикует свой результат в отдельную страницу этого раздела
+* при необходимости summary и выжимки дублируются в архитектурные, QA или
+  operational разделы
+* diagrams внутри function-документов ведутся в `mermaid`
+
+Основной набор документов:
+
+* `ML/LLM PRD`
+* `ML/LLM System Design`
+* `ML/LLM ADR`
+* `ML/LLM Service Spec`
+* `ML/LLM Evaluation Plan`
+* `ML/LLM Delivery Plan`
+* `ML/LLM Runbook`
+* `ML/LLM Security Note`
+* `ML/LLM Prompt Template`
+* `ML/LLM Document Set`
+
+== Наборы Документов По Функциям
+
+Кроме общих cross-function страниц, для каждой крупной функции должен
+поддерживаться свой набор pipeline-документов.
+
+Текущий базовый набор функций:
+
+* xref:project/functions/block-generation/index.adoc[Block Generation]
+* xref:project/functions/prompt-slicing/index.adoc[Prompt Slicing]
+* xref:project/functions/normalization/index.adoc[Normalization]
+* xref:project/functions/composition-rewrite/index.adoc[Composition Rewrite]
+* xref:project/functions/prompt-server/index.adoc[Prompt Server]
+
+Текущее правило:
+
+* общие страницы описывают весь AI / ML контур проекта
+* подпапки функций описывают одну capability с собственным набором файлов

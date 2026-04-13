@@ -1,0 +1,14 @@
+= 4. Процессы и Гайдлайны
+
+Этот раздел должен собирать процессную документацию проекта.
+
+Связанные материалы:
+
+* xref:../spec-kit.adoc[Spec Kit]
+* `ML LLM Delivery Pipeline`
+
+Практический подход такой:
+
+* `spec kit` ведёт feature-level спецификации и planning flow
+* `ML LLM Delivery Pipeline` ведёт delivery-document set для AI / ML направления
+* устойчивые выводы публикуются в структурированной документации этого раздела

@@ -1,0 +1,12 @@
+= Block Generation Delivery Plan
+
+Текущий delivery status:
+
+* базовый workflow уже реализован в GUI и engine
+* нужен отдельный formal quality loop для оценки результата
+
+Следующие шаги:
+
+* формализовать acceptance наборы
+* завести prompt versions
+* описать fallback policy при ошибках генерации

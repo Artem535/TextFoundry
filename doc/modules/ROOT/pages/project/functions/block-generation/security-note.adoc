@@ -1,0 +1,13 @@
+= Block Generation Security Note
+
+Риски:
+
+* пользовательский prompt может содержать чувствительные данные
+* внешний provider видит содержимое инструкции
+* generated content может включать нежелательные или небезопасные фрагменты
+
+Базовые меры:
+
+* не отправлять секреты в prompt
+* review output до сохранения
+* фиксировать provider boundary как external system

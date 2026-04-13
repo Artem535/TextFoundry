@@ -1,0 +1,15 @@
+= 3. ТЗ: Требования и спецификации
+
+Этот раздел предназначен для публикации feature-level требований и
+спецификаций, подготовленных через `spec kit`.
+
+Типичный поток наполнения:
+
+* `speckit-specify` для feature spec
+* `speckit-clarify` для снятия пробелов
+* `speckit-plan` и `speckit-tasks` для перехода к реализации
+
+Связанные документы:
+
+* xref:../../../spec-kit.adoc[Spec Kit]
+* xref:prd.adoc[PRD]

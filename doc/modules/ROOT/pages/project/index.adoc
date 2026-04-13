@@ -1,0 +1,14 @@
+= Project Docs
+
+This section reorganizes the project documentation into a hierarchical space
+closer to an internal knowledge base.
+
+It is the target publication area for:
+
+* core project documents
+* architecture and design artifacts
+* function-level outputs from `ML LLM Delivery Pipeline` skills
+* AI / ML delivery artifacts
+* process, QA, and operations notes
+
+Use the navigation tree to move by section.

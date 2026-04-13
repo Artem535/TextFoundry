@@ -1,0 +1,7 @@
+= 3. Командная и Разработка
+
+Раздел собирает документацию по инженерным workstreams и специализированным
+delivery-артефактам.
+
+Здесь особенно уместно публиковать AI / ML document set по pipeline, а также
+backend / frontend engineering notes.

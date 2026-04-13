@@ -1,0 +1,50 @@
+= Block Generation Evaluation Plan
+
+== 1. Evaluation Goal
+
+* What quality means: generated draft ускоряет authoring и остаётся пригодным к review
+* Main risks: unusable schema, wrong block type, low-signal template
+* Release decision: можно ли опираться на функцию как на штатный drafting workflow
+
+== 2. Quality Dimensions
+
+* structural validity
+* semantic relevance
+* placeholder correctness
+* editability after generation
+
+== 3. Acceptance Criteria
+
+* generated draft валиден по базовой структуре
+* template и defaults согласованы между собой
+* author может довести результат до publish без полной регенерации в большинстве тестовых кейсов
+
+== 4. Dataset Strategy
+
+* gold cases: role, style, safety, constraint, domain blocks
+* negative cases: vague prompts, contradictory instructions, missing context
+
+== 5. Offline Evaluation
+
+* проверка результата на curated prompt set
+* ручная оценка качества generated drafts
+
+== 6. Manual Review
+
+* reviewer: prompt author или product/domain owner
+* focus: relevance, schema quality, review cost
+
+== 7. Thresholds and Decision Rule
+
+* go: большинство representative prompts дают usable draft
+* no-go: частые structural failures или unusable outputs
+
+== 8. Regression Policy
+
+* regression: заметное ухудшение draft usability или schema consistency
+* baseline: текущий accepted prompt/template version
+
+== 9. Post-Release Quality Review
+
+* собирать примеры discarded outputs
+* обновлять prompt strategy и eval set по реальным кейсам

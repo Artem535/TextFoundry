@@ -1,0 +1,11 @@
+= 3. ML/LLM ADR
+
+Страница предназначена для результата skill `ml-llm-adr`.
+
+Здесь фиксируются ключевые архитектурные решения по AI / ML направлению:
+
+* provider strategy
+* adapter boundaries
+* prompt server scope
+* fallback и degradation policy
+* data handling choices

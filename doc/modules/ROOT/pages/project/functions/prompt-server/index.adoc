@@ -1,0 +1,10 @@
+= Prompt Server
+
+Это planned-функция, которая пока не реализована в коде, но уже зафиксирована в
+архитектуре проекта.
+
+Назначение:
+
+* read-only дистрибуция published prompt assets
+* runtime resolution of compositions and parameters
+* отделение authoring от delivery

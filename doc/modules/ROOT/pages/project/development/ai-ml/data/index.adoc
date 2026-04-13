@@ -1,0 +1,10 @@
+= 4.1.2. Данные
+
+Раздел предназначен для данных, используемых в evaluation и delivery-процессе.
+
+Сюда относятся:
+
+* benchmark sets
+* datasets
+* curated examples
+* golden cases для regression checks

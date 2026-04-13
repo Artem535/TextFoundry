@@ -1,0 +1,10 @@
+= 4.1.1. Модели
+
+Раздел предназначен для описания model strategy:
+
+* поддерживаемые providers и adapters
+* назначение моделей по сценариям
+* ограничения, fallback и routing policy
+
+Для `TextFoundry` здесь стоит документировать, какие AI adapters уже есть и как
+они соотносятся с задачами генерации, rewrite и normalization.

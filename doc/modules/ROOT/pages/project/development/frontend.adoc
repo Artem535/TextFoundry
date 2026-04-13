@@ -1,0 +1,9 @@
+= 4.3. Фронтенд
+
+Страница предназначена для GUI / UX workstream и frontend-facing решений.
+
+Для `TextFoundry` здесь можно документировать:
+
+* desktop editor behavior
+* AI-assisted interaction patterns
+* view-model и state transitions

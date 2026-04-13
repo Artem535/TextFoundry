@@ -1,0 +1,56 @@
+= Block Generation Service Spec
+
+== 1. Purpose and Service Boundary
+
+* Service responsibility: превратить instruction в block draft suggestion
+* Consumers: GUI block editor и потенциальные authoring clients
+* Non-goals: publish, persist, auto-approve
+
+== 2. Consumers and Dependencies
+
+* Consumers: block editor workflow
+* Dependencies: `IBlockGenerator`, provider API, transport layer
+
+== 3. API / Tool Methods
+
+* `Engine.GenerateBlockData(...)`
+* `Engine.GenerateBlockDraft(...)`
+
+== 4. Input Schema
+
+* required: prompt / instruction
+* optional: `BlockType`, language, tags, defaults hints
+
+== 5. Output Schema
+
+* `GeneratedBlockData`
+* `BlockDraft`
+
+== 6. Data Contract Rules
+
+* generator result должен быть конвертируем в block draft
+* missing generator configuration must surface as explicit error
+* output version не считается published version
+
+== 7. Prompting and Source Hierarchy
+
+* system prompt lives in `textfoundry_ai`
+* task prompt derives from user instruction and optional hints
+* no hidden prompt chaining outside configured generator
+
+== 8. Error Handling and Retries
+
+* transport, auth, parsing and provider errors bubble up to caller
+* retry policy определяется provider/transport configuration
+* no implicit persistence retry
+
+== 9. Confidence / Routing Rules
+
+* текущая реализация не вводит отдельный confidence score
+* routing фиксирован на configured generator implementation
+
+== 10. Edge Cases and Fallback Behavior
+
+* no generator configured -> explicit error
+* malformed provider response -> error + stay in manual editing
+* low-quality suggestion -> user edits or discards draft

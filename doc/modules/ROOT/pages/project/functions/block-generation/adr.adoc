@@ -1,0 +1,12 @@
+= Block Generation ADR
+
+Текущее зафиксированное решение:
+
+* генерация вынесена в adapter interface, а не зашита в core renderer
+* provider-specific logic живёт в `textfoundry_ai`
+* review step обязателен перед сохранением результата в хранилище
+
+Открытый planned-вопрос:
+
+* нужно ли поддерживать несколько провайдеров и routing policy поверх одного
+  `IBlockGenerator`

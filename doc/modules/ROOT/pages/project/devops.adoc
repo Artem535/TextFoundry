@@ -1,0 +1,10 @@
+= 6. Разворачивание и эксплуатация
+
+Раздел предназначен для operational documentation.
+
+Основные кандидаты на публикацию:
+
+* deployment topology
+* runtime configuration
+* monitoring и alerting
+* результат skill `ml-llm-runbook`

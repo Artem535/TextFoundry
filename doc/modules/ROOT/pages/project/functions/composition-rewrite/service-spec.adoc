@@ -1,0 +1,55 @@
+= Composition Rewrite Service Spec
+
+== 1. Purpose and Service Boundary
+
+* Service responsibility: rewrite composition through previewable patch set
+* Consumers: GUI rewrite workflow
+* Non-goals: blind overwrite, hidden persistence side effects outside apply
+
+== 2. Consumers and Dependencies
+
+* Consumers: composition rewrite dialog and authoring flow
+* Dependencies: `ICompositionBlockRewriter`, provider API, engine apply logic
+
+== 3. API / Tool Methods
+
+* `Engine.PreviewCompositionBlockRewrite(...)`
+* `Engine.ApplyCompositionBlockRewrite(...)`
+
+== 4. Input Schema
+
+* `CompositionBlockRewriteRequest`
+* rewrite strength
+* preservation hints / context
+
+== 5. Output Schema
+
+* `CompositionBlockRewritePreview`
+* `AppliedCompositionBlockRewriteResult`
+
+== 6. Data Contract Rules
+
+* preview must remain inspectable by caller
+* apply depends on approved preview
+* storage mutation occurs only in explicit apply path
+
+== 7. Prompting and Source Hierarchy
+
+* source composition and rewrite policy form the prompt context
+* preservation rules are part of prompt policy
+
+== 8. Error Handling and Retries
+
+* provider/transport errors surface to caller
+* preview validation failures block apply
+
+== 9. Confidence / Routing Rules
+
+* current implementation uses one configured rewriter path
+* preview quality and preservation ratio act as practical routing gate
+
+== 10. Edge Cases and Fallback Behavior
+
+* no rewriter configured -> explicit error
+* too aggressive rewrite -> do not apply, user reviews preview
+* ambiguous patch set -> fall back to manual composition editing

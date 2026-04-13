@@ -5,7 +5,7 @@ separates architectural intent, implementation status, and API reference.
 
 == Sections
 
-* xref:prd.adoc[PRD]
+* xref:project/index.adoc[Project Docs]
 * xref:status.adoc[Implementation Status]
 * xref:spec-kit.adoc[Spec Kit]
 * xref:api.adoc[API Reference]
@@ -15,3 +15,13 @@ separates architectural intent, implementation status, and API reference.
 The Antora pages in this module are thin wrappers around the existing source
 documents in `doc/*.adoc`. This keeps the project on a single documentation
 source while enabling Antora publication.
+
+== Structured Space
+
+The `Project Docs` section provides a hierarchical documentation space closer to
+an internal knowledge base. It is intended as the publication layer for:
+
+* project PRD and architecture materials
+* structured AI / ML delivery artifacts
+* process and operational documentation
+* outputs produced through `spec kit` and `ML LLM Delivery Pipeline` skills

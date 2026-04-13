@@ -1,0 +1,50 @@
+= Normalization System Design
+
+== 1. Executive Summary
+
+Функция добавляет explicit semantic rewrite поверх deterministic render path.
+Она использует `SemanticStyle` как input policy, но не меняет базовый render
+contract и может быть полностью отключена без потери core functionality.
+
+== 2. Context and Scope
+
+* In scope: text normalization, composition normalization, semantic style application
+* Out of scope: hidden rewrite in renderer, automatic persistence
+
+== 3. Requirements Summary
+
+* Functional: normalize text, normalize composition, return reviewable result
+* NFR: explicitness, graceful degradation, separation from render path
+
+== 4. Components and Integrations
+
+Компоненты:
+
+* render or composition UI workflow
+* `SemanticStyle`
+* `INormalizer` / `IBlockNormalizer`
+* OpenAI-compatible normalizer
+
+== 5. Key System Scenario
+
+Поток:
+
+[source,mermaid]
+----
+flowchart LR
+  Source["Rendered Text or Composition"] --> Engine["Normalize / NormalizeComposition"]
+  Engine --> Normalizer["INormalizer / IBlockNormalizer"]
+  Normalizer --> Provider["OpenAI-compatible API"]
+  Provider --> Normalizer
+  Normalizer --> Engine
+  Engine --> Result["Normalized Output"]
+----
+
+== 6. Reliability and Degradation
+
+* при отсутствии normalizer система остаётся в deterministic mode
+
+== 7. Operations Summary
+
+* normalized result is derived, not silently committed
+* source snapshot and target style must remain inspectable

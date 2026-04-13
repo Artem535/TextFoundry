@@ -1,0 +1,50 @@
+= Normalization Evaluation Plan
+
+== 1. Evaluation Goal
+
+* quality means semantic changes are applied without unacceptable loss of meaning
+* main risks: hallucinated rewrite, over-editing, broken composition coherence
+
+== 2. Quality Dimensions
+
+* faithfulness to source
+* style adherence
+* language correctness
+* composition coherence
+
+== 3. Acceptance Criteria
+
+* requested style changes are visible
+* original meaning remains acceptable
+* normalized composition remains reviewable and structurally understandable
+
+== 4. Dataset Strategy
+
+* representative render outputs
+* multilingual cases
+* tone and tense shifts
+* negative cases with under-specified style requests
+
+== 5. Offline Evaluation
+
+* compare normalized outputs against curated expectations
+* review preservation of meaning and style shift
+
+== 6. Manual Review
+
+* review by author or domain owner
+* disagreements resolved in favor of meaning preservation
+
+== 7. Thresholds and Decision Rule
+
+* go when representative cases show usable style change with acceptable fidelity
+* no-go when semantic drift is frequent
+
+== 8. Regression Policy
+
+* regression means worse preservation of meaning or lower adherence to style request
+
+== 9. Post-Release Quality Review
+
+* collect examples of over-aggressive rewrite
+* refine prompt policy and style guidance

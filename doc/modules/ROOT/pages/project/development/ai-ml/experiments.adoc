@@ -1,0 +1,11 @@
+= 4.1.3. Эксперименты и исследования
+
+Раздел предназначен для исследования гипотез, prompt experiments и сравнения
+вариантов реализации.
+
+Сюда удобно переносить:
+
+* experiment notes
+* evaluation deltas
+* prompt tuning results
+* rationale перед оформлением ADR

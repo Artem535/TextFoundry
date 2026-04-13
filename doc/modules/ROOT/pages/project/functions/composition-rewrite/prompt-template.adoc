@@ -1,0 +1,7 @@
+= Composition Rewrite Prompt Template
+
+Prompt contract должен фиксировать:
+
+* допустимую силу rewrite
+* правила preservation existing blocks
+* expected patch-oriented output format

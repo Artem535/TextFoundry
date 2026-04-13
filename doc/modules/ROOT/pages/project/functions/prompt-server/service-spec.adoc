@@ -1,0 +1,65 @@
+= Prompt Server Service Spec
+
+Статус: draft placeholder для planned capability.
+
+== 1. Purpose and Service Boundary
+
+* Service responsibility: serve published prompt assets and render them deterministically
+* Consumers: downstream runtime clients
+* Non-goals: authoring, draft access, hidden rewrite
+
+== 2. Consumers and Dependencies
+
+* Consumers: services and clients using published prompts
+* Dependencies: published repository, renderer, authn/authz layer
+
+== 3. API / Tool Methods
+
+Ожидаемые контракты:
+
+* resolve published composition
+* render with parameters
+* inspect available published assets
+
+== 4. Input Schema
+
+* asset id / version
+* runtime params
+* optional view mode or response format
+
+== 5. Output Schema
+
+* resolved published asset metadata
+* rendered text
+* validation errors
+
+== 6. Data Contract Rules
+
+* only published assets are addressable
+* draft ids/versions must be rejected
+* contract changes require compatibility policy
+
+== 7. Prompting and Source Hierarchy
+
+* primary source is published repository
+* no hidden AI prompting in base contract
+
+== 8. Error Handling and Retries
+
+* asset not found -> explicit not found
+* missing required params -> validation error
+* repository unavailable -> service unavailable / fail closed
+
+== 9. Confidence / Routing Rules
+
+* no confidence routing in deterministic base server contract
+
+== 10. Edge Cases and Fallback Behavior
+
+* draft requested -> reject
+* invalid params -> reject
+* unavailable published store -> fail closed, do not switch to draft data
+
+== Source of Requirements
+
+* xref:project/about/prd.adoc[Project PRD]

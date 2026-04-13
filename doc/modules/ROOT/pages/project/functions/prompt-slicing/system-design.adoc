@@ -1,0 +1,55 @@
+= Prompt Slicing System Design
+
+== 1. Executive Summary
+
+Функция строит batch-oriented AI workflow для перевода raw prompt в block set.
+Она использует тот же generator abstraction, что и single-block generation,
+но добавляет batch contract, GUI validation и preservation checks.
+
+== 2. Context and Scope
+
+* In scope: prompt decomposition, update mode, generated block validation
+* Out of scope: auto-save of generated blocks, hidden prompt migration
+
+== 3. Requirements Summary
+
+* Functional: produce block batch, preserve structure in update mode, validate ids
+* NFR: reviewability, explicit errors, no silent overwrite
+
+== 4. Components and Integrations
+
+Компоненты:
+
+* GUI slice dialog
+* `PromptSlicingRequest`
+* engine batch generation methods
+* generator adapter
+* validation of generated ids and preservation heuristics
+
+== 5. Key System Scenario
+
+Поток:
+
+[source,mermaid]
+----
+flowchart LR
+  Source["Source Prompt"] --> Dialog["Block Slice Dialog"]
+  Dialog --> Engine["Engine.GenerateBlockBatchData / GenerateBlockDrafts"]
+  Engine --> Generator["IBlockGenerator"]
+  Generator --> Provider["OpenAI-compatible API"]
+  Provider --> Generator
+  Generator --> Engine
+  Engine --> Validate["Client-side Validation"]
+  Validate --> Drafts["Suggested Blocks"]
+----
+
+== 6. Reliability and Degradation
+
+* GUI validation catches duplicate ids and unsafe replacements
+* provider failure leaves source prompt unchanged
+* user may switch to manual block editing
+
+== 7. Operations Summary
+
+* generated block ids должны быть уникальны
+* update mode должен учитывать preservation of existing block set

@@ -1,0 +1,8 @@
+= Prompt Server Security Note
+
+Ключевые требования:
+
+* только published data
+* no draft mutation
+* parameter input validation
+* authn/authz policy для external clients

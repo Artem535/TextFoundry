@@ -1,0 +1,45 @@
+= Normalization Runbook
+
+== 1. Operational Overview
+
+* Service owner: normalization workflow owner
+* Criticality: medium
+
+== 2. Ownership and Support Model
+
+* Primary owner: AI adapter/normalizer owner
+* Secondary owner: render/composition workflow owners
+
+== 3. Key Signals and Alerts
+
+* repeated provider failures
+* parsing errors from normalization responses
+* user-visible mismatch between raw snapshot and normalized output freshness
+
+== 4. Common Failure Modes
+
+* missing configuration
+* stale source snapshot
+* low-quality semantic rewrite
+
+== 5. Incident Response
+
+* verify AI settings
+* verify source snapshot
+* inspect provider failure returned by engine
+* switch to raw output when needed
+
+== 6. Degradation Modes
+
+* disable normalization
+* continue with deterministic render only
+
+== 7. Recovery and Validation
+
+* rerun normalization on representative sample
+* verify status indicates normalized result is current
+
+== 8. Escalation Contacts
+
+* Team Lead: AI workflow owner
+* Core owner: engine integration owner

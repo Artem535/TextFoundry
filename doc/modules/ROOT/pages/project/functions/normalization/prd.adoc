@@ -1,0 +1,62 @@
+= Normalization PRD
+
+== 1. Goal and Business Context
+
+* Business problem: пользователю нужен controlled rewrite без потери deterministic base flow.
+* Service goal: применять semantic style changes только по explicit request.
+* Expected effect: быстрее получать согласованный tone/tense/language output.
+
+== 2. Problem Statement
+
+* Current state: raw render не меняет семантику текста.
+* Pain points: manual rewrite после render занимает время.
+* Why ML/LLM is needed: semantic rewrite трудно описать чисто deterministic правилами.
+
+== 3. Users and Use Cases
+
+* Primary users: пользователи render и composition workflows
+* Main use cases:
+* normalize rendered text
+* normalize composition blocks while preserving structure
+* prepare alternate tone/language variants
+
+== 4. Scope and Non-Goals
+
+=== In Scope
+
+* text normalization
+* composition normalization
+* explicit semantic style application
+
+=== Out of Scope
+
+* automatic semantic mutation in `Render()`
+* silent overwrite of stored published data
+
+== 5. Success Criteria and KPI
+
+* normalized result reflects requested semantic style
+* source meaning remains acceptable after rewrite
+* workflow remains optional and clearly separated from deterministic render
+
+== 6. Requirements Summary
+
+* engine MUST require explicit normalize call
+* system MUST fail explicitly when normalizer is absent
+* user MUST review normalized output before reuse in authored content
+
+== 7. Assumptions and Constraints
+
+* AI provider may be unavailable
+* normalization quality depends on source text and style clarity
+* core engine should remain deterministic without AI
+
+== 8. Dependencies and Stakeholders
+
+* Dependencies: `INormalizer`, `IBlockNormalizer`, GUI render/composition workflows
+* Stakeholders: content authors, AI workflow owner, core engine owner
+
+== 9. Pilot / Release Acceptance
+
+* Pilot: users can create useful normalized variants for common styles
+* Release: normalization is stable enough to be part of regular explicit workflow

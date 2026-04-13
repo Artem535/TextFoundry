@@ -1,0 +1,9 @@
+= Composition Rewrite
+
+Функция отвечает за block-preserving rewrite workflow для composition.
+
+Текущее состояние:
+
+* поддерживается preview/apply модель
+* отдельный rewriter подключается через engine
+* GUI уже поддерживает `Rewrite Blocks`

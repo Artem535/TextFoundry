@@ -1,0 +1,10 @@
+= Prompt Server Prompt Template
+
+Для server capability prompt-template как отдельный runtime prompt может и не
+понадобиться. Пока страница сохранена для единообразия pipeline.
+
+Если server будет поддерживать built-in prompt wrappers, они должны быть:
+
+* deterministic
+* versioned
+* published-only

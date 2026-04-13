@@ -1,0 +1,10 @@
+= 3.4. Интеграции
+
+Раздел предназначен для внешних интеграций и контрактов с внешними системами.
+
+Для `TextFoundry` сюда логично относить:
+
+* AI provider integrations
+* future prompt-server interfaces
+* import / export integrations
+* внешние tool contracts

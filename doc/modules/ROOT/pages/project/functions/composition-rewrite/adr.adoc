@@ -1,0 +1,7 @@
+= Composition Rewrite ADR
+
+Текущее решение:
+
+* rewrite делается как patch-oriented workflow, а не как blind overwrite
+* preview обязателен перед apply
+* engine хранит границу между suggestion и mutation

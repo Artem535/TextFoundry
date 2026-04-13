@@ -1,0 +1,14 @@
+= 2. ML/LLM System Design
+
+Страница предназначена для результата skill `ml-llm-system-design`.
+
+Здесь должен жить end-to-end design AI / ML контура проекта:
+
+* architecture overview
+* components and boundaries
+* integrations
+* data flow
+* degradation and fallback paths
+* operational constraints
+
+Все диаграммы в документе должны оформляться в `mermaid`.

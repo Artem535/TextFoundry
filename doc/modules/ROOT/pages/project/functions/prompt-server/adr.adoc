@@ -1,0 +1,7 @@
+= Prompt Server ADR
+
+Уже зафиксированные архитектурные решения:
+
+* server planned как отдельная граница, а не как часть GUI
+* доступ только к published сущностям
+* server не должен становиться authoring surface

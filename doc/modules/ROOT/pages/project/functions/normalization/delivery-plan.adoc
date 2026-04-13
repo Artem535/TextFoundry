@@ -1,0 +1,10 @@
+= Normalization Delivery Plan
+
+Текущий статус:
+
+* базовый text and composition normalization уже реализован
+
+Следующие шаги:
+
+* формализовать style acceptance наборы
+* добавить regression corpus по tone / tense / language cases

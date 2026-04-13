@@ -1,0 +1,17 @@
+= 1. High-Level Design
+
+Страница предназначена для high-level system design документа.
+
+Основной кандидат на наполнение:
+
+* результат skill `ml-llm-system-design`
+
+Для `TextFoundry` здесь стоит собирать:
+
+* core rendering path
+* composition model
+* storage layer
+* AI integration layer
+* CLI / GUI / future prompt server boundaries
+
+Диаграммы в этом разделе должны оформляться в `mermaid`.

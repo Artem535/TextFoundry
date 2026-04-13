@@ -1,0 +1,62 @@
+= Composition Rewrite PRD
+
+== 1. Goal and Business Context
+
+* Business problem: обновление composition вручную может быть медленным и ломать структуру.
+* Service goal: дать controlled rewrite без потери block-oriented model.
+* Expected effect: быстрее обновлять composition, сохраняя reviewability.
+
+== 2. Problem Statement
+
+* Current state: composition editing и rewrite делаются вручную или фрагментарно.
+* Pain points: сложно обновить набор блоков, не разрушив текущую композицию.
+* Why ML/LLM is needed: semantic rewrite нужно сочетать с preservation existing blocks.
+
+== 3. Users and Use Cases
+
+* Primary users: authors editing compositions
+* Main use cases:
+* preview AI rewrite over current composition
+* inspect patches before apply
+* update composition while preserving important blocks
+
+== 4. Scope and Non-Goals
+
+=== In Scope
+
+* preview/apply rewrite workflow
+* patch-oriented output
+* explicit user review
+
+=== Out of Scope
+
+* blind overwrite of composition
+* automatic apply without preview
+
+== 5. Success Criteria and KPI
+
+* preview explains changes well enough for human decision
+* apply updates composition without hidden mutations
+* rewrite preserves enough existing structure to stay useful
+
+== 6. Requirements Summary
+
+* system MUST separate preview and apply
+* system MUST expose patch-like result
+* user MUST approve changes before mutation
+
+== 7. Assumptions and Constraints
+
+* provider sees composition content
+* sensitive blocks may require manual review
+* quality depends on preservation guidance
+
+== 8. Dependencies and Stakeholders
+
+* Dependencies: `ICompositionBlockRewriter`, GUI rewrite dialog, engine apply flow
+* Stakeholders: composition authors, AI workflow owner, core composition owner
+
+== 9. Pilot / Release Acceptance
+
+* Pilot: preview/apply is useful on representative compositions
+* Release: patch quality and preservation behavior are stable enough for repeated use

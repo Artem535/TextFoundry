@@ -1,0 +1,6 @@
+= Prompt Server Document Set
+
+Функция пока находится в planned-state.
+
+Минимальный набор placeholder-документов уже создан, чтобы future work не
+размазывался по общей документации.

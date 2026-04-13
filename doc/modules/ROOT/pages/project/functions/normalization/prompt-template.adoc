@@ -1,0 +1,7 @@
+= Normalization Prompt Template
+
+Prompt contract должен фиксировать:
+
+* target semantic changes
+* правила сохранения смысла
+* запрет на избыточные изменения вне requested style shift

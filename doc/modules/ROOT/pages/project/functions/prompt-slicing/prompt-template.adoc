@@ -1,0 +1,8 @@
+= Prompt Slicing Prompt Template
+
+Prompt contract должен фиксировать:
+
+* требуемый формат batch output
+* правила именования ids
+* ожидания по сохранению intent
+* политику preservation для update mode

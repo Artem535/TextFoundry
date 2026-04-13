@@ -1,0 +1,48 @@
+= Block Generation Runbook
+
+== 1. Operational Overview
+
+* Service owner: AI authoring workflow owner
+* Criticality: medium
+* Support model: business-hours engineering support
+
+== 2. Ownership and Support Model
+
+* Primary owner: команда, поддерживающая `textfoundry_ai`
+* Secondary owner: GUI / engine owner for authoring workflow
+
+== 3. Key Signals and Alerts
+
+* provider auth errors
+* transport failures
+* parsing failures from provider responses
+
+== 4. Common Failure Modes
+
+* bad provider config -> request cannot start
+* invalid response format -> draft cannot be built
+* low-quality output -> manual review rejects suggestion
+
+== 5. Incident Response
+
+* verify settings
+* verify endpoint reachability
+* inspect provider error returned to UI
+* switch user to manual block creation if needed
+
+== 6. Degradation Modes
+
+* disable AI generation
+* continue manual authoring
+
+== 7. Recovery and Validation
+
+* recover provider configuration
+* rerun generation on test prompt
+* confirm editor receives a draft suggestion
+
+== 8. Escalation Contacts
+
+* Team Lead: authoring flow owner
+* ML owner: prompt/generator owner
+* GUI owner: block editor owner

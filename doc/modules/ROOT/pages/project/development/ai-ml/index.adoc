@@ -1,0 +1,15 @@
+= 4.1. Искусственный Интеллект
+
+Этот раздел предназначен для AI / ML направления проекта.
+
+Здесь публикуются результаты работы skills из `ML LLM Delivery Pipeline`,
+распределённые по смысловым разделам, а не сваленные в один каталог.
+
+Типичное распределение:
+
+* `ml-llm-prd` -> продуктовый и capability-level scope
+* `ml-llm-system-design` -> архитектура
+* `ml-llm-service-spec` -> интеграционные контракты
+* `ml-llm-evaluation-plan` -> evaluation и quality gates
+* `ml-llm-runbook` -> эксплуатация
+* `ml-llm-prompt-template` -> production prompts

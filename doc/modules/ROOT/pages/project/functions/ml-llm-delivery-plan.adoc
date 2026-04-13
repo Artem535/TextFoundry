@@ -1,0 +1,10 @@
+= 6. ML/LLM Delivery Plan
+
+Страница предназначена для результата skill `ml-llm-delivery-plan`.
+
+Здесь публикуются:
+
+* rollout stages
+* workstreams and ownership
+* dependency map
+* blockers and readiness checklist

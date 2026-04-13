@@ -1,0 +1,14 @@
+= Block Generation Document Set
+
+Покрытие функции сейчас разложено так:
+
+* продуктовый intent — `PRD`
+* архитектура — `System Design`
+* контракт — `Service Spec`
+* эксплуатация — `Runbook`
+
+Что ещё требуется усилить:
+
+* формальный benchmark set
+* versioned prompt governance
+* quality thresholds для release readiness

@@ -1,0 +1,54 @@
+= Normalization Service Spec
+
+== 1. Purpose and Service Boundary
+
+* Service responsibility: apply semantic rewrite to text or composition
+* Consumers: render UI, composition UI, future authoring clients
+* Non-goals: implicit render-time rewrite, direct mutation of published state
+
+== 2. Consumers and Dependencies
+
+* Consumers: render workflow, composition workflow
+* Dependencies: `INormalizer`, `IBlockNormalizer`, provider API
+
+== 3. API / Tool Methods
+
+* `Engine.Normalize(...)`
+* `Engine.NormalizeComposition(...)`
+
+== 4. Input Schema
+
+* source text or composition snapshot
+* `SemanticStyle`
+
+== 5. Output Schema
+
+* normalized string
+* `NormalizedCompositionResult`
+
+== 6. Data Contract Rules
+
+* caller must provide explicit style request
+* absence of configured normalizer is an error
+* derived result is review output, not implicit persistence
+
+== 7. Prompting and Source Hierarchy
+
+* style policy derives from `SemanticStyle`
+* prompt assembly is provider-side implementation detail in `textfoundry_ai`
+
+== 8. Error Handling and Retries
+
+* transport and parsing failures are surfaced
+* no hidden retry on persistence because persistence is outside the service boundary
+
+== 9. Confidence / Routing Rules
+
+* current implementation uses configured normalizer path only
+* no separate confidence score is exposed to caller
+
+== 10. Edge Cases and Fallback Behavior
+
+* no normalizer configured -> explicit error
+* unclear style request -> provider result still requires review
+* provider unavailable -> fallback to raw deterministic output

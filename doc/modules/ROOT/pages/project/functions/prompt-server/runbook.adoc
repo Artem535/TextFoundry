@@ -1,0 +1,47 @@
+= Prompt Server Runbook
+
+Статус: placeholder для planned capability.
+
+== 1. Operational Overview
+
+* Service owner: future platform/runtime owner
+* Criticality: high for downstream consumers using published prompts
+
+== 2. Ownership and Support Model
+
+* Primary owner: platform/service owner
+* Secondary owner: prompt library owner
+
+== 3. Key Signals and Alerts
+
+* repository access failures
+* authn/authz failures
+* render error spikes
+
+== 4. Common Failure Modes
+
+* published store unavailable
+* invalid runtime parameter requests
+* misconfigured access control
+
+== 5. Incident Response
+
+* verify repository connectivity
+* verify published-only access rules
+* validate deterministic render path
+
+== 6. Degradation Modes
+
+* read-only degraded mode
+* disable optional introspection endpoints if needed
+
+== 7. Recovery and Validation
+
+* restore published repository access
+* replay deterministic render test cases
+
+== 8. Escalation Contacts
+
+* Platform owner
+* Prompt library owner
+* Security owner

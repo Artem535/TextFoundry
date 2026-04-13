@@ -1,0 +1,8 @@
+= Prompt Slicing Document Set
+
+Минимальный комплект для функции уже создан.
+
+Следующие документы требуют усиления:
+
+* benchmark examples для slicing quality
+* explicit prompt schema и negative cases

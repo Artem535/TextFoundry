@@ -1,0 +1,54 @@
+= Composition Rewrite System Design
+
+== 1. Executive Summary
+
+Функция строит patch-oriented AI workflow для composition rewrite. Вместо
+слепой замены текста система сначала создаёт preview, затем даёт отдельный apply
+step, что сохраняет review boundary между suggestion и mutation.
+
+== 2. Context and Scope
+
+* In scope: preview generation, apply over approved preview, block-preserving rewrite
+* Out of scope: hidden mutation of composition, implicit publish
+
+== 3. Requirements Summary
+
+* Functional: produce preview, apply approved rewrite, preserve structure where possible
+* NFR: inspectability, explicitness, graceful degradation
+
+== 4. Components and Integrations
+
+Компоненты:
+
+* GUI rewrite dialog
+* `CompositionBlockRewriteRequest`
+* `ICompositionBlockRewriter`
+* preview/apply workflow
+
+== 5. Key System Scenario
+
+Поток:
+
+[source,mermaid]
+----
+flowchart LR
+  Composition["Current Composition"] --> Preview["Preview Rewrite Request"]
+  Preview --> Engine["PreviewCompositionBlockRewrite"]
+  Engine --> Rewriter["ICompositionBlockRewriter"]
+  Rewriter --> Provider["OpenAI-compatible API"]
+  Provider --> Rewriter
+  Rewriter --> Engine
+  Engine --> Patch["CompositionBlockRewritePreview"]
+  Patch --> Apply["ApplyCompositionBlockRewrite"]
+----
+
+== 6. Reliability and Degradation
+
+* provider failure leaves source composition unchanged
+* preview quality acts as primary safety gate
+* user can fall back to manual composition editing
+
+== 7. Operations Summary
+
+* preview и apply разделены
+* stored data меняются только после explicit apply

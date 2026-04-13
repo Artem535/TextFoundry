@@ -1,0 +1,8 @@
+= Composition Rewrite Document Set
+
+Минимальный pipeline для функции создан.
+
+Дальше нужно усилить:
+
+* preservation benchmarks
+* ясные quality gates для preview acceptance

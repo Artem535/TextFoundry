@@ -1,0 +1,10 @@
+= 5. Тестирование и QA
+
+Раздел предназначен для testing strategy, quality gates и evaluation artifacts.
+
+Для AI / ML контекста сюда прежде всего ложатся:
+
+* `Evaluation Plan`
+* benchmark criteria
+* regression policy
+* release readiness checks

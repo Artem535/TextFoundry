@@ -1,0 +1,12 @@
+= Block Generation Prompt Template
+
+В prompt contract должны фиксироваться:
+
+* назначение блока
+* желаемый `BlockType`
+* ограничения на output structure
+* требования к placeholders и defaults
+* expected review model: suggestion, not auto-commit
+
+Текущий runtime использует provider-specific prompt assembly в модуле
+`textfoundry_ai`.

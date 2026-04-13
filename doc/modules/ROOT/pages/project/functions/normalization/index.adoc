@@ -1,0 +1,10 @@
+= Normalization
+
+Функция отвечает за семантическую нормализацию текста и composition через
+explicit AI call.
+
+Текущее состояние:
+
+* поддерживается `Normalize(...)`
+* поддерживается `NormalizeComposition(...)`
+* normalizer отделён от deterministic render path

@@ -1,0 +1,11 @@
+= 5. Модели данных
+
+Страница предназначена для data model описания:
+
+* composition entities
+* storage entities
+* AI request / response structures
+* persistence boundaries
+
+Текущий код уже использует `Composition`, `Fragment` и ObjectBox-модели; при
+выделении формального data model документа он должен публиковаться здесь.

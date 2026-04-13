@@ -1,0 +1,11 @@
+= Block Generation
+
+Функция отвечает за генерацию одного нового блока из пользовательской
+инструкции.
+
+Текущее состояние:
+
+* реализована в engine как explicit AI workflow
+* использует `IBlockGenerator` и OpenAI-compatible adapter
+* доступна из GUI block editor
+* не вызывается автоматически из обычного render path
