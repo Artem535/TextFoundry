@@ -32,7 +32,8 @@ Dialog {
             spacing: General.spacingMedium
 
             Frame {
-                Layout.preferredWidth: 360
+                Layout.preferredWidth: 400
+                Layout.minimumWidth: 360
                 Layout.fillHeight: true
                 background: Rectangle {
                     radius: General.radiusMedium
@@ -43,46 +44,54 @@ Dialog {
                 ScrollView {
                     id: rewriteScroll
                     anchors.fill: parent
+                    anchors.margins: General.paddingMedium
                     clip: true
                     ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
-                    Column {
+                    ColumnLayout {
                         width: rewriteScroll.availableWidth
                         spacing: General.spacingMedium
 
                         DetailField {
-                            width: parent.width
+                            Layout.fillWidth: true
                             label: "Target Composition"
                             value: CompositionBlockRewriteVm.targetCompositionId
                         }
 
                         DetailField {
-                            width: parent.width
+                            Layout.fillWidth: true
                             label: "Base Version"
                             value: CompositionBlockRewriteVm.targetCompositionVersion
                         }
 
                         ColumnLayout {
-                            width: parent.width
+                            Layout.fillWidth: true
                             spacing: 4
 
                             Label {
+                                Layout.fillWidth: true
                                 text: "Instruction"
                                 font.bold: true
                             }
 
-                            TextArea {
-                                width: parent.width
-                                height: 180
-                                text: CompositionBlockRewriteVm.instruction
-                                placeholderText: "Describe how the existing blocks should change without changing composition structure."
-                                wrapMode: TextEdit.WrapAtWordBoundaryOrAnywhere
-                                selectByMouse: true
-                                leftPadding: General.paddingSmall
-                                rightPadding: General.paddingSmall
-                                topPadding: General.paddingSmall
-                                bottomPadding: General.paddingSmall
-                                onTextChanged: if (text !== CompositionBlockRewriteVm.instruction) CompositionBlockRewriteVm.instruction = text
+                            ScrollView {
+                                Layout.fillWidth: true
+                                implicitHeight: 180
+                                clip: true
+                                ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
+
+                                TextArea {
+                                    width: parent.width
+                                    text: CompositionBlockRewriteVm.instruction
+                                    placeholderText: "Describe how the existing blocks should change without changing composition structure."
+                                    wrapMode: TextEdit.WrapAtWordBoundaryOrAnywhere
+                                    selectByMouse: true
+                                    leftPadding: General.paddingSmall
+                                    rightPadding: General.paddingSmall
+                                    topPadding: General.paddingSmall
+                                    bottomPadding: General.paddingSmall
+                                    onTextChanged: if (text !== CompositionBlockRewriteVm.instruction) CompositionBlockRewriteVm.instruction = text
+                                }
                             }
                         }
                     }
