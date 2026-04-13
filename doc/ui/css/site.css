@@ -43,12 +43,44 @@ a:hover {
   max-width: 1200px;
   margin: 0 auto;
   padding: 1rem 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  justify-content: space-between;
+  flex-wrap: wrap;
 }
 
 .site-header__brand {
   font-size: 1.125rem;
   font-weight: 700;
   letter-spacing: 0.02em;
+}
+
+.site-search {
+  flex: 1 1 320px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.site-search__field {
+  width: min(100%, 420px);
+}
+
+.site-search__input {
+  width: 100%;
+  appearance: none;
+  border: 1px solid var(--border);
+  background: #fffdfa;
+  color: var(--text);
+  border-radius: 999px;
+  padding: 0.8rem 1rem;
+  font: inherit;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.site-search__input:focus {
+  outline: 2px solid rgba(15, 118, 110, 0.2);
+  border-color: var(--accent);
 }
 
 .layout {
@@ -92,6 +124,13 @@ a:hover {
 .nav-item .nav-list {
   margin-top: 0.45rem;
   padding-left: 1rem;
+}
+
+.nav-item > a,
+.nav-item > span {
+  display: inline-block;
+  color: var(--text);
+  font-weight: 600;
 }
 
 .doc {
@@ -155,5 +194,10 @@ a:hover {
 
   .doc {
     padding: 1.25rem;
+  }
+
+  .site-search {
+    flex-basis: 100%;
+    justify-content: stretch;
   }
 }

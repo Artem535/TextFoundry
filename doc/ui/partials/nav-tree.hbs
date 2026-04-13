@@ -1,5 +1,6 @@
 <ul class="nav-list">
   {{#each navigation}}
+  {{#if this.content}}
   <li class="nav-item">
     {{#if this.url}}
     <a href="{{{this.url}}}">{{this.content}}</a>
@@ -10,5 +11,10 @@
     {{> nav-tree navigation=this.items}}
     {{/if}}
   </li>
+  {{else}}
+  {{#if this.items}}
+  {{> nav-tree navigation=this.items}}
+  {{/if}}
+  {{/if}}
   {{/each}}
 </ul>

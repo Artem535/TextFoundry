@@ -14,6 +14,12 @@ content:
 output:
   dir: ./public
 
+antora:
+  extensions:
+    - require: '@antora/lunr-extension'
+      index_latest_only: true
+      index_by_heading: true
+
 ui:
   bundle:
     url: ./doc/ui

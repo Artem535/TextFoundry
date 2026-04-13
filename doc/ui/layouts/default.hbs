@@ -10,6 +10,13 @@
     <header class="site-header">
       <div class="site-header__inner">
         <a class="site-header__brand" href="{{{siteRootPath}}}">{{site.title}}</a>
+        {{#if env.SITE_SEARCH_PROVIDER}}
+        <div class="site-search">
+          <div id="search-field" class="site-search__field">
+            <input id="search-input" class="site-search__input" type="text" placeholder="Search the docs"{{#if page.home}} autofocus{{/if}}>
+          </div>
+        </div>
+        {{/if}}
       </div>
     </header>
     <div class="layout">
@@ -26,5 +33,8 @@
         </article>
       </main>
     </div>
+    {{#if env.SITE_SEARCH_PROVIDER}}
+    {{> search-scripts}}
+    {{/if}}
   </body>
 </html>
