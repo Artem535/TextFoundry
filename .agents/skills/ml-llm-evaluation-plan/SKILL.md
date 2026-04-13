@@ -1,6 +1,6 @@
 ---
 name: ml-llm-evaluation-plan
-description: Use when the user wants a quality and release-readiness plan for an ML or LLM service: dimensions, thresholds, datasets, review process, regression rules, and post-release quality review.
+description: "Use when the user wants a quality and release-readiness plan for an ML or LLM service: dimensions, thresholds, datasets, review process, regression rules, and post-release quality review."
 ---
 
 # ML / LLM Evaluation Plan
@@ -28,4 +28,3 @@ must be documented.
 
 * Tie metrics to release decisions.
 * Separate product acceptance from model-quality acceptance.
-

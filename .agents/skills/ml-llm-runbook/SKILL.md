@@ -1,6 +1,6 @@
 ---
 name: ml-llm-runbook
-description: Use when the user wants the operational document for an ML or LLM service: ownership, alerts, common failures, incident response, degradation modes, recovery checks, and escalation contacts.
+description: "Use when the user wants the operational document for an ML or LLM service: ownership, alerts, common failures, incident response, degradation modes, recovery checks, and escalation contacts."
 ---
 
 # ML / LLM Runbook
@@ -26,4 +26,3 @@ Use this skill for operations and support readiness.
 
 * Be concrete about first response steps.
 * Prefer operator actions over generic prose.
-

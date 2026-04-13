@@ -1,6 +1,6 @@
 ---
 name: ml-llm-delivery-plan
-description: Use when the user wants the rollout and ownership plan for an ML or LLM delivery: scope, workstreams, dependency map, rollout steps, blockers, readiness checklist, and transition notes.
+description: "Use when the user wants the rollout and ownership plan for an ML or LLM delivery: scope, workstreams, dependency map, rollout steps, blockers, readiness checklist, and transition notes."
 ---
 
 # ML / LLM Delivery Plan
@@ -27,4 +27,3 @@ ownership.
 
 * Keep this execution-focused.
 * Do not re-explain architecture except where needed for rollout.
-

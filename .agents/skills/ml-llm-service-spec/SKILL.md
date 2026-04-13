@@ -1,6 +1,6 @@
 ---
 name: ml-llm-service-spec
-description: Use when the user wants the integration contract for an ML or LLM service: API/tool methods, input/output schema, data contract rules, prompt hierarchy, retries, confidence routing, and fallback behavior.
+description: "Use when the user wants the integration contract for an ML or LLM service: API/tool methods, input/output schema, data contract rules, prompt hierarchy, retries, confidence routing, and fallback behavior."
 ---
 
 # ML / LLM Service Spec
@@ -29,4 +29,3 @@ component.
 
 * Be explicit about schema and contract behavior.
 * Keep business context short and operational detail secondary.
-
