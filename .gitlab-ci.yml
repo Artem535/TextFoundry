@@ -1,6 +1,6 @@
 stages:
+  - docs
   - build
-  - pages
 
 variables:
   LANG: C.UTF-8
@@ -42,9 +42,20 @@ build_rpm:
     paths:
       - "*.rpm"
     expire_in: 7 days
+  rules:
+    - changes:
+        - CMakeLists.txt
+        - CMakePresets.json
+        - cmake/**/*
+        - src/**/*
+        - tests/**/*
+        - examples/**/*
+        - vcpkg.json
+        - vcpkg-configuration.json
+        - .gitlab-ci.yml
 
 pages:
-  stage: pages
+  stage: docs
   image: node:22-bookworm
   script:
     - npm install
@@ -54,3 +65,9 @@ pages:
       - public
   rules:
     - if: $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
+      changes:
+        - doc/**/*
+        - antora-playbook.yml
+        - package.json
+        - package-lock.json
+        - scripts/sync_antora_docs.sh
