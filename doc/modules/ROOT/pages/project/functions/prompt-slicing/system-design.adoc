@@ -30,7 +30,7 @@
 
 Поток:
 
-[source,mermaid]
+[mermaid]
 ----
 flowchart LR
   Source["Source Prompt"] --> Dialog["Block Slice Dialog"]

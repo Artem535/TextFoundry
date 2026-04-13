@@ -31,7 +31,7 @@ assets. Он должен отделить authoring system от runtime consump
 
 Поток:
 
-[source,mermaid]
+[mermaid]
 ----
 flowchart LR
   Client --> Server["Prompt Server API"]

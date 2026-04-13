@@ -29,7 +29,7 @@ step, что сохраняет review boundary между suggestion и mutatio
 
 Поток:
 
-[source,mermaid]
+[mermaid]
 ----
 flowchart LR
   Composition["Current Composition"] --> Preview["Preview Rewrite Request"]

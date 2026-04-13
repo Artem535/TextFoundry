@@ -31,7 +31,7 @@
 
 Поток:
 
-[source,mermaid]
+[mermaid]
 ----
 flowchart LR
   User["User Instruction"] --> GUI["GUI Block Editor"]
