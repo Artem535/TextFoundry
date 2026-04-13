@@ -134,6 +134,7 @@ docs/latex/
 node_modules/
 public/
 doc/modules/ROOT/partials/generated/
+.cache/
 
 # System files
 .DS_Store

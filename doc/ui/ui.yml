@@ -1,4 +1,0 @@
-output_dir: _
-static_files:
-  - css/*
-default_layout: default
