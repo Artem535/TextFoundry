@@ -1,0 +1,26 @@
+site:
+  title: TextFoundry Documentation
+  start_page: textfoundry::index.adoc
+
+runtime:
+  cache_dir: ./.cache/antora
+
+content:
+  sources:
+    - url: .
+      branches: HEAD
+      start_path: doc
+
+output:
+  dir: ./public
+
+ui:
+  bundle:
+    url: ./doc/ui
+
+asciidoc:
+  attributes:
+    page-pagination: ''
+    sectanchors: ''
+    toc: left
+    toclevels: 3

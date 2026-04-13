@@ -1,0 +1,16 @@
+= TextFoundry Documentation
+
+TextFoundry documentation is published as an Antora site. The current structure
+separates architectural intent, implementation status, and API reference.
+
+== Sections
+
+* xref:prd.adoc[PRD]
+* xref:status.adoc[Implementation Status]
+* xref:api.adoc[API Reference]
+
+== Source of Truth
+
+The Antora pages in this module are thin wrappers around the existing source
+documents in `doc/*.adoc`. This keeps the project on a single documentation
+source while enabling Antora publication.

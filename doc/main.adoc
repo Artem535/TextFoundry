@@ -8,4 +8,5 @@
 = TextFoundry
 
 include::prd.adoc[leveloffset=1]
+include::status.adoc[leveloffset=1]
 include::doc.adoc[leveloffset=1]

@@ -45,11 +45,10 @@ build_rpm:
 
 pages:
   stage: pages
-  image: asciidoctor/docker-asciidoctor:main
+  image: node:22-bookworm
   script:
-    - mkdir public
-    - cd public
-    - asciidoctor ../doc/main.adoc -o index.html
+    - npm install
+    - npm run docs:build
   artifacts:
     paths:
       - public

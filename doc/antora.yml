@@ -1,0 +1,5 @@
+name: textfoundry
+title: TextFoundry
+version: ~
+nav:
+  - modules/ROOT/nav.adoc

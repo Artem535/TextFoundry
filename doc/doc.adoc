@@ -1,26 +1,21 @@
 = TextFoundry API Documentation
 
-
 == Обзор библиотеки
 
-TextFoundry — это C++ библиотека для конструирования текстов и промптов из переиспользуемых смысловых блоков. Библиотека предоставляет детерминированный движок для сборки текстов с поддержкой параметризации, версионирования и стилизации.
+`TextFoundry` — это C++ библиотека для конструирования текстов и промптов из
+переиспользуемых смысловых блоков. Библиотека предоставляет детерминированный
+движок для сборки текстов с поддержкой параметризации, версионирования,
+структурированных композиций и explicit AI-assisted workflow.
 
 === Основные принципы
 
-* **Engine-first**: Движок — самостоятельная библиотека без зависимостей от UI
-* **No magic**: Все преобразования детерминированы, воспроизводимы и тестируемы
-* **Control over convenience**: Контроль над текстом важнее автоматизации
+* **Engine-first**: движок — самостоятельная библиотека без зависимостей от UI
+* **No magic**: обычный render path детерминирован и не вызывает AI автоматически
+* **Control over convenience**: контроль над текстом важнее скрытой автоматизации
 
 === Пространство имён
 
-Все классы и функции находятся в пространстве имён `tf`.
-
-[source,cpp]
-----
-#include <textfoundry/engine.h>
-
-using namespace tf;
-----
+Все основные классы и функции находятся в пространстве имён `tf`.
 
 == Основные типы и псевдонимы
 
@@ -30,24 +25,45 @@ using namespace tf;
 |===
 | Тип | Определение | Описание
 
-| `BlockId` | `std::string` | Глобально уникальный идентификатор блока (нотация `domain.subdomain.name`)
-| `CompositionId` | `std::string` | Уникальный идентификатор композиции
-| `ParamValue` | `std::string` | Значение параметра
-| `Params` | `std::unordered_map<std::string_view, ParamValue>` | Карта параметров
+| `BlockId`
+| `std::string`
+| Глобально уникальный идентификатор блока
+
+| `CompositionId`
+| `std::string`
+| Уникальный идентификатор композиции
+
+| `ParamValue`
+| `std::string`
+| Значение параметра
+
+| `Params`
+| `std::unordered_map<std::string, ParamValue>`
+| Карта параметров
 |===
+
+=== ParamSchema
+
+[source,cpp]
+----
+struct ParamSchema {
+    std::string name;
+    bool required = false;
+    std::optional<ParamValue> defaultValue;
+};
+----
 
 === Версионирование
 
 [source,cpp]
 ----
 struct Version {
-    uint16_t major = 0;  // Breaking changes
-    uint16_t minor = 0;  // Backward compatible additions
+    uint16_t major = 0;
+    uint16_t minor = 0;
 
-    std::string toString() const;  // "major.minor"
+    std::string ToString() const;
 };
 
-// Поддерживает сравнение
 Version v1{1, 0};
 Version v2{1, 2};
 assert(v1 < v2);
@@ -57,35 +73,54 @@ assert(v1 < v2);
 
 === BlockType
 
-Категория блока (используется как тег/метаданные):
-
 [cols="1,2", options="header"]
 |===
 | Значение | Назначение
 
-| `Role` | Роли для LLM (system, user, assistant)
-| `Constraint` | Ограничения и требования
+| `Role` | Роли и инструкции для LLM
+| `System` | Системный контекст и framing
+| `Mission` | Цели, задачи и intent blocks
+| `Safety` | Ограничения безопасности и guardrails
+| `Constraint` | Формальные ограничения и требования
 | `Style` | Стилистические параметры
-| `Domain` | Предметная область
-| `Meta` | Мета-информация
+| `Domain` | Предметные блоки
+| `Meta` | Вспомогательные и meta-блоки
 |===
 
 === BlockState
-
-Состояние жизненного цикла:
 
 [cols="1,2", options="header"]
 |===
 | Значение | Описание
 
 | `Draft` | Редактируемая версия
-| `Published` | Опубликованная, неизменяемая версия
+| `Published` | Зафиксированная версия
 | `Deprecated` | Устаревшая, но доступная для чтения
 |===
 
-=== ErrorCode
+=== SeparatorType
 
-Коды ошибок:
+[cols="1,2", options="header"]
+|===
+| Значение | Описание
+
+| `Newline` | Перевод строки
+| `Paragraph` | Пустая строка между фрагментами
+| `Hr` | Горизонтальный разделитель
+|===
+
+=== FragmentType
+
+[cols="1,2", options="header"]
+|===
+| Значение | Описание
+
+| `BlockRef` | Ссылка на блок
+| `StaticText` | Inline текст без параметров
+| `Separator` | Типизированный разделитель
+|===
+
+=== ErrorCode
 
 [cols="1,2", options="header"]
 |===
@@ -94,372 +129,265 @@ assert(v1 < v2);
 | `MissingParam` | Обязательный параметр не предоставлен
 | `InvalidParamType` | Несоответствие типа параметра
 | `UnknownParam` | Параметр не определён в схеме
-| `VersionRequired` | BlockRef должен указывать версию
+| `VersionRequired` | Для `BlockRef` требуется версия
 | `VersionNotFound` | Запрошенная версия не существует
-| `BlockNotFound` | Блок с данным ID не найден
-| `CompositionNotFound` | Композиция с данным ID не найдена
+| `InvalidVersion` | Некорректная версия
+| `BlockNotFound` | Блок не найден
+| `CompositionNotFound` | Композиция не найдена
+| `DuplicateId` | Идентификатор уже существует
 | `InvalidStateTransition` | Недопустимый переход состояния
+| `DraftRequired` | Операция требует Draft состояния
+| `PublishedRequired` | Операция требует Published состояния
 | `TemplateSyntaxError` | Ошибка синтаксиса шаблона
+| `CircularReference` | Циклическая ссылка
 | `StorageError` | Ошибка хранилища
 | `Success` | Успех
 |===
+
+== Error и Result
+
+[source,cpp]
+----
+struct Error {
+    ErrorCode code;
+    std::string message;
+
+    bool is_error() const noexcept;
+    bool is_success() const noexcept;
+
+    static Error MissingParam(const std::string_view& paramName);
+    static Error VersionRequired();
+    static Error BlockNotFound(const std::string& blockId);
+    static Error CompositionNotFound(const std::string& compId);
+    static Error success();
+};
+
+template <typename T>
+class Result {
+public:
+    explicit Result(T value);
+    explicit Result(Error error);
+
+    bool HasValue() const noexcept;
+    bool HasError() const noexcept;
+    T& value() &;
+    const T& value() const&;
+    Error& error() &;
+    const Error& error() const&;
+};
+----
+
+== Класс Template
+
+Шаблон с плейсхолдерами вида `pass:[{{paramName}}]`.
+
+[source,cpp]
+----
+class Template {
+public:
+    Template();
+    explicit Template(std::string content);
+
+    const std::string& Content() const noexcept;
+    void SetContent(std::string content);
+
+    std::vector<std::string> ExtractParamNames() const;
+    Result<std::string> Expand(const Params& params) const;
+};
+----
 
 == Класс Block
 
 Логический переиспользуемый фрагмент текста.
 
-=== Конструкторы
+=== Основные методы
 
 [source,cpp]
 ----
-Block();                           // Пустой блок
-explicit Block(BlockId id);        // Блок с ID
-----
+class Block {
+public:
+    Block();
+    explicit Block(BlockId id);
 
-=== Методы доступа
+    const BlockId& Id() const noexcept;
+    BlockType type() const noexcept;
+    BlockState state() const noexcept;
+    const Version& version() const noexcept;
+    const Template& templ() const noexcept;
+    const Params& defaults() const noexcept;
+    const std::vector<ParamSchema>& param_schema() const noexcept;
+    const std::unordered_set<std::string>& tags() const noexcept;
+    const std::string& language() const noexcept;
+    const std::string& description() const noexcept;
+    const std::string& revision_comment() const noexcept;
 
-[cols="1,2", options="header"]
-|===
-| Метод | Описание
+    void SetId(BlockId id);
+    void SetType(BlockType type);
+    void SetState(BlockState state);
+    void SetTemplate(Template templ);
+    void SetDefaults(Params defaults);
+    void SetParamSchema(std::vector<ParamSchema> schema);
+    void SetTags(std::unordered_set<std::string> tags);
+    void SetLanguage(std::string lang);
+    void SetDescription(std::string desc);
+    void SetRevisionComment(std::string comment);
+    void SetVersion(const Version& v);
 
-| `id() -> const BlockId&` | Идентификатор блока
-| `type() -> BlockType` | Тип блока
-| `state() -> BlockState` | Состояние (Draft/Published/Deprecated)
-| `version() -> const Version&` | Версия
-| `templ() -> const Template&` | Шаблон содержимого
-| `defaults() -> const Params&` | Значения параметров по умолчанию
-| `paramSchema() -> const std::vector<ParamSchema>&` | Схема параметров
-| `tags() -> const std::unordered_set<std::string>&` | Теги
-| `language() -> const std::string&` | Язык (по умолчанию "en")
-| `description() -> const std::string&` | Описание
-|===
+    Result<ParamValue> ResolveParam(
+        const std::string& param_name,
+        const Params& local_override,
+        const Params& runtime_context
+    ) const;
 
-=== Методы изменения (только для Draft)
+    bool CanResolveParam(
+        const std::string& param_name,
+        const Params& local_override,
+        const Params& runtime_context
+    ) const;
 
-[source,cpp]
-----
-void setId(BlockId id);
-void setType(BlockType type);
-void setTemplate(Template templ);
-void setDefaults(Params defaults);
-void setParamSchema(std::vector<ParamSchema> schema);
-void setTags(std::unordered_set<std::string> tags);
-void setLanguage(std::string lang);
-void setDescription(std::string desc);
-----
+    Error ValidateParams(
+        const Params& local_override,
+        const Params& runtime_context
+    ) const;
 
-=== Работа с параметрами
-
-[source,cpp]
-----
-// Разрешение параметра по иерархии:
-// 1. Block Defaults (низкий приоритет)
-// 2. Composition Local Override
-// 3. Runtime Context (высокий приоритет)
-Result<ParamValue> resolveParam(
-    const std::string& paramName,
-    const Params& localOverride,
-    const Params& runtimeContext
-) const;
-
-// Проверка, можно ли разрешить параметр
-bool canResolveParam(
-    const std::string& paramName,
-    const Params& localOverride,
-    const Params& runtimeContext
-) const;
-
-// Валидация всех обязательных параметров
-Error validateParams(
-    const Params& localOverride,
-    const Params& runtimeContext
-) const;
-----
-
-=== Жизненный цикл
-
-[source,cpp]
-----
-// Публикация блока (создаёт неизменяемую версию)
-Error publish(const Version& newVersion);
-
-// Пометка как устаревший
-void deprecate();
+    Error publish(const Version& new_version);
+    void deprecate();
+};
 ----
 
 === BlockDraftBuilder
 
-Удобный билдер для создания Draft-блоков:
-
 [source,cpp]
 ----
-auto block = BlockDraftBuilder("greeting.basic")
-    .withType(BlockType::Domain)
-    .withTemplate(Template("Здравствуйте, {{name}}!"))
-    .withDefault("name", "пользователь")
-    .withTag("formal")
-    .withLanguage("ru")
-    .withDescription("Базовое приветствие")
+auto draft = BlockDraftBuilder("greeting.basic")
+    .WithType(BlockType::Domain)
+    .WithTemplate(Template("Здравствуйте, {{name}}!"))
+    .WithDefault("name", "пользователь")
+    .WithTag("formal")
+    .WithLanguage("ru")
+    .WithDescription("Базовое приветствие")
+    .WithRevisionComment("Initial version")
     .build();
-----
-
-== Класс Template
-
-Шаблон с плейсхолдерами `{{paramName}}`.
-
-[source,cpp]
-----
-// Конструкторы
-Template();                                    // Пустой шаблон
-explicit Template(std::string content);        // С содержимым
-
-// Доступ к содержимому
-const std::string& content() const noexcept;
-void setContent(std::string content);
-
-// Извлечение имён параметров из плейсхолдеров
-std::vector<std::string> extractParamNames() const;
-
-// Разворачивание шаблона с подстановкой параметров
-Result<std::string> expand(const Params& params) const;
-----
-
-== Класс Composition
-
-Упорядоченный список фрагментов, формирующих полный текст.
-
-=== Конструкторы
-
-[source,cpp]
-----
-Composition();
-explicit Composition(CompositionId id);
-----
-
-=== Методы доступа
-
-[cols="1,2", options="header"]
-|===
-| Метод | Описание
-
-| `id() -> const CompositionId&` | Идентификатор
-| `state() -> BlockState` | Состояние
-| `version() -> const Version&` | Версия
-| `fragments() -> const std::vector<Fragment>&` | Список фрагментов
-| `styleProfile() -> const std::optional<StyleProfile>&` | Профиль стиля
-| `projectKey() -> const std::string&` | Ключ проекта
-| `description() -> const std::string&` | Описание
-|===
-
-=== Добавление фрагментов
-
-[source,cpp]
-----
-// Добавить ссылку на блок (версия обязательна для Published)
-Fragment& addBlockRef(
-    const BlockId& blockId,
-    Version version,
-    Params localParams = {}
-);
-
-// Добавить ссылку с use_latest (только для Draft)
-Fragment& addBlockRefLatest(
-    const BlockId& blockId,
-    Params localParams = {}
-);
-
-// Добавить статический текст
-Fragment& addStaticText(std::string text);
-
-// Добавить разделитель
-Fragment& addSeparator(SeparatorType type);
-----
-
-=== Манипуляция фрагментами
-
-[source,cpp]
-----
-void insertFragment(size_t index, Fragment fragment);
-void removeFragment(size_t index);
-void clearFragments();
-Fragment& fragment(size_t index);
-const Fragment& fragment(size_t index) const;
-size_t fragmentCount() const noexcept;
-----
-
-=== Жизненный цикл и валидация
-
-[source,cpp]
-----
-// Валидация (проверяет, что BlockRef имеют версии в Published)
-Error validate() const;
-
-// Публикация
-Error publish(Version newVersion);
-
-// Пометка как устаревшая
-void deprecate();
-----
-
-=== Сериализация
-
-[source,cpp]
-----
-// Сериализация фрагментов в JSON
-std::string serializeFragments() const;
-
-// Десериализация из JSON
-Error deserializeFragments(const std::string& json);
-----
-
-=== CompositionDraftBuilder
-
-[source,cpp]
-----
-auto comp = CompositionDraftBuilder("welcome.message")
-    .withProjectKey("myproject")
-    .withStyleProfile(StyleProfile::markdown())
-    .addBlockRef("greeting.basic", Version{1, 0}, {{"name", "Анна"}})
-    .addStaticText("\n\n")
-    .addBlockRef("footer.signature", Version{1, 0})
-    .build();
-----
-
-== Класс Fragment
-
-Фрагмент композиции — может быть BlockRef, StaticText или Separator.
-
-=== Конструкторы
-
-[source,cpp]
-----
-Fragment();                                        // Пустой (StaticText)
-explicit Fragment(BlockRef blockRef);              // Ссылка на блок
-explicit Fragment(StaticText staticText);          // Статический текст
-explicit Fragment(Separator separator);            // Разделитель
-
-// Фабричные методы
-static Fragment makeBlockRef(BlockRef ref);
-static Fragment makeStaticText(std::string text);
-static Fragment makeSeparator(SeparatorType type);
-----
-
-=== Проверка типа
-
-[source,cpp]
-----
-FragmentType type() const noexcept;    // Получить тип
-bool isBlockRef() const noexcept;
-bool isStaticText() const noexcept;
-bool isSeparator() const noexcept;
-----
-
-=== Доступ к данным
-
-[source,cpp]
-----
-// Прямой доступ (выбрасывает исключение при неправильном типе)
-BlockRef& asBlockRef() &;
-const BlockRef& asBlockRef() const&;
-StaticText& asStaticText() &;
-const StaticText& asStaticText() const&;
-Separator& asSeparator() &;
-const Separator& asSeparator() const&;
-
-// Безопасный доступ (nullptr при неправильном типе)
-BlockRef* getBlockRef() noexcept;
-const BlockRef* getBlockRef() const noexcept;
-StaticText* getStaticText() noexcept;
-const StaticText* getStaticText() const noexcept;
-Separator* getSeparator() noexcept;
-const Separator* getSeparator() const noexcept;
 ----
 
 == Класс BlockRef
 
-Ссылка на опубликованный блок с локальными переопределениями параметров.
+Ссылка на блок с локальными переопределениями параметров.
 
 [source,cpp]
 ----
-// Конструкторы
-BlockRef();
-explicit BlockRef(BlockId blockId);
-BlockRef(BlockId blockId, Version version);
-BlockRef(BlockId blockId, Version version, Params localParams);
+class BlockRef {
+public:
+    BlockRef();
+    explicit BlockRef(BlockId blockId);
+    BlockRef(BlockId blockId, Version version);
+    BlockRef(BlockId blockId, Version version, Params LocalParams);
 
-// Геттеры
-const BlockId& blockId() const noexcept;
-const std::optional<Version>& version() const noexcept;
-const Params& localParams() const noexcept;
-bool useLatest() const noexcept;
+    const BlockId& GetBlockId() const noexcept;
+    const std::optional<Version>& version() const noexcept;
+    const Params& LocalParams() const noexcept;
+    bool UseLatest() const noexcept;
 
-// Сеттеры
-void setBlockId(BlockId id);
-void setVersion(Version ver);
-void setLocalParams(Params params);
-void setUseLatest(bool useLatest);  // Только для Draft
+    void SetBlockId(BlockId id);
+    void SetVersion(Version ver);
+    void SetLocalParams(Params params);
+    void SetUseLatest(bool UseLatest);
 
-// Добавление параметра
-BlockRef& withParam(const std::string& name, ParamValue value);
+    BlockRef& WithParam(const std::string& name, ParamValue value);
 
-// Валидация
-Error validate(bool isDraftContext = false) const;
-
-// Разрешение параметров
-Result<Params> resolveParams(
-    const Block& block,
-    const Params& runtimeContext
-) const;
+    Error validate(bool is_draft_context = false) const;
+    Result<Params> ResolveParams(
+        const Block& block,
+        const Params& runtime_context
+    ) const;
+};
 ----
 
-== Стили
+== Fragment, StaticText и Separator
+
+[source,cpp]
+----
+struct StaticText {
+    std::string content;
+    explicit StaticText(std::string text);
+    const std::string& text() const noexcept;
+};
+
+struct Separator {
+    SeparatorType type;
+    explicit Separator(SeparatorType sepType);
+    std::string toString() const;
+};
+
+class Fragment {
+public:
+    Fragment();
+    explicit Fragment(BlockRef blockRef);
+    explicit Fragment(StaticText staticText);
+    explicit Fragment(Separator separator);
+
+    static Fragment MakeBlockRef(BlockRef ref);
+    static Fragment MakeStaticText(std::string text);
+    static Fragment MakeSeparator(SeparatorType type);
+
+    FragmentType type() const noexcept;
+    bool IsBlockRef() const noexcept;
+    bool IsStaticText() const noexcept;
+    bool IsSeparator() const noexcept;
+
+    BlockRef& AsBlockRef() &;
+    const BlockRef& AsBlockRef() const&;
+    StaticText& AsStaticText() &;
+    const StaticText& AsStaticText() const&;
+    Separator& AsSeparator() &;
+    const Separator& AsSeparator() const&;
+
+    BlockRef* GetBlockRef() noexcept;
+    const BlockRef* GetBlockRef() const noexcept;
+    StaticText* GetStaticText() noexcept;
+    const StaticText* GetStaticText() const noexcept;
+    Separator* GetSeparator() noexcept;
+    const Separator* GetSeparator() const noexcept;
+
+    Error validate(bool isDraftContext = false) const;
+};
+----
+
+== Стили и контекст рендера
 
 === StructuralStyle
-
-Детерминированные параметры форматирования:
 
 [source,cpp]
 ----
 struct StructuralStyle {
-    enum class OutputFormat {
-        Plain,      // Обычный текст
-        Markdown,   // Markdown
-        Json,       // JSON
-        Xml         // XML
-    };
-
-    OutputFormat outputFormat = OutputFormat::Plain;
-    std::optional<std::string> blockWrapper;  // Шаблон с {{content}}
-    std::optional<std::string> preamble;      // Текст перед
-    std::optional<std::string> postamble;     // Текст после
-    std::optional<std::string> delimiter;     // Разделитель
-
-    // Предустановленные стили
-    static StructuralStyle plain();
-    static StructuralStyle markdown();
-    static StructuralStyle json();
+    std::optional<std::string> blockWrapper;
+    std::optional<std::string> preamble;
+    std::optional<std::string> postamble;
+    std::optional<std::string> delimiter;
 };
 ----
 
 === SemanticStyle
 
-Параметры, требующие переписывания текста (LLM):
-
 [source,cpp]
 ----
 struct SemanticStyle {
-    std::optional<std::string> tone;           // "formal", "casual"
-    std::optional<std::string> tense;          // "past", "present"
-    std::optional<std::string> targetLanguage; // "en", "ru"
-    std::optional<std::string> person;         // "first", "third"
+    std::optional<std::string> tone;
+    std::optional<std::string> tense;
+    std::optional<std::string> targetLanguage;
+    std::optional<std::string> person;
+    std::optional<std::string> rewriteStrength;
+    std::optional<std::string> audience;
+    std::optional<std::string> locale;
+    std::optional<std::string> terminologyRigidity;
+    std::optional<bool> preserveFormatting;
+    std::optional<bool> preserveExamples;
 
     bool isEmpty() const noexcept;
 };
 ----
 
 === StyleProfile
-
-Комбинированный профиль стиля:
 
 [source,cpp]
 ----
@@ -468,58 +396,274 @@ struct StyleProfile {
     SemanticStyle semantic;
 
     static StyleProfile plain();
-    static StyleProfile markdown();
 };
 ----
 
-== RenderContext
-
-Контекст рендеринга с runtime-параметрами:
+=== RenderContext
 
 [source,cpp]
 ----
 struct RenderContext {
-    Params params;                           // Runtime параметры
-    std::optional<std::string> targetLanguage; // Целевой язык
-    bool strictMode = false;                 // Строгий режим
+    Params params;
+    std::optional<std::string> targetLanguage;
+    bool strictMode = false;
 
-    // Builder-методы
-    RenderContext& withParam(const std::string& name, ParamValue value);
-    RenderContext& withLanguage(std::string lang);
-    RenderContext& withStrictMode(bool strict);
+    RenderContext& WithParam(const std::string& name, ParamValue value);
+    RenderContext& WithLanguage(std::string lang);
+    RenderContext& with_strict_mode(bool strict);
+};
+----
+
+== Класс Composition
+
+Упорядоченный список фрагментов, формирующих полный текст.
+
+[source,cpp]
+----
+class Composition {
+public:
+    Composition();
+    explicit Composition(CompositionId id);
+
+    const CompositionId& id() const noexcept;
+    BlockState state() const noexcept;
+    const Version& version() const noexcept;
+    void SetVersion(const Version& v);
+
+    const std::vector<Fragment>& fragments() const noexcept;
+    const std::optional<StyleProfile>& GetStyleProfile() const noexcept;
+    const std::string& ProjectKey() const noexcept;
+    const std::string& description() const noexcept;
+    const std::string& revision_comment() const noexcept;
+
+    void SetId(CompositionId id);
+    void SetState(BlockState state);
+    void SetStyleProfile(StyleProfile profile);
+    void SetProjectKey(std::string key);
+    void SetDescription(std::string desc);
+    void SetRevisionComment(std::string comment);
+
+    Fragment& AddBlockRef(const BlockId& blockId, Version version, Params localParams = {});
+    Fragment& AddBlockRefLatest(const BlockId& blockId, Params localParams = {});
+    Fragment& AddStaticText(std::string text);
+    Fragment& AddSeparator(SeparatorType type);
+
+    void InsertFragment(size_t index, Fragment fragment);
+    void RemoveFragment(size_t index);
+    void ClearFragments();
+
+    Fragment& fragment(size_t index);
+    const Fragment& fragment(size_t index) const;
+    size_t fragmentCount() const noexcept;
+
+    Error validate() const;
+    Error publish(Version new_version);
+    void deprecate();
+};
+----
+
+=== CompositionDraftBuilder
+
+[source,cpp]
+----
+auto comp = CompositionDraftBuilder("welcome.message")
+    .WithProjectKey("myproject")
+    .WithStyleProfile(StyleProfile::plain())
+    .WithDescription("Greeting composition")
+    .WithRevisionComment("Initial version")
+    .AddBlockRef("greeting.basic", 1, 0, {{"name", "Анна"}})
+    .AddStaticText("\n\n")
+    .AddSeparator(SeparatorType::Paragraph)
+    .build();
+----
+
+== Рендеринг
+
+=== RenderResult
+
+[source,cpp]
+----
+struct RenderResult {
+    std::string text;
+    CompositionId compositionId;
+    Version compositionVersion;
+    std::vector<std::pair<BlockId, Version>> blocksUsed;
+
+    bool isEmpty() const noexcept;
+};
+----
+
+=== IBlockCache и Renderer
+
+[source,cpp]
+----
+class IBlockCache {
+public:
+    virtual ~IBlockCache() = default;
+    virtual const Block* GetBlock(const BlockId& id, Version version) const = 0;
+    virtual const Block* GetLatestBlock(const BlockId& id) const = 0;
+    virtual void clear() = 0;
 };
 
-// Пример использования
-RenderContext ctx;
-ctx.withParam("user_name", "Иван")
-   .withLanguage("ru")
-   .withStrictMode(true);
+class Renderer {
+public:
+    Renderer();
+    explicit Renderer(std::unique_ptr<IBlockCache> cache);
+
+    void SetBlockCache(std::unique_ptr<IBlockCache> cache);
+    void ClearCache();
+
+    Result<RenderResult> Render(
+        const Composition& composition,
+        const RenderContext& context = RenderContext{}
+    ) const;
+
+    static Result<std::string> RenderBlock(
+        const Block& block,
+        const RenderContext& context = RenderContext{}
+    );
+
+    static std::string ApplyStructuralStyle(
+        const std::vector<std::string>& fragmentTexts,
+        const StructuralStyle& style
+    );
+};
+----
+
+== AI-assisted API
+
+=== Block generation
+
+[source,cpp]
+----
+struct BlockGenerationRequest {
+    std::string prompt;
+    std::optional<BlockId> preferred_id;
+    std::optional<BlockType> preferred_type;
+    std::optional<std::string> preferred_language;
+    std::vector<BlockId> existing_block_ids;
+    bool allow_id_collision = false;
+};
+
+struct PromptSlicingRequest {
+    std::string source_text;
+    std::optional<std::string> preferred_language;
+    std::optional<std::string> namespace_prefix;
+    std::vector<BlockId> existing_block_ids;
+    std::vector<BlockId> reusable_block_ids;
+    std::vector<std::string> reusable_block_summaries;
+    int preserve_reuse_percent = 70;
+    bool preserve_order = false;
+    bool allow_id_collision = false;
+};
+
+struct GeneratedBlockData {
+    BlockId id;
+    BlockType type = BlockType::Domain;
+    std::string language = "en";
+    std::string description;
+    std::string templ;
+    Params defaults;
+    std::vector<std::string> tags;
+};
+
+struct GeneratedBlockBatch {
+    std::vector<GeneratedBlockData> blocks;
+};
+----
+
+=== Normalization и rewrite
+
+[source,cpp]
+----
+struct BlockNormalizationRequest {
+    Block source_block;
+    SemanticStyle style;
+};
+
+struct NormalizedBlockData {
+    std::string templ;
+    std::optional<std::string> description;
+    std::optional<std::string> language;
+};
+
+struct CompositionNormalizationRequest {
+    CompositionId source_composition_id;
+    std::optional<Version> source_version;
+    SemanticStyle style;
+    std::optional<std::string> target_composition_id;
+    bool normalize_static_text = false;
+    bool reuse_cached_blocks = true;
+};
+
+struct NormalizedCompositionResult {
+    CompositionId composition_id;
+    Version composition_version;
+    std::vector<std::pair<BlockId, BlockId>> rewritten_blocks;
+};
+
+struct CompositionBlockRewriteRequest {
+    CompositionId source_composition_id;
+    std::optional<Version> source_version;
+    std::string instruction;
+    bool preserve_language = true;
+    bool preserve_placeholders = true;
+};
+
+struct BlockRewritePatch {
+    BlockId block_id;
+    std::optional<std::string> description;
+    std::optional<std::string> templ;
+    std::optional<Params> defaults;
+    std::optional<std::vector<std::string>> tags;
+    std::string rationale;
+};
+
+struct CompositionBlockRewritePreview {
+    CompositionId source_composition_id;
+    Version source_version;
+    std::vector<BlockRewritePatch> patches;
+};
+
+struct AppliedCompositionBlockRewriteResult {
+    CompositionId composition_id;
+    Version composition_version;
+    std::vector<std::pair<BlockId, Version>> rewritten_blocks;
+};
 ----
 
 == Класс Engine
 
-Главный API-класс TextFoundry.
-
-=== Конструкторы и конфигурация
-
-[source,cpp]
-----
-Engine();
-explicit Engine(EngineConfig config);
-
-// Установка репозиториев
-void setBlockRepository(std::shared_ptr<IBlockRepository> repo);
-void setCompositionRepository(std::shared_ptr<ICompositionRepository> repo);
-void setNormalizer(std::shared_ptr<INormalizer> normalizer);
-----
+Главный API-класс `TextFoundry`.
 
 === EngineConfig
 
 [source,cpp]
 ----
 struct EngineConfig {
-    std::string projectKey = "default";
-    bool strictMode = false;  // Режим по умолчанию
+    std::string ProjectKey = "default";
+    bool strict_mode = false;
+    std::string default_data_path = "memory:tf";
+};
+----
+
+=== Конфигурация зависимостей
+
+[source,cpp]
+----
+class Engine {
+public:
+    enum class VersionBump { Minor, Major };
+
+    Engine();
+    explicit Engine(EngineConfig config);
+
+    void SetBlockRepository(std::shared_ptr<IBlockRepository> repo);
+    void SetCompositionRepository(std::shared_ptr<ICompositionRepository> repo);
+    void SetNormalizer(std::shared_ptr<INormalizer> normalizer);
+    void SetBlockNormalizer(std::shared_ptr<IBlockNormalizer> normalizer);
+    void SetBlockGenerator(std::shared_ptr<IBlockGenerator> generator);
+    void SetCompositionBlockRewriter(std::shared_ptr<ICompositionBlockRewriter> rewriter);
 };
 ----
 
@@ -527,447 +671,180 @@ struct EngineConfig {
 
 [source,cpp]
 ----
-// Создание
-Block createBlockDraft(const BlockId& id);
+Result<Block> LoadBlock(
+    const BlockId& id,
+    std::optional<Version> version = std::nullopt
+) const;
 
-// Сохранение и загрузка
-Error saveBlock(const Block& block);
-Result<Block> loadBlock(const BlockId& id, std::optional<Version> version = std::nullopt);
+Error DeprecateBlock(const BlockId& id, Version version);
+Error DeleteBlock(const BlockId& id);
 
-// Жизненный цикл
-Result<Block> publishBlock(const BlockId& id, Version newVersion);
-Error deprecateBlock(const BlockId& id, Version version);
+Result<Version> GetLatestBlockVersion(const BlockId& id);
+Result<std::vector<Version>> ListBlockVersions(const BlockId& id);
+std::vector<BlockId> ListBlocks(
+    std::optional<BlockType> typeFilter = std::nullopt
+);
 
-// Список и версии
-Result<Version> getLatestBlockVersion(const BlockId& id);
-std::vector<BlockId> listBlocks(std::optional<BlockType> typeFilter = std::nullopt);
+Result<PublishedBlock> PublishBlock(
+    BlockDraft draft,
+    VersionBump bump = VersionBump::Minor
+);
+Result<PublishedBlock> PublishBlock(BlockDraft draft, Version explicit_version);
+Result<PublishedBlock> UpdateBlock(
+    BlockDraft draft,
+    VersionBump bump = VersionBump::Minor
+);
+----
+
+=== Операции AI-authoring для Block
+
+[source,cpp]
+----
+Result<GeneratedBlockData> GenerateBlockData(
+    const BlockGenerationRequest& request
+) const;
+
+Result<GeneratedBlockBatch> GenerateBlockBatchData(
+    const PromptSlicingRequest& request
+) const;
+
+Result<BlockDraft> GenerateBlockDraft(
+    const BlockGenerationRequest& request
+) const;
+
+Result<std::vector<BlockDraft>> GenerateBlockDrafts(
+    const PromptSlicingRequest& request
+) const;
 ----
 
 === Операции с Composition
 
 [source,cpp]
 ----
-// Создание
-Composition createCompositionDraft(const CompositionId& id);
+Result<PublishedComposition> PublishComposition(
+    CompositionDraft draft,
+    VersionBump bump = VersionBump::Minor
+);
+Result<PublishedComposition> PublishComposition(
+    CompositionDraft draft,
+    Version explicit_version
+);
+Result<PublishedComposition> UpdateComposition(
+    CompositionDraft draft,
+    VersionBump bump = VersionBump::Minor
+);
 
-// Сохранение и загрузка
-Error saveComposition(const Composition& composition);
-Result<Composition> loadComposition(
+Result<Version> GetLatestCompositionVersion(const CompositionId& id);
+Result<std::vector<Version>> ListCompositionVersions(const CompositionId& id);
+
+Result<Composition> LoadComposition(
     const CompositionId& id,
     std::optional<Version> version = std::nullopt
 );
 
-// Жизненный цикл
-Result<Composition> publishComposition(const CompositionId& id, Version newVersion);
-Error deprecateComposition(const CompositionId& id, Version version);
-
-// Список
-std::vector<CompositionId> listCompositions();
+Error DeprecateComposition(const CompositionId& id, Version version);
+Error DeleteComposition(const CompositionId& id);
+std::vector<CompositionId> ListCompositions() const;
 ----
 
-=== Рендеринг
+=== Рендеринг и validation
 
 [source,cpp]
 ----
-// Рендеринг композиции
-Result<RenderResult> render(
+Result<RenderResult> Render(
     const CompositionId& compositionId,
     const RenderContext& context = RenderContext{}
 );
-
-// Рендеринг конкретной версии
-Result<RenderResult> render(
+Result<RenderResult> Render(
     const CompositionId& compositionId,
     Version version,
     const RenderContext& context = RenderContext{}
 );
 
-// Рендеринг отдельного блока (для превью/тестирования)
-Result<std::string> renderBlock(
+Result<std::string> RenderBlock(
     const BlockId& blockId,
     const RenderContext& context = RenderContext{}
 );
-Result<std::string> renderBlock(
+Result<std::string> RenderBlock(
     const BlockId& blockId,
     Version version,
     const RenderContext& context = RenderContext{}
 );
+
+Error ValidateComposition(const CompositionId& id);
+Error ValidateBlock(const BlockId& id);
 ----
 
-=== Нормализация (опционально)
+=== Normalization и rewrite
 
 [source,cpp]
 ----
-// Нормализация текста через Normalizer (LLM)
-// Требует явного вызова - НЕ применяется автоматически
-Result<std::string> normalize(
+Result<std::string> Normalize(
     const std::string& text,
     const SemanticStyle& style
 ) const;
 
-// Проверка наличия Normalizer
-bool hasNormalizer() const noexcept;
-----
-
-=== Валидация
-
-[source,cpp]
-----
-Error validateComposition(const CompositionId& id);
-Error validateBlock(const BlockId& id);
-----
-
-== Класс Renderer
-
-Сервис рендеринга, преобразует Composition в текст.
-
-[source,cpp]
-----
-// Конструкторы
-Renderer();
-explicit Renderer(std::unique_ptr<IBlockCache> cache);
-
-void setBlockCache(std::unique_ptr<IBlockCache> cache);
-
-// Рендеринг
-Result<RenderResult> render(
-    const Composition& composition,
-    const RenderContext& context = RenderContext{}
-) const;
-
-// Рендеринг отдельного блока
-Result<std::string> renderBlock(
-    const Block& block,
-    const RenderContext& context = RenderContext{}
-) const;
-
-// Применение структурного стиля
-static std::string applyStructuralStyle(
-    const std::vector<std::string>& fragmentTexts,
-    const StructuralStyle& style
+Result<NormalizedCompositionResult> NormalizeComposition(
+    const CompositionNormalizationRequest& request
 );
+
+Result<CompositionBlockRewritePreview> PreviewCompositionBlockRewrite(
+    const CompositionBlockRewriteRequest& request
+);
+
+Result<AppliedCompositionBlockRewriteResult> ApplyCompositionBlockRewrite(
+    const CompositionBlockRewritePreview& preview,
+    VersionBump bump = VersionBump::Minor
+);
+
+bool HasNormalizer() const noexcept;
+bool HasBlockNormalizer() const noexcept;
+bool HasBlockGenerator() const noexcept;
+bool HasCompositionBlockRewriter() const noexcept;
 ----
 
-=== RenderResult
+=== Инициализация
 
 [source,cpp]
 ----
-struct RenderResult {
-    std::string text;                                    // Итоговый текст
-    CompositionId compositionId;                         // ID композиции
-    Version compositionVersion;                          // Версия
-    std::vector<std::pair<BlockId, Version>> blocksUsed; // Использованные блоки
-    StructuralStyle::OutputFormat format;                // Формат вывода
-
-    bool isEmpty() const noexcept;
-};
+void FullInit();
 ----
 
-== Интерфейсы репозиториев
-
-=== IBlockRepository
+== Репозитории
 
 [source,cpp]
 ----
 class IBlockRepository {
 public:
     virtual ~IBlockRepository() = default;
-
     virtual Error save(const Block& block) = 0;
     virtual Result<Block> load(const BlockId& id, Version version) = 0;
-    virtual Result<Block> loadLatest(const BlockId& id) = 0;
+    virtual Result<Block> LoadLatest(const BlockId& id) = 0;
     virtual std::vector<BlockId> list(std::optional<BlockType> typeFilter = std::nullopt) = 0;
-    virtual Result<Version> getLatestVersion(const BlockId& id) = 0;
+    virtual Result<Version> GetLatestVersion(const BlockId& id) = 0;
+    virtual Result<std::vector<Version>> ListVersions(const BlockId& id) = 0;
     virtual Error deprecate(const BlockId& id, Version version) = 0;
+    virtual Error remove(const BlockId& id) = 0;
 };
-----
 
-=== ICompositionRepository
-
-[source,cpp]
-----
 class ICompositionRepository {
 public:
     virtual ~ICompositionRepository() = default;
-
     virtual Error save(const Composition& composition) = 0;
     virtual Result<Composition> load(const CompositionId& id, Version version) = 0;
-    virtual Result<Composition> loadLatest(const CompositionId& id) = 0;
+    virtual Result<Composition> LoadLatest(const CompositionId& id) = 0;
     virtual std::vector<CompositionId> list() = 0;
-    virtual Result<Version> getLatestVersion(const CompositionId& id) = 0;
+    virtual Result<Version> GetLatestVersion(const CompositionId& id) = 0;
+    virtual Result<std::vector<Version>> ListVersions(const CompositionId& id) = 0;
     virtual Error deprecate(const CompositionId& id, Version version) = 0;
+    virtual Error remove(const CompositionId& id) = 0;
 };
 ----
 
-=== IBlockCache
-
-Интерфейс для кэша блоков при рендеринге:
-
-[source,cpp]
-----
-class IBlockCache {
-public:
-    virtual ~IBlockCache() = default;
-
-    virtual const Block* getBlock(const BlockId& id, Version version) const = 0;
-    virtual const Block* getLatestBlock(const BlockId& id) const = 0;
-};
-----
-
-=== INormalizer
-
-Интерфейс для семантической нормализации (LLM):
-
-[source,cpp]
-----
-class INormalizer {
-public:
-    virtual ~INormalizer() = default;
-
-    virtual Result<std::string> normalize(
-        const std::string& text,
-        const SemanticStyle& style
-    ) const = 0;
-};
-----
-
-== Обработка ошибок
-
-=== Класс Error
-
-[source,cpp]
-----
-struct Error {
-    ErrorCode code;
-    std::string message;
-
-    bool isError() const noexcept;
-    bool isSuccess() const noexcept;
-
-    // Фабричные методы
-    static Error missingParam(const std::string_view& paramName);
-    static Error versionRequired();
-    static Error blockNotFound(const std::string& blockId);
-    static Error compositionNotFound(const std::string& compId);
-    static Error success();
-};
-----
-
-=== Класс Result<T>
-
-Тип результата — либо значение, либо ошибка:
-
-[source,cpp]
-----
-template<typename T>
-class Result {
-public:
-    explicit Result(T value);
-    explicit Result(Error error);
-
-    bool hasValue() const noexcept;
-    bool hasError() const noexcept;
-
-    T& value() &;
-    const T& value() const&;
-    T&& value() &&;
-
-    Error& error() &;
-    const Error& error() const&;
-
-    T* operator->();
-    const T* operator->() const;
-    T& operator*() &;
-    const T& operator*() const&;
-};
-----
-
-=== Использование Result
-
-[source,cpp]
-----
-auto result = engine.render("welcome.message", ctx);
-
-if (result.hasError()) {
-    // Обработка ошибки
-    std::cerr << result.error().message << std::endl;
-    return;
-}
-
-// Получение значения
-const auto& renderResult = result.value();
-std::cout << renderResult.text << std::endl;
-
-// Или через оператор разыменования
-std::cout << result->text << std::endl;
-----
-
-== Примеры использования
-
-=== Пример 1: Создание и рендеринг блока
-
-[source,cpp]
-----
-#include <textfoundry/engine.h>
-#include <iostream>
-
-using namespace tf;
-
-int main() {
-    Engine engine;
-
-    // Создание блока
-    auto greeting = BlockDraftBuilder("greeting.formal")
-        .withTemplate(Template("Уважаемый {{name}}, добро пожаловать!"))
-        .withDefault("name", "клиент")
-        .withLanguage("ru")
-        .build();
-
-    // Рендеринг с параметром
-    RenderContext ctx;
-    ctx.withParam("name", "Алексей");
-
-    auto result = engine.renderBlock("greeting.formal", ctx);
-    if (result.hasValue()) {
-        std::cout << result.value() << std::endl;
-        // Вывод: "Уважаемый Алексей, добро пожаловать!"
-    }
-
-    return 0;
-}
-----
-
-=== Пример 2: Создание композиции
-
-[source,cpp]
-----
-// Создание блоков
-auto headerBlock = engine.createBlockDraft("report.header");
-headerBlock.setTemplate(Template("# Отчёт за {{period}}"));
-headerBlock.setDefaults({{"period", "текущий период"}});
-engine.saveBlock(headerBlock);
-engine.publishBlock("report.header", Version{1, 0});
-
-auto bodyBlock = engine.createBlockDraft("report.body");
-bodyBlock.setTemplate(Template("{{content}}"));
-engine.saveBlock(bodyBlock);
-engine.publishBlock("report.body", Version{1, 0});
-
-// Создание композиции
-auto report = engine.createCompositionDraft("monthly.report");
-report.addBlockRef("report.header", Version{1, 0}, {{"period", "Q3 2024"}});
-report.addSeparator(SeparatorType::Paragraph);
-report.addStaticText("## Основные показатели\n\n");
-report.addBlockRef("report.body", Version{1, 0}, {{"content", "Рост на 15%"}});
-
-engine.saveComposition(report);
-engine.publishComposition("monthly.report", Version{1, 0});
-
-// Рендеринг
-auto result = engine.render("monthly.report");
-if (result.hasValue()) {
-    std::cout << result->text << std::endl;
-}
-----
-
-=== Пример 3: Иерархия параметров
-
-[source,cpp]
-----
-// Блок с дефолтами
-auto block = BlockDraftBuilder("notification")
-    .withTemplate(Template("{{urgency}}: {{message}}"))
-    .withDefault("urgency", "Информация")
-    .build();
-
-// Composition с локальным переопределением
-auto comp = engine.createCompositionDraft("alert");
-comp.addBlockRef("notification", Version{1, 0}, {{"urgency", "Внимание"}});
-engine.publishComposition("alert", Version{1, 0});
-
-// Runtime параметр имеет наивысший приоритет
-RenderContext ctx;
-ctx.withParam("urgency", "КРИТИЧНО");
-
-auto result = engine.render("alert", ctx);
-// Результат: "КРИТИЧНО: {{message}}"
-// (message не задан → ошибка или значение по умолчанию)
-----
-
-=== Пример 4: Markdown вывод
-
-[source,cpp]
-----
-auto comp = engine.createCompositionDraft("markdown.doc");
-comp.setStyleProfile(StyleProfile::markdown());
-
-comp.addStaticText("# Заголовок документа\n\n");
-comp.addBlockRef("intro", Version{1, 0});
-comp.addSeparator(SeparatorType::Paragraph);
-comp.addStaticText("## Список задач\n\n");
-comp.addBlockRef("task.list", Version{2, 1});
-comp.addStaticText("\n---\n_Сгенерировано автоматически_");
-
-engine.publishComposition("markdown.doc", Version{1, 0});
-
-auto result = engine.render("markdown.doc");
-----
-
-== Архитектура
-
-=== Слои системы
-
-[source]
-----
-┌─────────────────────────────────────┐
-│  CLI / TUI / Qt GUI / Prompt Server │  <- Clients
-├─────────────────────────────────────┤
-│  TextEngine Core (header-only API)  │  <- Pure C++23
-│  - Engine                           │
-│  - Renderer                         │
-│  - Block/Composition domain models  │
-├─────────────────────────────────────┤
-│  Repository Abstraction             │  <- Ports (interfaces)
-│  IBlockRepository                   │
-│  ICompositionRepository             │
-├─────────────────────────────────────┤
-│  ObjectBox Storage Layer            │  <- Adapter implementation
-│  - BlockEntity                      │
-│  - CompositionEntity                │
-└─────────────────────────────────────┘
-----
-
-=== Этапы обработки текста
-
-[source]
-----
-Blocks
-↓
-Template Expansion (Renderer)
-↓
-Raw Text
-↓
-(optional) Normalization
-↓
-Final Text
-----
-
-=== Иерархия параметров
-
-Параметры разрешаются в порядке приоритета (от низкого к высокому):
-
-1. **Block Defaults** — значения по умолчанию в Block
-2. **Composition Local Override** — `localParams` в BlockRef
-3. **Runtime Context** — параметры, переданные в `render()`
-
-== Зависимости
-
-* C++23 или новее
-* Зависимости сборки (vcpkg):
-** `doctest` ^>=2.4.12^ — тестирование
-** `spdlog` ^>=1.17.0^ — логирование
-** `ctre` ^>=3.10.0^ — compile-time регулярные выражения
-
-== Лицензия
-
-Copyright (c) 2026 Artem Durynin. Все права защищены.
+[IMPORTANT]
+====
+Этот документ синхронизирован с текущими заголовками `src/textfoundry_engine/tf`
+и описывает фактический API codebase. Для продуктовых решений и planned
+архитектуры используйте `doc/prd.adoc`, а для текущего статуса реализации —
+`doc/status.adoc`.
+====

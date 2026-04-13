@@ -131,6 +131,9 @@ graph_info.json
 # Documentation
 docs/html/
 docs/latex/
+node_modules/
+public/
+doc/modules/ROOT/partials/generated/
 
 # System files
 .DS_Store

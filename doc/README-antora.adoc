@@ -1,0 +1,33 @@
+= Antora Setup
+
+== Local Build
+
+[source,bash]
+----
+npm install
+npm run docs:sync
+npm run docs:build
+----
+
+The generated site is written to `public/`.
+
+== Structure
+
+* `doc/antora.yml` — Antora component descriptor
+* `doc/modules/ROOT/nav.adoc` — site navigation
+* `doc/modules/ROOT/pages/*.adoc` — thin wrapper pages
+* `doc/modules/ROOT/partials/generated/*.adoc` — generated partial copies used by Antora
+* `antora-playbook.yml` — root site playbook
+* `scripts/sync_antora_docs.sh` — sync script for source documents
+
+== Source Documents
+
+The following files remain the primary source documents:
+
+* `doc/prd.adoc`
+* `doc/status.adoc`
+* `doc/doc.adoc`
+
+Before each Antora build, `scripts/sync_antora_docs.sh` copies these files into
+Antora partials so that the site build can include them using supported Antora
+resource families.

@@ -1,0 +1,3 @@
+= API Reference
+
+include::partial$generated/api.adoc[leveloffset=+1]
