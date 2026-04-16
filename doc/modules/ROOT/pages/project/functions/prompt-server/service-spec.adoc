@@ -67,7 +67,141 @@
 * render
   `POST /render`
 
-== 4. Входной контракт
+== 4. Предлагаемые endpoint contracts
+
+Ниже фиксируется рекомендуемый shape будущего HTTP-style API. Это still planned
+contract, а не описание уже существующей реализации.
+
+=== 4.1. `GET /blocks/{id}`
+
+Назначение:
+
+* получить published block metadata;
+* получить latest published version или конкретную published version.
+
+Ожидаемые query params:
+
+* `version`
+  optional explicit published version.
+
+* `latest=true`
+  optional shortcut для latest published version.
+
+Успешный ответ должен содержать:
+
+* `block_id`
+* `version`
+* `type`
+* `language`
+* `description`
+* `templ`
+* `defaults`
+* `tags`
+* `published_at`
+
+=== 4.2. `GET /compositions/{id}`
+
+Назначение:
+
+* получить published composition metadata;
+* получить explicit published version или latest published version.
+
+Ожидаемые query params:
+
+* `version`
+* `latest=true`
+
+Успешный ответ должен содержать:
+
+* `composition_id`
+* `version`
+* `description`
+* `fragment_summary`
+* `published_at`
+* optional lightweight fragment metadata without full render
+
+=== 4.3. `GET /compositions/{id}/versions`
+
+Назначение:
+
+* перечислить опубликованные версии composition;
+* дать клиенту stable way выбрать render target.
+
+Успешный ответ должен содержать:
+
+* `composition_id`
+* `versions`
+  list of published version descriptors
+
+Каждый version descriptor должен включать:
+
+* `version`
+* `published_at`
+* optional `revision_comment`
+* optional `deprecated`
+
+=== 4.4. `POST /resolve`
+
+Назначение:
+
+* получить resolved published composition view без окончательного render;
+* увидеть, какие published block versions будут использованы.
+
+Ожидаемый request body:
+
+* `composition_id`
+* optional `version`
+* optional `latest_published`
+* optional `params`
+
+Ожидаемый response body:
+
+* `composition_id`
+* `version`
+* `resolved_blocks`
+* `fragments`
+* `required_params`
+* `warnings`
+
+Каждый resolved block entry должен включать:
+
+* `block_id`
+* `version`
+* `type`
+* `language`
+* `description`
+
+=== 4.5. `POST /render`
+
+Назначение:
+
+* получить deterministic rendered prompt для published composition.
+
+Ожидаемый request body:
+
+* `composition_id`
+* optional `version`
+* optional `latest_published`
+* `params`
+* optional `strict_mode`
+* optional `response_format`
+
+Ожидаемый response body:
+
+* `composition_id`
+* `version`
+* `rendered_text`
+* `resolved_blocks`
+* `param_summary`
+* `warnings`
+* optional `content_hash`
+
+`resolved_blocks` должны позволять клиенту понять:
+
+* какие published block versions вошли в render;
+* какой именно versioned asset был источником итогового текста.
+
+== 5. Входной контракт
 
 Ожидаемые входы:
 
@@ -82,7 +216,13 @@
 * authoring mutation commands;
 * неявные AI rewrite requests в рамках базового deterministic contract.
 
-== 5. Выходной контракт
+Дополнительные правила для `POST /render`:
+
+* либо `version`, либо `latest_published`, но не двусмысленная комбинация;
+* `params` должны быть object-like key-value contract;
+* request не должен ссылаться на draft identity.
+
+== 6. Выходной контракт
 
 Ожидаемые выходы:
 
@@ -99,7 +239,14 @@
 * render response должен явно показывать, какие published versions участвовали в
   результате.
 
-== 6. Правила доменного контракта
+Дополнительные правила output contract:
+
+* `GET` endpoints должны отдавать registry metadata без hidden authoring state;
+* `POST /resolve` не должен притворяться окончательным render output;
+* `POST /render` должен возвращать final deterministic text plus version
+  metadata.
+
+== 7. Правила доменного контракта
 
 Будущий сервис должен соблюдать:
 
@@ -111,7 +258,7 @@
 * blocks and compositions должны оставаться first-class runtime entities, а не
   быть скрытыми за одним render endpoint.
 
-== 7. Источники данных и иерархия
+== 8. Источники данных и иерархия
 
 Primary source:
 
@@ -128,7 +275,7 @@ Primary source:
 * GUI state
 * implicit AI prompting в базовом delivery contract
 
-== 8. Ошибки и retry policy
+== 9. Ошибки и retry policy
 
 Ожидаемые ошибки:
 
@@ -145,7 +292,24 @@ Primary source:
 * published repository unavailable - fail closed;
 * fallback to draft data недопустим.
 
-== 9. Routing и confidence policy
+Для planned endpoint shape дополнительно ожидаются:
+
+* `400`
+  invalid request shape or invalid params.
+
+* `401/403`
+  authn/authz failures.
+
+* `404`
+  published asset or version not found.
+
+* `409`
+  incompatible version selection semantics, если request противоречив.
+
+* `503`
+  published repository unavailable.
+
+== 10. Routing и confidence policy
 
 В базовом deterministic server contract:
 
@@ -159,7 +323,7 @@ Primary source:
   gateway;
 * его primary job - published prompt registry and render delivery.
 
-== 10. Edge cases и fallback behavior
+== 11. Edge cases и fallback behavior
 
 Основные edge cases:
 
@@ -172,10 +336,17 @@ Primary source:
 * unavailable published store
   Fail closed, do not switch to draft data.
 
+* both `version` and `latest_published` conflict
+  Reject as invalid request.
+
+* render request with missing required params
+  Reject with validation error, do not partially render hidden defaults unless
+  policy explicitly allows them.
+
 * capability not implemented yet
   Документация должна явно маркировать статус planned.
 
-== 11. Источник требований
+== 12. Источник требований
 
 * xref:project/about/prd.adoc[Project PRD]
 * xref:project/functions/prompt-server/prd.adoc[Prompt Server PRD]

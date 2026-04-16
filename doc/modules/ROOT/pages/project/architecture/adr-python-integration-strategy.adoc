@@ -1,0 +1,245 @@
+= ADR: Python integration должна идти поверх продуктовой server boundary, а не определять её
+
+== 1. Статус и назначение документа
+
+Статус: принят как архитектурное направление для будущей Python integration
+strategy.
+
+Назначение: зафиксировать, как в проекте следует развивать Python-интеграцию:
+
+* не как скрытый альтернативный центр продукта;
+* не как причина размывания desktop/server boundaries;
+* а как downstream integration surface поверх уже определённой модели
+  `Workbench + Engine + Prompt Server`.
+
+== 2. Контекст
+
+После оформления `Prompt Server` как `published prompt registry +
+deterministic render API` у продукта возникает следующий естественный вопрос:
+
+* как правильно войти в Python ecosystem.
+
+Причины, по которым Python интеграция выглядит полезной:
+
+* evaluation scripts;
+* backend use cases;
+* notebooks и исследовательские сценарии;
+* интеграции с orchestration/framework слоями;
+* более простое подключение `TextFoundry` к существующим AI runtime stacks.
+
+При этом у проекта уже есть важная архитектурная позиция:
+
+* `Workbench` отвечает за authoring, review и publish;
+* `Engine` отвечает за deterministic assembly;
+* `Prompt Server` отвечает за published-only delivery.
+
+Если Python strategy выбрать неосторожно, можно случайно:
+
+* дать Python-коду обходной доступ к draft/authoring semantics;
+* превратить локальные bindings в альтернативный "настоящий API";
+* заставить server contract подстраиваться под удобство FFI, а не под продукт;
+* получить две конкурирующие integration models вместо одной понятной.
+
+== 3. Проблема, которую нужно было решить
+
+Нужно было определить, какой принцип должен управлять развитием Python
+integration, чтобы:
+
+* Python был сильной интеграционной поверхностью;
+* но не стал архитектурным центром продукта;
+* published-only delivery boundary сохранилась;
+* draft and authoring semantics не утекали в runtime clients;
+* server API оставался product-first contract.
+
+Иными словами, вопрос был не "нужен ли Python", а "на каком уровне его нужно
+подключать".
+
+== 4. Рассмотренные варианты
+
+=== Вариант A. Сделать Python bindings главным внешним API продукта
+
+Идея:
+дать Python bindings к engine как основной способ интеграции и уже под них
+подстраивать остальной runtime shape.
+
+Плюсы:
+
+* быстро выходит на Python ecosystem;
+* удобно для локальных scripts и notebooks;
+* не нужен отдельный server на первом этапе.
+
+Минусы:
+
+* продуктовая boundary начинает определяться локальным embedding use case;
+* draft/published distinction сложнее удерживать на уровне внешнего контракта;
+* server позже рискует стать вторичным и неполным отражением bindings API;
+* возникает риск утечки authoring semantics наружу.
+
+Вердикт:
+
+* отклонено как стратегический центр.
+
+=== Вариант B. Делать только `Prompt Server`, а Python не учитывать заранее
+
+Идея:
+сначала строить server, а Python integration отложить полностью и не учитывать
+в документации.
+
+Плюсы:
+
+* фокус на одной delivery boundary;
+* меньше отвлекающих архитектурных решений.
+
+Минусы:
+
+* игнорируется важный downstream use case;
+* позже Python integration может появиться реактивно и бессистемно;
+* часть решений по API shape полезно принимать с учётом client ergonomics.
+
+Вердикт:
+
+* частично полезно, но слишком узко.
+
+=== Вариант C. Сначала определить product/server boundary, затем строить Python client или bindings как downstream integration
+
+Идея:
+сначала зафиксировать, что центром внешнего runtime contract является
+`Prompt Server`, а Python integration строить поверх него как:
+
+* Python client/SDK к server API;
+* или, в отдельных локальных сценариях, thin bindings к engine, но без
+  подмены product boundary.
+
+Плюсы:
+
+* продуктовая модель остаётся целостной;
+* published-only semantics проще удерживать;
+* server API остаётся главным внешним runtime contract;
+* Python получает понятную роль как integration surface;
+* локальные bindings можно делать позже и более аккуратно.
+
+Минусы:
+
+* Python integration развивается чуть медленнее;
+* часть локальных сценариев на первом этапе может быть менее удобной;
+* нужно дисциплинированно удерживать границу между SDK и internal engine API.
+
+Вердикт:
+
+* выбранный вариант.
+
+== 5. Принятое решение
+
+Принято решение использовать следующий порядок и принцип:
+
+* product/server boundary первична;
+* `Prompt Server` является главным внешним runtime contract для published prompt
+  delivery;
+* Python integration должна строиться поверх этой boundary;
+* direct engine bindings допустимы только как вторичная локальная интеграция, а
+  не как источник product semantics.
+
+Это означает:
+
+* published prompt consumption в Python по умолчанию должна идти через
+  client/SDK к server API;
+* bindings к engine не должны по умолчанию открывать authoring/draft semantics
+  как "обычный" runtime path;
+* server contract нельзя деформировать только ради удобства FFI.
+
+== 6. Детализация принятого решения
+
+=== 6.1. Python client предпочтительнее как первая интеграционная поверхность
+
+Причина:
+Python client поверх server API:
+
+* наследует published-only delivery model;
+* не обходит authn/authz boundary;
+* работает в тех же терминах, что и другие downstream clients;
+* не требует знания desktop internals.
+
+Следствие:
+
+* первой реалистичной Python integration should be SDK/client, а не full engine
+  bindings.
+
+=== 6.2. Direct bindings могут понадобиться, но не как product-first contract
+
+Причина:
+есть сценарии, где прямой локальный доступ к engine действительно удобен:
+
+* offline tooling;
+* local migration utilities;
+* advanced evaluation;
+* developer-side experiments.
+
+Но такие bindings должны пониматься как:
+
+* local integration layer;
+* specialist tooling surface;
+* не канонический public runtime contract.
+
+=== 6.3. Draft and authoring semantics нельзя делать "нормой" через Python по умолчанию
+
+Причина:
+если Python получает слишком широкий доступ:
+
+* published-only policy размывается;
+* server и SDK расходятся по модели;
+* появляется обходной путь мимо review/publish discipline.
+
+Следствие:
+
+* Python integration по умолчанию должна мыслиться через published assets and
+  render delivery.
+
+=== 6.4. Server API shape нужно проектировать product-first, но с учётом Python ergonomics
+
+Причина:
+игнорировать Python use cases полностью тоже неправильно.
+
+Нужно учитывать:
+
+* удобные request/response shapes;
+* понятные typed models;
+* стабильность version-aware API;
+* простую обработку ошибок и metadata.
+
+Но это означает ergonomic influence, а не архитектурное доминирование Python.
+
+== 7. Последствия решения
+
+Положительные:
+
+* product boundary остаётся целостной;
+* Python получает понятную и безопасную роль;
+* downstream integrations сходятся вокруг одного server contract;
+* published-only semantics проще защищать и тестировать.
+
+Компромиссы:
+
+* direct bindings не становятся первым шагом;
+* часть developer workflows может временно быть менее удобной;
+* придётся поддерживать дисциплину между internal engine API и public SDK API.
+
+Отрицательные:
+
+* больше работы на старте server/SDK story;
+* некоторые локальные use cases будут просить "просто открыть engine напрямую".
+
+== 8. Что это означает practically
+
+На ближайшую перспективу это означает:
+
+* сначала конкретизировать `Prompt Server Service Spec`;
+* затем спроектировать Python client/SDK к нему;
+* только после этого, если реально потребуется, решать вопрос о thin engine
+  bindings как отдельной интеграционной поверхности.
+
+== 9. Связанные документы
+
+* xref:project/architecture/adr-build-vs-dspy.adoc[Почему TextFoundry сделан как самостоятельный продукт, а не как решение на базе DSPy]
+* xref:project/functions/prompt-server/adr.adoc[Prompt Server ADR]
+* xref:project/functions/prompt-server/service-spec.adoc[Prompt Server Service Spec]
+* xref:project/architecture/system/hld.adoc[High-Level Design]
