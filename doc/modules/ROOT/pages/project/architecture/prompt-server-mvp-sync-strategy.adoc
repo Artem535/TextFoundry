@@ -1,0 +1,341 @@
+= Какую стратегию синхронизации выбрать для MVP Prompt Server
+
+Этот документ продолжает explain-материал про `Prompt Server`, но делает
+следующий шаг:
+
+* не просто объясняет варианты;
+* а пытается дать практическую рекомендацию, что выбирать первым для MVP.
+
+== 1. Короткий вывод
+
+Если говорить прямо, для первого рабочего `Prompt Server` наиболее разумной
+выглядит такая стратегия:
+
+* `Prompt Server` остаётся `published-only`;
+* единица синхронизации - `published version`;
+* first implementation использует либо shared published storage, либо очень
+  тонкую publish propagation;
+* полноценную distributed authoring sync model откладываем.
+
+Если совсем коротко:
+
+* сначала `publish propagation`;
+* потом, если понадобится, `remote authoring`.
+
+== 2. Что именно нужно выбрать
+
+Для MVP нужно ответить на три вопроса:
+
+1. Что именно синхронизируется:
+   drafts или published versions.
+2. Где живёт source of truth для server runtime:
+   в shared store или в отдельной server replica.
+3. Нужен ли серверу mutation lifecycle:
+   `publish/update/delete/deprecate` или нет.
+
+Если выбрать эти три вещи неаккуратно, система быстро станет сложнее, чем нужно
+для первого server rollout.
+
+== 3. Варианты для MVP
+
+=== Вариант A. Shared published storage + published-only server
+
+[mermaid]
+----
+flowchart LR
+  Workbench --> Engine1["Engine"]
+  Engine1 --> Store["Shared Versioned Store"]
+  Server --> Engine2["Engine"]
+  Engine2 --> Store
+  Clients --> Server
+----
+
+Что это означает:
+
+* и workbench, и server смотрят в одно versioned store;
+* server читает только published entities;
+* publish делает новую version сразу видимой для server runtime.
+
+Плюсы:
+
+* самый простой путь к первому working server;
+* почти нет дополнительной sync-логики;
+* меньше moving parts;
+* проще дебажить.
+
+Минусы:
+
+* сильная инфраструктурная связность;
+* хуже isolation между authoring и delivery;
+* сервер и workbench сильнее зависят от одного storage environment.
+
+Когда это хороший MVP:
+
+* когда хочется быстрее всего получить работающий render API;
+* когда проект ещё не требует отдельной server infrastructure discipline.
+
+=== Вариант B. Publish replication в server-side published store
+
+[mermaid]
+----
+flowchart LR
+  Workbench --> Authoring["Authoring Store"]
+  Authoring --> PublishJob["Publish Propagation"]
+  PublishJob --> ServerStore["Server Published Store"]
+  Server --> ServerStore
+  Clients --> Server
+----
+
+Что это означает:
+
+* workbench продолжает жить в своём authoring store;
+* publish запускает propagation published entities;
+* server читает отдельную published replica.
+
+Плюсы:
+
+* чище разделение authoring и delivery;
+* лучше operational isolation;
+* проще строить отдельный server deployment;
+* легче вводить authz, scaling и reliability policy вокруг server runtime.
+
+Минусы:
+
+* больше компонентов;
+* появляется lag между publish и server availability;
+* нужен publish propagation pipeline.
+
+Когда это хороший MVP:
+
+* когда уже заранее понятно, что server будет отдельным runtime-сервисом;
+* когда хочется сразу строить более production-like topology.
+
+=== Вариант C. Authoring-capable server
+
+[mermaid]
+----
+flowchart LR
+  GUI["Workbench"] --> API["Server API"]
+  Remote["Remote Clients"] --> API
+  API --> Drafts["Draft Store"]
+  API --> Published["Published Store"]
+----
+
+Что это означает:
+
+* server умеет не только render/read;
+* server становится central lifecycle API;
+* drafts и published state начинают жить в одной удалённой системе.
+
+Плюсы:
+
+* максимальная гибкость;
+* можно прийти к collaborative prompt platform;
+* есть foundation для remote teams и multi-user editing.
+
+Минусы:
+
+* это уже не MVP prompt registry/render server, а другой класс продукта;
+* резко возрастает сложность consistency model;
+* нужны optimistic locking, conflicts, draft ownership, session semantics,
+  authz roles, review model.
+
+Когда это плохой MVP:
+
+* почти всегда, если цель первого шага - просто получить `Prompt Server`.
+
+== 4. Таблица сравнения
+
+[cols="1,1,1,1"]
+|===
+|Критерий |Shared published storage |Publish replication |Authoring-capable server
+
+|Скорость реализации
+|Высокая
+|Средняя
+|Низкая
+
+|Сложность синхронизации
+|Низкая
+|Средняя
+|Высокая
+
+|Чистота границы authoring/delivery
+|Средняя
+|Высокая
+|Низкая или сложная
+
+|Надёжность первой версии
+|Хорошая
+|Хорошая
+|Рискованная
+
+|Operational maturity potential
+|Средняя
+|Высокая
+|Высокая, но дорогая
+
+|Риск product scope explosion
+|Низкий
+|Низкий
+|Очень высокий
+|===
+
+== 5. Что я рекомендую как первый шаг
+
+Если цель - запустить первый полезный `Prompt Server`, я рекомендую:
+
+1. Не делать authoring-capable server.
+2. Синхронизировать только published versions.
+3. Выбрать один из двух первых вариантов:
+   shared published storage или publish replication.
+
+При этом я бы рекомендовал такой practical order:
+
+* для самого первого прототипа:
+  `shared published storage`
+
+* для первого production-like шага:
+  `publish replication`
+
+Почему именно так:
+
+* shared storage позволяет быстро проверить product value;
+* replication позволяет потом отделить delivery runtime без пересборки всей
+  модели продукта.
+
+== 6. Рекомендуемая поэтапная стратегия
+
+=== Этап 1. Local/shared-store MVP
+
+Цель:
+
+* доказать, что server API действительно полезен.
+
+Что делаем:
+
+* один engine model;
+* published-only server;
+* render and resolve endpoints;
+* shared published store.
+
+Что не делаем:
+
+* drafts over API;
+* remote publish;
+* remote update/delete;
+* distributed sync.
+
+=== Этап 2. Published propagation
+
+Цель:
+
+* развести authoring и delivery по инфраструктуре.
+
+Что делаем:
+
+* publish event создаёт propagation в server-side published store;
+* server читает только replicated published view;
+* вводим более явный deployment boundary.
+
+Что это даёт:
+
+* более зрелую operational модель;
+* подготовку к backend/Python adoption.
+
+=== Этап 3. Отдельное решение: нужен ли вообще remote authoring
+
+Только после первых двух этапов имеет смысл честно спросить:
+
+* нужен ли нам вообще server-side authoring;
+* нужен ли multi-user draft model;
+* нужен ли shared remote editing lifecycle.
+
+Если ответ "да", это уже должен быть не маленький refactor `Prompt Server`,
+а новая архитектурная ставка.
+
+== 7. Почему не стоит прыгать сразу в remote authoring
+
+Потому что это почти всегда выглядит проще на словах, чем на деле.
+
+Кажется, что достаточно "добавить пару endpoint-ов":
+
+* `POST /publish`
+* `PATCH /block`
+* `DELETE /composition`
+
+Но фактически за этим сразу стоят вопросы:
+
+* кто редактирует какой draft;
+* что значит stale revision;
+* как проходит review;
+* кто имеет права на publish;
+* как устроен audit;
+* как синхронизируются GUI и remote clients;
+* как работает conflict resolution.
+
+Это уже отдельный продуктовый слой.
+
+== 8. Какую роль здесь играет Python
+
+Для MVP Python не должен толкать нас в сторону authoring-capable server.
+
+Наоборот, лучший первый Python use case выглядит так:
+
+* Python client вызывает `GET /compositions/{id}`;
+* Python client вызывает `POST /resolve`;
+* Python client вызывает `POST /render`;
+* Python client получает published-only deterministic result.
+
+То есть Python здесь усиливает правильную first step architecture, а не ломает
+её.
+
+== 9. Практическая рекомендация
+
+Если нужно принять решение прямо сейчас, я бы зафиксировал так:
+
+* **MVP-1**
+  `Prompt Server` = published-only + shared published storage + resolve/render API
+
+* **MVP-2**
+  добавить publish propagation в отдельный server-side published store
+
+* **Future decision**
+  отдельно решить, нужен ли вообще authoring-capable server
+
+Это даёт:
+
+* быстрый старт;
+* низкую архитектурную стоимость первого шага;
+* понятный путь роста;
+* минимальный риск случайно построить слишком сложную систему раньше времени.
+
+== 10. Что можно считать хорошим критерием перехода от MVP-1 к MVP-2
+
+Переход с shared storage на replication имеет смысл, если:
+
+* server начинает жить как отдельный deployment;
+* появляются несколько downstream clients;
+* хочется лучше контролировать availability server runtime;
+* нужно ослабить coupling между workbench и server environment;
+* появляются требования к отдельной security/ops policy для server layer.
+
+== 11. Что можно считать критерием для отдельного ADR про remote authoring
+
+Его стоит писать только если появляется реальная потребность в:
+
+* multi-user editing;
+* remote draft workflows;
+* role-based publish over API;
+* central admin lifecycle;
+* collaborative review and approval.
+
+Пока этой потребности нет, архитектурно дешевле и яснее удерживать
+`Prompt Server` как published-only runtime.
+
+== 12. Связанные документы
+
+* xref:project/architecture/prompt-server-sync-explainer.adoc[Как работает Prompt Server и синхронизация]
+* xref:project/functions/prompt-server/adr.adoc[Prompt Server ADR]
+* xref:project/functions/prompt-server/system-design.adoc[Prompt Server System Design]
+* xref:project/architecture/adr-python-integration-strategy.adoc[Python integration strategy]
