@@ -1,0 +1,304 @@
+= Матрица возможностей для C++ local / Python local / C++ remote / Python remote
+
+Этот документ нужен как практическое продолжение language-surface strategy.
+
+Он отвечает на вопрос:
+
+* какие возможности должны быть одинаковыми между четырьмя surface families;
+* где нужна строгая parity;
+* где достаточно semantic parity;
+* где различие допустимо и даже ожидаемо.
+
+== 1. Какие четыре поверхности сравниваются
+
+В документе сравниваются четыре runtime surface families:
+
+* `C++ local`
+  Прямой доступ к engine semantics из C++.
+
+* `Python local`
+  Прямой доступ к тем же engine semantics из Python.
+
+* `C++ remote`
+  Доступ к `Prompt Server` через удалённый client contract из C++.
+
+* `Python remote`
+  Доступ к тому же `Prompt Server` через удалённый client contract из Python.
+
+Важно:
+
+* `local` и `remote` не обязаны быть одинаковыми по всем возможностям;
+* `C++` и `Python` внутри одной boundary должны быть согласованы по capability и
+  semantics.
+
+== 2. Главный принцип
+
+Правильная иерархия требований такая:
+
+1. Сначала определяется boundary:
+   `local` или `remote`.
+2. Потом определяется parity между языками внутри этой boundary.
+
+Иначе говоря:
+
+* `C++ local` и `Python local` должны быть близки друг к другу;
+* `C++ remote` и `Python remote` должны быть близки друг к другу;
+* но `local` и `remote` могут сознательно отличаться.
+
+== 3. Типы parity
+
+В матрице используются три типа требований.
+
+`Strict capability parity`:
+
+* surface обязаны поддерживать одну и ту же capability;
+* отсутствие capability считается архитектурным gap.
+
+`Semantic parity`:
+
+* capability может быть выражена разными idiomatic средствами;
+* но смысл, lifecycle и error semantics должны быть согласованы.
+
+`Intentional divergence`:
+
+* различие допустимо по самой природе boundary;
+* это не ошибка, а осознанная архитектурная разница.
+
+== 4. Capability matrix
+
+[cols="1,1,1,1,1,1"]
+|===
+|Capability |C++ local |Python local |C++ remote |Python remote |Parity rule
+
+|Load published block/composition
+|Yes
+|Yes
+|Yes
+|Yes
+|Strict capability parity
+
+|List versions
+|Yes
+|Yes
+|Yes
+|Yes
+|Strict capability parity
+
+|Deterministic render
+|Yes
+|Yes
+|Yes
+|Yes
+|Strict capability parity
+
+|Resolve composition without final render
+|Yes
+|Yes
+|Yes
+|Yes
+|Strict capability parity
+
+|Read render metadata and resolved versions
+|Yes
+|Yes
+|Yes
+|Yes
+|Strict capability parity
+
+|Validate runtime params
+|Yes
+|Yes
+|Yes
+|Yes
+|Semantic parity
+
+|Work with Draft entities
+|Yes
+|Yes
+|No by default
+|No by default
+|Intentional divergence between local and remote
+
+|Publish Draft to Published
+|Yes
+|Yes
+|No by default
+|No by default
+|Intentional divergence between local and remote
+
+|Update / deprecate / delete lifecycle
+|Yes
+|Yes
+|No by default
+|No by default
+|Intentional divergence between local and remote
+
+|AI-assisted authoring workflows
+|Yes
+|Target Yes
+|No in base contract
+|No in base contract
+|Intentional divergence, target local parity
+
+|Access to GUI/TUI semantics
+|No
+|No
+|No
+|No
+|Out of scope for all four surfaces
+
+|Error semantics for version conflicts
+|Yes
+|Yes
+|Yes
+|Yes
+|Semantic parity
+
+|Type shape / wrapper style
+|C++ idiomatic
+|Python idiomatic
+|C++ idiomatic
+|Python idiomatic
+|Intentional divergence in form only
+|===
+
+== 5. Как читать эту матрицу
+
+Матрица показывает не только "что есть", но и что должно считаться багом
+документации или дизайна.
+
+Например:
+
+* если `Python local` не умеет publish draft, а `C++ local` умеет, это problem;
+* если `Python remote` не умеет `render`, а `C++ remote` умеет, это problem;
+* если `remote` surfaces не умеют draft lifecycle, это пока expected behavior.
+
+То есть главный вопрос всегда такой:
+
+* это расхождение внутри одной boundary
+  или
+* это расхождение между двумя разными boundaries.
+
+== 6. Что должно быть строго одинаковым между `C++ local` и `Python local`
+
+Это самая важная зона parity, если Python действительно first-class local
+surface.
+
+Ожидается parity по:
+
+* доменным сущностям;
+* lifecycle `Draft` / `Published`;
+* publish/update/deprecate semantics;
+* render behavior;
+* version handling;
+* error classes at the semantic level.
+
+Допустимые различия:
+
+* naming;
+* method grouping;
+* exceptions vs result objects;
+* collection types;
+* builder vs dataclass-like construction style.
+
+== 7. Что должно быть строго одинаковым между `C++ remote` и `Python remote`
+
+Это вторая важная зона parity.
+
+Ожидается parity по:
+
+* endpoint coverage;
+* request semantics;
+* response semantics;
+* version selection rules;
+* validation behavior;
+* error categories.
+
+Допустимые различия:
+
+* transport wrapper API;
+* async/sync style;
+* generated vs handwritten typed models;
+* exception hierarchy or result wrappers.
+
+== 8. Где различия между `local` и `remote` являются нормой
+
+Вот здесь часто возникает путаница.
+
+`local` и `remote` не обязаны быть одинаковыми.
+
+Нормальные различия:
+
+* local surfaces могут видеть drafts;
+* remote surfaces по умолчанию работают только с published;
+* local surfaces могут выполнять publish/update lifecycle;
+* remote surfaces по текущей ставке этого не делают;
+* local surfaces могут ближе находиться к authoring workflows;
+* remote surfaces должны оставаться delivery-oriented.
+
+Если это различие начинает исчезать, это уже сигнал, что архитектура движется в
+сторону `authoring-capable server`.
+
+== 9. Как использовать матрицу при реализации
+
+Матрица должна использоваться как review checklist.
+
+При добавлении новой capability нужно задавать четыре вопроса:
+
+1. Нужна ли эта capability в local boundary?
+2. Нужна ли она в remote boundary?
+3. Если нужна внутри boundary, есть ли parity между C++ и Python?
+4. Если parity нет, это intentional divergence или real gap?
+
+Это особенно полезно для:
+
+* bindings design review;
+* server client SDK review;
+* API compatibility review;
+* release readiness review.
+
+== 10. Рекомендуемая next-step matrix для проекта
+
+Если смотреть на текущую траекторию проекта, я бы зафиксировал такой приоритет.
+
+`Priority 1`:
+
+* `C++ local` and `Python local` parity for deterministic engine core
+* `C++ remote` and `Python remote` parity for `render/resolve/registry`
+
+`Priority 2`:
+
+* common error semantics
+* common version-selection semantics
+* common metadata and traceability shape
+
+`Priority 3`:
+
+* parity for more advanced authoring-support tooling where it is actually needed
+
+== 11. Что пока нельзя считать обязательным
+
+На этом этапе не стоит требовать:
+
+* буквальную method-by-method parity;
+* идентичные object models в языке;
+* одинаковые async patterns;
+* автоматическое наличие любой authoring capability в remote boundary.
+
+Это создаст слишком жёсткое и при этом неправильное требование.
+
+== 12. Когда матрицу нужно будет пересматривать
+
+Её нужно будет пересмотреть, если:
+
+* появится `authoring-capable server`;
+* Python local bindings будут формализованы как отдельный public API layer;
+* появится multi-tenant server model;
+* изменится продуктовая ставка по draft/published separation.
+
+== 13. Связанные документы
+
+* xref:project/architecture/adr-python-integration-strategy.adoc[Python и C++ как first-class runtime surfaces]
+* xref:project/functions/prompt-server/prd.adoc[Prompt Server PRD]
+* xref:project/functions/prompt-server/system-design.adoc[Prompt Server System Design]
+* xref:project/functions/prompt-server/service-spec.adoc[Prompt Server Service Spec]
