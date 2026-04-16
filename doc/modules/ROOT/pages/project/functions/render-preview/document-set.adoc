@@ -1,6 +1,6 @@
 = Render Preview Document Set
 
-== 1. Coverage Summary
+== 1. Покрытие набора документов
 
 Покрытие функции сейчас разложено так:
 
@@ -14,7 +14,7 @@
 * data handling constraints - `Security Note`
 * normalization-specific prompting note - `Prompt Template`
 
-== 2. Cross-Document Gaps
+== 2. Оставшиеся пробелы
 
 Что ещё требует усиления:
 
@@ -22,13 +22,13 @@
 * explicit QA checklist for preview mode confusion
 * documented rationale for future prompt-server divergence from GUI raw preview
 
-== 3. Next Updates
+== 3. Следующие обновления
 
 * sync testing guidance with render reproducibility checks
 * revisit ADR if raw preview helper is refactored or removed
 * align prompt-server future docs with canonical deterministic render contract
 
-== 4. Upstream Dependencies
+== 4. Входящие зависимости
 
 Документы, на которые опирается этот набор:
 
@@ -37,7 +37,7 @@
 * xref:project/functions/normalization/index.adoc[Normalization]
 * xref:project/functions/render-preview/prd.adoc[PRD]
 
-== 5. Source of Truth in Code
+== 5. Source of truth в коде
 
 Основные code artifacts:
 

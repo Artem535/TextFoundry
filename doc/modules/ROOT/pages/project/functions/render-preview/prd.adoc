@@ -1,6 +1,6 @@
 = Render Preview PRD
 
-== 1. Goal and Business Context
+== 1. Цель и продуктовый контекст
 
 * Business problem: пользователю нужен быстрый и предсказуемый способ проверить,
   как composition будет выглядеть в runtime, не переходя в код или внешний
@@ -12,7 +12,7 @@
 * Expected effect: быстрее проверять composition versions, runtime params и
   итоговый render до использования в downstream системах.
 
-== 2. Problem Statement
+== 2. Постановка проблемы
 
 * Current state: в проекте есть полноценный render UI, но он не выделен в
   отдельный function-level набор документов.
@@ -26,7 +26,7 @@
   render только на высоком уровне и не фиксируют пользовательские решения,
   ограничения и operational expectations.
 
-== 3. Users and Use Cases
+== 3. Пользователи и сценарии
 
 * Primary users: prompt authors, composition authors, reviewers prompt assets.
 * Secondary users: инженер, проверяющий render output перед интеграцией;
@@ -58,7 +58,7 @@
 * mutation of compositions from render screen
 * hidden publish, version bump or authoring side effects
 
-== 5. Success Criteria and KPI
+== 5. Критерии успеха
 
 * пользователь понимает, что именно он сейчас смотрит: raw, rendered или
   normalized output
@@ -66,7 +66,7 @@
 * ошибки parse/render/normalization подаются явно и без скрытых side effects
 * render screen пригоден как основной preview workflow перед downstream usage
 
-== 6. Requirements Summary
+== 6. Функциональные требования
 
 * Система MUST поддерживать deterministic render отдельно от normalization.
 * Система MUST позволять выбрать composition version, если такая версия
@@ -78,7 +78,7 @@
 * Пользователь MUST иметь возможность явно запустить normalization поверх
   текущего raw snapshot, а не поверх неявного source.
 
-== 7. Assumptions and Constraints
+== 7. Ограничения и допущения
 
 * базовый render path работает только для published compositions
 * raw preview в GUI собирается отдельным helper-путем и не является тем же самым
@@ -87,7 +87,7 @@
 * render capability в текущем состоянии привязана к GUI и local engine, а не к
   внешнему runtime service
 
-== 8. Dependencies and Stakeholders
+== 8. Зависимости и заинтересованные стороны
 
 * Dependencies:
 * `RenderViewModel`
@@ -103,7 +103,7 @@
 * core engine owner
 * GUI owner
 
-== 9. Pilot / Release Acceptance
+== 9. Критерии приёмки
 
 * Pilot acceptance:
 * пользователь может выбрать composition, версию и параметры

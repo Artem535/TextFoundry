@@ -1,6 +1,6 @@
 = Render Preview Evaluation Plan
 
-== 1. Evaluation Goal
+== 1. Цель оценки
 
 * quality means that render-preview stays understandable, reproducible and safe
   for review-oriented usage
@@ -10,7 +10,7 @@
 * divergence between selected version and actual previewed source
 * stale normalized output interpreted as current truth
 
-== 2. Quality Dimensions
+== 2. Измерения качества
 
 * deterministic reproducibility
 * preview mode clarity
@@ -18,7 +18,7 @@
 * consistency between composition selection and previewed data
 * normalization stale-state correctness
 
-== 3. Acceptance Criteria
+== 3. Критерии приёмки
 
 * identical composition version + identical params produce identical rendered
   output
@@ -27,7 +27,7 @@
 * normalized preview becomes stale after source snapshot change
 * clear/reload actions leave the screen in coherent state
 
-== 4. Dataset Strategy
+== 4. Стратегия датасета
 
 * representative published compositions with:
 * static text
@@ -40,20 +40,20 @@
 * malformed version string
 * malformed params text
 
-== 5. Offline Evaluation
+== 5. Offline evaluation
 
 * compare deterministic render results across repeated runs
 * validate version selection against known composition versions
 * verify raw preview for compositions with mixed fragment types
 * verify stale-state transitions for normalized output
 
-== 6. Manual Review
+== 6. Ручная проверка
 
 * reviewer checks whether preview labels and actions make output semantics clear
 * reviewer checks whether copy actions export the intended content
 * reviewer checks whether errors are actionable for non-engine authors
 
-== 7. Thresholds and Decision Rule
+== 7. Пороговые значения и правило решения
 
 * go:
 * deterministic render reproducible for representative assets
@@ -64,7 +64,7 @@
 * stale normalized output appears current
 * version/params selection can silently produce wrong preview
 
-== 8. Regression Policy
+== 8. Политика регрессий
 
 Regression считается любой из случаев:
 
@@ -74,7 +74,7 @@ Regression считается любой из случаев:
 * normalization stale flag no longer reflects source changes
 * copy/clear/reload actions leave inconsistent state
 
-== 9. Post-Release Quality Review
+== 9. Post-release review
 
 * collect user reports about confusion between preview modes
 * maintain regression compositions for render reproducibility

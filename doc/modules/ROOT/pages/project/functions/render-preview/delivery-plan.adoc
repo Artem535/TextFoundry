@@ -1,8 +1,8 @@
 = Render Preview Delivery Plan
 
-== 1. Delivery Scope
+== 1. Область поставки
 
-Scope capability:
+В поставку capability входят:
 
 * GUI render screen
 * deterministic render orchestration
@@ -10,7 +10,7 @@ Scope capability:
 * optional normalized preview
 * version-aware composition preview
 
-== 2. Current Status
+== 2. Текущий статус
 
 Текущий статус:
 
@@ -18,7 +18,7 @@ Scope capability:
 * отсутствовал отдельный function-level document set
 * ключевое следующее действие - закрепить terminology и test expectations
 
-== 3. Workstreams and Owners
+== 3. Рабочие потоки и владельцы
 
 * GUI owner:
 * page layout
@@ -32,7 +32,7 @@ Scope capability:
 * normalized preview behavior
 * normalizer availability and prompt policy
 
-== 4. Dependency Map
+== 4. Карта зависимостей
 
 * composition repository
 * version metadata loading
@@ -40,20 +40,20 @@ Scope capability:
 * session-level engine configuration
 * optional normalizer configuration
 
-== 5. Rollout Steps
+== 5. Этапы rollout
 
 * formalize docs for render-preview
 * align QA checks with deterministic render contract
 * add explicit regression set for params/version validation
 * review raw preview helper against future renderer changes
 
-== 6. Blockers and Risks
+== 6. Блокеры и риски
 
 * raw preview helper duplicates part of render-like behavior
 * user expectations may drift toward treating normalized output as canonical
 * future prompt server work may create pressure to reuse GUI-specific semantics
 
-== 7. Readiness Checklist
+== 7. Критерии готовности
 
 * composition/version selection behavior documented
 * deterministic render path documented as canonical runtime output

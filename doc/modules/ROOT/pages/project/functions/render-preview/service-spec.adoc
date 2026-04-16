@@ -1,6 +1,6 @@
 = Render Preview Service Spec
 
-== 1. Purpose and Service Boundary
+== 1. Назначение и граница сервиса
 
 * Service responsibility: дать пользователю version-aware preview capability для
   compositions, включая raw snapshot, deterministic rendered output и optional
@@ -8,7 +8,7 @@
 * Consumers: `RenderViewModel`, `RenderPage.qml`, потенциально future review tools.
 * Non-goals: authoring mutation, publish/save, prompt server API contract.
 
-== 2. Consumers and Dependencies
+== 2. Потребители и зависимости
 
 * Consumers:
 * `RenderViewModel`
@@ -22,7 +22,7 @@
 * `Renderer`
 * optional `INormalizer`
 
-== 3. API / Tool Methods
+== 3. Методы и точки вызова
 
 Прямо используемые engine methods:
 
@@ -41,7 +41,7 @@ GUI-local methods:
 * `RenderViewModel.copyRaw()`
 * `RenderViewModel.clear()`
 
-== 4. Input Schema
+== 4. Входной контракт
 
 Пользовательские входы:
 
@@ -65,7 +65,7 @@ GUI-local methods:
 * render input: `CompositionId` + optional `Version` + `RenderContext`
 * normalize input: `raw_output_text` + non-empty `SemanticStyle`
 
-== 5. Output Schema
+== 5. Выходной контракт
 
 UI-visible outputs:
 
@@ -83,7 +83,7 @@ Underlying engine outputs:
 * `RenderResult`
 * normalized `std::string`
 
-== 6. Data Contract Rules
+== 6. Правила доменного контракта
 
 * `Rendered` output is the canonical deterministic preview result.
 * `Raw` output is a GUI-local composition snapshot preview and must not be
@@ -93,7 +93,7 @@ Underlying engine outputs:
 * empty or invalid params/version must block render and surface explicit error
 * render preview must not mutate composition or block storage
 
-== 7. Prompting and Source Hierarchy
+== 7. Иерархия источников и prompt policy
 
 Для deterministic render prompting отсутствует.
 
@@ -103,7 +103,7 @@ Underlying engine outputs:
 * semantic instructions - current `SemanticStyle`
 * provider-specific prompt policy - implementation detail normalizer adapter
 
-== 8. Error Handling and Retries
+== 8. Ошибки и retry policy
 
 * invalid params -> explicit validation error in UI
 * invalid version format -> explicit validation error in UI
@@ -119,7 +119,7 @@ Retry behavior:
 * normalization retry is user-driven through `Re-normalize`
 * no hidden storage retry logic exists in this capability
 
-== 9. Confidence / Routing Rules
+== 9. Routing и confidence policy
 
 * deterministic render does not expose confidence score
 * normalized preview does not expose confidence score either
@@ -127,7 +127,7 @@ Retry behavior:
 * if normalizer unavailable, only raw/rendered modes are available
 * if normalizer configured, normalized mode becomes explicit optional path
 
-== 10. Edge Cases and Fallback Behavior
+== 10. Edge cases и fallback behavior
 
 * composition not selected -> render is blocked with explicit status
 * selected version invalid -> render is blocked before engine call
@@ -137,7 +137,7 @@ Retry behavior:
 * normalization requested with empty semantic style -> explicit status and no
   provider call
 
-== Upstream / Downstream
+== 11. Связанные документы
 
 Upstream:
 

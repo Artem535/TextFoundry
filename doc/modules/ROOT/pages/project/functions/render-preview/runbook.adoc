@@ -1,18 +1,18 @@
 = Render Preview Runbook
 
-== 1. Operational Overview
+== 1. Операционный обзор
 
 * Service owner: GUI/engine render workflow owner
 * Criticality: high for local authoring and review, medium for AI-related paths
 * Support model: engineering support during active development and release review
 
-== 2. Ownership and Support Model
+== 2. Владение и модель поддержки
 
 * Primary owner: core engine/render owner
 * Secondary owner: GUI owner
 * AI-related secondary owner: normalization adapter owner
 
-== 3. Key Signals and Alerts
+== 3. Ключевые сигналы и наблюдаемость
 
 * repeated render failures for valid published compositions
 * repeated params parsing failures on normal user input
@@ -20,7 +20,7 @@
 * normalized output stale-state behaving incorrectly
 * copy actions silently failing
 
-== 4. Common Failure Modes
+== 4. Типовые сбои
 
 * invalid `versionText`
 * invalid `paramsText`
@@ -29,7 +29,7 @@
 * missing normalizer configuration
 * provider failure during normalization
 
-== 5. Incident Response
+== 5. Реакция на инцидент
 
 * verify selected composition and version still exist
 * verify render path works without normalization
@@ -38,7 +38,7 @@
 * if issue is normalization-only, keep deterministic render available and disable
   AI expectation in triage
 
-== 6. Degradation Modes
+== 6. Режимы деградации
 
 * if normalization unavailable:
 * keep `Raw` and `Rendered` modes operational
@@ -47,14 +47,14 @@
 * if clipboard unavailable:
 * keep preview available without copy support
 
-== 7. Recovery and Validation
+== 7. Восстановление и проверка
 
 * reload compositions list
 * repeat preview with known-good published composition
 * render with empty params, then with representative params
 * trigger normalization and verify stale-state after source change
 
-== 8. Escalation Contacts
+== 8. Контакты эскалации
 
 * Team Lead: render workflow owner
 * Core owner: deterministic renderer owner
