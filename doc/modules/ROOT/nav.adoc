@@ -1,6 +1,7 @@
 * xref:index.adoc[Overview]
 * xref:project/index.adoc[Project Docs]
 ** xref:project/about/index.adoc[1. О проекте]
+*** xref:project/about/product-presentation.adoc[0. Вводная презентация по продукту]
 *** xref:project/about/prd.adoc[1. PRD]
 *** xref:project/about/user-story-map.adoc[2. User Story Map]
 *** xref:project/about/requirements.adoc[3. ТЗ: Требования и спецификации]
