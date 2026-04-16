@@ -1,25 +1,57 @@
 = Normalization Security Note
 
-== 1. Data Sensitivity
+== 1. Область чувствительности данных
 
-Normalization sends rendered or source text to an external provider, so content
-classification matters.
+`Normalization` отправляет во внешний provider raw, rendered или block template
+текст. Это делает классификацию контента важной частью безопасного использования.
 
-== 2. Key Risks
+Во входе могут быть:
 
-Риски:
+* rendered prompts;
+* block templates;
+* composition text;
+* policy и safety instructions;
+* внутренние operational формулировки.
 
-* во внешний provider уходит raw or rendered text
-* normalized output может менять чувствительные формулировки
+== 2. Основные риски
 
-== 3. Access and Logging
+Ключевые риски:
 
-* avoid logging sensitive prompt payloads
-* do not persist secrets in AI configuration traces
+* во внешний provider уходит raw или rendered text;
+* normalized output может изменить чувствительные формулировки;
+* block normalization работает с template content, который может включать важные
+  placeholders и policy text;
+* логирование payload может привести к утечке контента.
 
-== 4. Required Controls
+== 3. Логирование и доступ
+
+Нужно:
+
+* избегать логирования чувствительных payloads;
+* не сохранять secrets в AI configuration traces;
+* отделять безопасные operational метрики от содержимого текстов;
+* не путать derived normalization data с безопасными диагностическими данными.
+
+== 4. Обязательные меры контроля
+
+Базовые меры:
+
+* normalization должна вызываться только по explicit user action;
+* normalized result должен review-иться до reuse;
+* external provider должен рассматриваться как отдельная trust boundary;
+* secrets и credentials не должны попадать в source text.
+
+== 5. Специфические product-риски
+
+Особые риски:
+
+* normalized output может смягчить или изменить safety wording;
+* derived composition может выглядеть polished, но быть менее верной source;
+* composition-level normalization может затронуть большое количество content за
+  один вызов.
 
 Меры:
 
-* explicit user action
-* review normalized result before reuse
+* review derived result;
+* placeholder preservation checks;
+* ручная проверка safety-sensitive outputs отдельно.

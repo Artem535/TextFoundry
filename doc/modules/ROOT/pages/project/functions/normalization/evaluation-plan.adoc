@@ -1,50 +1,120 @@
 = Normalization Evaluation Plan
 
-== 1. Evaluation Goal
+== 1. Цель оценки
 
-* quality means semantic changes are applied without unacceptable loss of meaning
-* main risks: hallucinated rewrite, over-editing, broken composition coherence
+Качество `Normalization` означает:
 
-== 2. Quality Dimensions
+* requested semantic style действительно виден в результате;
+* смысл источника не теряется неприемлемым образом;
+* composition coherence сохраняется;
+* placeholders и structural constraints не ломаются.
+
+Главные риски:
+
+* hallucinated rewrite;
+* over-editing;
+* semantic drift;
+* broken composition coherence;
+* placeholder breakage in block normalization.
+
+== 2. Измерения качества
+
+Оцениваемые измерения:
 
 * faithfulness to source
+  Сохраняется ли исходный смысл.
+
 * style adherence
+  Видно ли requested tone/tense/language shift.
+
 * language correctness
+  Насколько результат грамматически и stylistically пригоден.
+
 * composition coherence
+  Остаётся ли normalized composition логичной и цельной.
 
-== 3. Acceptance Criteria
+* placeholder preservation
+  Сохраняются ли обязательные placeholders в derived blocks.
 
-* requested style changes are visible
-* original meaning remains acceptable
-* normalized composition remains reviewable and structurally understandable
+== 3. Критерии приёмки
 
-== 4. Dataset Strategy
+Функция считается проходящей оценку, если:
 
-* representative render outputs
-* multilingual cases
-* tone and tense shifts
-* negative cases with under-specified style requests
+* requested style changes заметны;
+* original meaning остаётся приемлемым;
+* normalized composition остаётся reviewable и структурно понятной;
+* placeholder-preservation check стабильно проходит на representative blocks;
+* derived assets полезны, а не просто stylistically different.
 
-== 5. Offline Evaluation
+== 4. Стратегия датасета
 
-* compare normalized outputs against curated expectations
-* review preservation of meaning and style shift
+Нужно собирать:
 
-== 6. Manual Review
+* representative render outputs;
+* multilingual cases;
+* tone and tense shift cases;
+* composition cases с несколькими типами blocks;
+* negative cases с under-specified style requests;
+* blocks с placeholders и более сложной template structure.
 
-* review by author or domain owner
-* disagreements resolved in favor of meaning preservation
+== 5. Offline evaluation
 
-== 7. Thresholds and Decision Rule
+Нужно проводить:
 
-* go when representative cases show usable style change with acceptable fidelity
-* no-go when semantic drift is frequent
+* сравнение normalized outputs с curated expectations;
+* review preservation of meaning;
+* review style shift;
+* composition-level inspection;
+* placeholder-preservation verification.
 
-== 8. Regression Policy
+Полезно отдельно проверять:
 
-* regression means worse preservation of meaning or lower adherence to style request
+* text normalization;
+* composition normalization;
+* behavior with and without static text normalization.
 
-== 9. Post-Release Quality Review
+== 6. Ручная проверка
 
-* collect examples of over-aggressive rewrite
-* refine prompt policy and style guidance
+Ревьюеры:
+
+* author;
+* domain owner;
+* при composition path - владелец composition workflow.
+
+Принцип разрешения споров:
+
+* при конфликте stylistic polish и meaning preservation приоритет у сохранения
+  смысла и structural correctness.
+
+== 7. Пороговые значения и правило решения
+
+`Go`, если:
+
+* representative cases показывают полезный style change;
+* fidelity к source остаётся приемлемой;
+* placeholder violations редки и корректно отсекаются.
+
+`No-Go`, если:
+
+* semantic drift частый;
+* normalized output системно хуже исходника;
+* derived compositions теряют coherence;
+* placeholder preservation часто ломается на нормальных кейсах.
+
+== 8. Политика регрессий
+
+Регрессией считается:
+
+* худшее сохранение смысла;
+* более низкая adherence к style request;
+* рост over-aggressive rewrites;
+* ухудшение placeholder preservation.
+
+== 9. Post-release review
+
+После изменений prompt policy, provider или style guidance нужно:
+
+* собирать примеры over-aggressive rewrites;
+* обновлять curated style cases;
+* отдельно анализировать text и composition paths;
+* отслеживать, не выросла ли доля useless normalized outputs.

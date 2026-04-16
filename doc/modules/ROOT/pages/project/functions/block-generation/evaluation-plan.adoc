@@ -1,50 +1,139 @@
 = Block Generation Evaluation Plan
 
-== 1. Evaluation Goal
+== 1. Цель оценки
 
-* What quality means: generated draft ускоряет authoring и остаётся пригодным к review
-* Main risks: unusable schema, wrong block type, low-signal template
-* Release decision: можно ли опираться на функцию как на штатный drafting workflow
+Цель оценки качества:
 
-== 2. Quality Dimensions
+* понять, действительно ли generated draft ускоряет authoring;
+* убедиться, что функция даёт структурно валидный и содержательно полезный
+  стартовый результат;
+* определить, можно ли считать `Block Generation` штатным drafting workflow, а
+  не экспериментальной опцией.
+
+Главные риски качества:
+
+* unusable schema;
+* неверный `block_type`;
+* слабый или пустой template;
+* плохой `block_id`;
+* слишком высокая стоимость ручной доводки после генерации.
+
+== 2. Измерения качества
+
+Оцениваемые измерения:
 
 * structural validity
+  Базовая пригодность payload к domain validation.
+
 * semantic relevance
-* placeholder correctness
-* editability after generation
+  Насколько draft соответствует пользовательской инструкции.
 
-== 3. Acceptance Criteria
+* type correctness
+  Насколько выбранный тип блока соответствует смыслу запроса.
 
-* generated draft валиден по базовой структуре
-* template и defaults согласованы между собой
-* author может довести результат до publish без полной регенерации в большинстве тестовых кейсов
+* template usefulness
+  Насколько template уже похож на production-usable draft, а не на общую
+  болванку.
 
-== 4. Dataset Strategy
+* editability
+  Насколько просто автору довести результат до publish.
 
-* gold cases: role, style, safety, constraint, domain blocks
-* negative cases: vague prompts, contradictory instructions, missing context
+== 3. Критерии приёмки
 
-== 5. Offline Evaluation
+Функция считается проходящей оценку, если:
 
-* проверка результата на curated prompt set
-* ручная оценка качества generated drafts
+* generated draft валиден по базовой структуре;
+* template, description и defaults не противоречат друг другу;
+* author может довести результат до publish без полной регенерации в
+  большинстве representative cases;
+* revision mode сохраняет identity существующего блока;
+* доля полностью unusable drafts остаётся низкой на curated наборе кейсов.
 
-== 6. Manual Review
+== 4. Стратегия датасета
 
-* reviewer: prompt author или product/domain owner
-* focus: relevance, schema quality, review cost
+Нужно собирать:
 
-== 7. Thresholds and Decision Rule
+* gold cases для `role`, `style`, `safety`, `constraint`, `domain`, `system`;
+* кейсы с preferred type и preferred id;
+* revision cases для существующих blocks;
+* vague prompts;
+* contradictory instructions;
+* prompts with missing context;
+* multilingual and mixed-language prompts.
 
-* go: большинство representative prompts дают usable draft
-* no-go: частые structural failures или unusable outputs
+Набор должен включать:
 
-== 8. Regression Policy
+* простые кейсы;
+* средние по сложности product-like instructions;
+* негативные кейсы, где модель склонна давать generic output.
 
-* regression: заметное ухудшение draft usability или schema consistency
-* baseline: текущий accepted prompt/template version
+== 5. Offline evaluation
 
-== 9. Post-Release Quality Review
+Нужно проводить:
 
-* собирать примеры discarded outputs
-* обновлять prompt strategy и eval set по реальным кейсам
+* прогон по curated prompt set;
+* проверку structural validity;
+* ручную оценку semantic relevance;
+* сравнение create mode и revise mode;
+* сравнение качества до и после изменений prompt policy.
+
+Полезно фиксировать:
+
+* сколько кейсов проходят validation;
+* сколько кейсов требуют light edit, heavy edit или full rewrite;
+* где чаще всего ломается `id`, `type`, `templ` или `description`.
+
+== 6. Ручная проверка
+
+Ревьюеры:
+
+* prompt author;
+* product/domain owner;
+* при необходимости владелец block library.
+
+Что проверять вручную:
+
+* relevance;
+* correctness of type;
+* usability of template;
+* review cost;
+* можно ли сохранить результат после разумной ручной правки.
+
+== 7. Пороговые значения и правило решения
+
+`Go`, если:
+
+* большинство representative prompts дают usable draft;
+* structural failures редки;
+* revision mode обычно сохраняет identity блока;
+* review cost заметно ниже полностью ручного authoring с нуля.
+
+`No-Go`, если:
+
+* часты structural failures;
+* draft почти всегда приходится переписывать с нуля;
+* модель системно выбирает неверные типы блоков;
+* revision mode разрушает ожидаемую идентичность существующих блоков.
+
+== 8. Политика регрессий
+
+Регрессией считается:
+
+* заметное ухудшение usability generated drafts;
+* рост invalid ids или schema failures;
+* снижение semantic relevance;
+* ухудшение качества revision mode.
+
+Baseline:
+
+* текущая принятая prompt/template policy;
+* curated benchmark prompts.
+
+== 9. Post-release review
+
+После изменений prompt policy или provider configuration нужно:
+
+* собирать примеры discarded outputs;
+* анализировать, где пользователи чаще всего редактируют generated drafts;
+* расширять eval set реальными кейсами;
+* отдельно отслеживать проблемы create mode и revise mode.

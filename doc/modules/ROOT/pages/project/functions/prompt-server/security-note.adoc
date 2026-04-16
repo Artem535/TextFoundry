@@ -1,15 +1,54 @@
 = Prompt Server Security Note
 
-== 1. Security Scope
+Статус: planned capability.
 
-Server exposes published prompt assets to clients, so the primary risks are
-access control, data boundary violations and unsafe parameter handling.
+== 1. Область безопасности
 
-== 2. Key Requirements
+Будущий `Prompt Server` будет открывать published prompt assets клиентам.
+Поэтому главные риски находятся не в AI prompt quality, а в:
 
-Ключевые требования:
+* access control;
+* data boundary correctness;
+* parameter handling;
+* published-only enforcement.
 
-* только published data
-* no draft mutation
-* parameter input validation
-* authn/authz policy для external clients
+== 2. Ключевые требования
+
+Сервис должен обеспечивать:
+
+* только published data;
+* no draft mutation;
+* no draft access;
+* parameter input validation;
+* authn/authz policy для external clients;
+* fail-closed behavior при нарушении доступа или недоступности published store.
+
+== 3. Основные риски
+
+Ключевые риски:
+
+* утечка draft data;
+* обход authoring boundary;
+* неверная parameter validation;
+* доступ к assets неавторизованными клиентами;
+* неконсистентная compatibility policy.
+
+== 4. Базовые меры контроля
+
+Необходимые меры:
+
+* published-only repository view;
+* строгая authn/authz модель;
+* reject draft ids and draft access attempts;
+* deterministic render only in base contract;
+* no fallback to draft data;
+* audit access to sensitive endpoints and assets.
+
+== 5. Особые замечания
+
+Так как capability пока не реализована:
+
+* документ фиксирует требования к будущей security boundary;
+* он не должен трактоваться как описание уже существующих защитных механизмов;
+* по мере реализации потребуется отдельная детализация authn/authz, rate
+  limiting, audit logging и secret management.

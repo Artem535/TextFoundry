@@ -1,49 +1,124 @@
 = Prompt Slicing Evaluation Plan
 
-== 1. Evaluation Goal
+== 1. Цель оценки
 
-* quality means preserving intent while producing usable block decomposition
-* main risks: missing sections, wrong grouping, invalid ids, destructive update mode
+Качество `Prompt Slicing` означает:
 
-== 2. Quality Dimensions
+* сохранить intent source prompt;
+* выделить осмысленные block boundaries;
+* сформировать publishable batch после разумного review;
+* в update mode не разрушить существующую структуру.
+
+Главные риски:
+
+* missing sections;
+* wrong grouping;
+* invalid ids;
+* destructive update mode;
+* чрезмерная зависимость от качества source prompt.
+
+== 2. Измерения качества
+
+Оцениваемые измерения:
 
 * coverage of source intent
-* block boundary quality
+  Критические части исходного prompt остаются представлены в block set.
+
+* boundary quality
+  Секции разделены логично, а не случайно.
+
 * id validity
-* preservation in update mode
+  Generated ids пригодны для storage и дальнейшего сопровождения.
 
-== 3. Acceptance Criteria
+* preservation quality in update mode
+  Existing structure сохраняется в разумной степени.
 
-* critical sections of source prompt remain represented
-* generated block set is saveable after light review
-* update mode does not aggressively replace too much structure
+* publishability
+  Batch можно довести до публикации без полной ручной пересборки.
 
-== 4. Dataset Strategy
+== 3. Критерии приёмки
 
-* legacy long prompts
-* structured prompts with obvious sections
-* noisy prompts with mixed formatting
-* negative cases for collisions and under-specified inputs
+Функция считается проходящей оценку, если:
 
-== 5. Offline Evaluation
+* критические секции source prompt остаются представленными;
+* generated block set в большинстве кейсов можно сохранить после light review;
+* update mode не заменяет слишком много структуры без необходимости;
+* tagged inputs часто разбираются корректно без лишнего AI rewriting;
+* collisions и structural failures отсеиваются до publish.
 
-* manual decomposition comparison
-* structural review of ids and suggested blocks
+== 4. Стратегия датасета
 
-== 6. Manual Review
+Нужно собирать:
 
-* reviewer checks coverage, grouping quality and review effort
+* legacy long prompts;
+* structured prompts with explicit sections;
+* noisy prompts with mixed formatting;
+* prompts с XML-like tags;
+* update cases для существующих композиций;
+* negative cases для collisions;
+* under-specified inputs.
 
-== 7. Thresholds and Decision Rule
+Отдельно стоит иметь:
 
-* go when typical prompts can be migrated without full manual rewrite
-* no-go when generated sets are structurally unusable
+* create mode benchmark set;
+* update mode benchmark set;
+* tagged-section benchmark set.
 
-== 8. Regression Policy
+== 5. Offline evaluation
 
-* regression: loss of coverage, worse preservation, more invalid ids
+Нужно проводить:
 
-== 9. Post-Release Quality Review
+* manual decomposition comparison;
+* structural review ids и suggested blocks;
+* проверку create mode и update mode отдельно;
+* проверку доли случаев, где fast path с tagged sections работает без AI;
+* анализ review cost перед publish.
 
-* collect failed slicing examples
-* update prompt policy and curated benchmark prompts
+== 6. Ручная проверка
+
+Ревьюеры:
+
+* prompt author;
+* composition owner;
+* владелец block library.
+
+Что проверять:
+
+* coverage;
+* grouping quality;
+* id quality;
+* review effort;
+* preservation of existing structure in update mode.
+
+== 7. Пороговые значения и правило решения
+
+`Go`, если:
+
+* typical prompts можно мигрировать без full manual rewrite;
+* update mode полезен в реальных change scenarios;
+* invalid ids и structurally unusable batches редки.
+
+`No-Go`, если:
+
+* generated sets часто structurally unusable;
+* update mode системно разрушает существующую структуру;
+* review cost почти равен полностью ручной миграции.
+
+== 8. Политика регрессий
+
+Регрессией считается:
+
+* loss of coverage;
+* worse preservation;
+* рост invalid ids;
+* ухудшение работы fast path для tagged inputs;
+* рост доли rejected batches.
+
+== 9. Post-release review
+
+После изменений prompt policy или update heuristics нужно:
+
+* собирать failed slicing examples;
+* расширять curated benchmark prompts;
+* отдельно анализировать create mode и update mode;
+* отслеживать реальные кейсы, где пользователь вернулся к manual editing.

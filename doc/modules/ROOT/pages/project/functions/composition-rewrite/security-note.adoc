@@ -1,20 +1,46 @@
 = Composition Rewrite Security Note
 
-== 1. Data Sensitivity
+== 1. Область чувствительности данных
 
-Composition content can include role, safety and constraint blocks, so rewrite
-requests may carry sensitive operational instructions.
+`Composition Rewrite` работает с composition content, в котором могут быть:
 
-== 2. Key Risks
+* role blocks;
+* safety blocks;
+* constraint blocks;
+* internal behavioral instructions;
+* product policies.
 
-Риски:
+Поэтому rewrite requests могут нести чувствительные operational instructions.
 
-* composition content уходит во внешний provider
-* неправильный rewrite может затронуть safety / constraint blocks
+== 2. Основные риски
 
-== 3. Required Controls
+Ключевые риски:
+
+* composition content уходит во внешний provider;
+* неправильный rewrite может затронуть safety/constraint blocks;
+* preview может выглядеть убедительно, но содержать unsafe semantic changes;
+* логирование patch context может раскрыть внутреннюю prompt structure.
+
+== 3. Обязательные меры контроля
+
+Базовые меры:
+
+* preview-before-apply;
+* explicit human review;
+* отдельная проверка safety-sensitive blocks;
+* no blind apply;
+* external provider рассматривается как отдельная trust boundary.
+
+== 4. Специфические product-риски
+
+Особые риски:
+
+* rewrite может ослабить guardrails без явного structural изменения;
+* пользователь может недооценить важность small wording changes;
+* apply затрагивает несколько assets, а не только один текст.
 
 Меры:
 
-* preview-before-apply
-* review sensitive blocks отдельно
+* review preview по блокам;
+* placeholder validation;
+* повышенное внимание к safety и constraint content.

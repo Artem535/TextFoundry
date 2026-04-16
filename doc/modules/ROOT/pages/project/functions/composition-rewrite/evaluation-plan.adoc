@@ -1,48 +1,116 @@
 = Composition Rewrite Evaluation Plan
 
-== 1. Evaluation Goal
+== 1. Цель оценки
 
-* quality means the rewrite is useful while preserving enough structure to remain safe
-* main risks: destructive rewrite, low-clarity preview, incorrect patch application
+Качество `Composition Rewrite` означает:
 
-== 2. Quality Dimensions
+* rewrite полезен по смыслу;
+* existing structure сохраняется в безопасной степени;
+* preview достаточно понятен для human approval;
+* apply faithfully следует approved preview.
+
+Главные риски:
+
+* destructive rewrite;
+* low-clarity preview;
+* incorrect patch application;
+* placeholder breakage;
+* скрытый structural redesign.
+
+== 2. Измерения качества
+
+Оцениваемые измерения:
 
 * preservation of existing blocks
+  Насколько rewrite сохраняет состав и роль существующих blocks.
+
 * patch clarity
-* semantic usefulness of rewrite
+  Насколько preview помогает понять proposed changes.
+
+* semantic usefulness
+  Насколько rewrite реально улучшает композицию по инструкции.
+
 * safety of apply step
+  Насколько apply соответствует preview и не ломает invariants.
 
-== 3. Acceptance Criteria
+* placeholder preservation
+  Сохраняются ли executable constraints blocks.
 
-* preview clearly explains proposed changes
-* preserved fraction of important blocks remains acceptable
-* apply result matches approved preview
+== 3. Критерии приёмки
 
-== 4. Dataset Strategy
+Функция считается проходящей оценку, если:
 
-* representative compositions with mixed block types
-* cases with safety and constraint blocks
-* update cases where only part of composition should change
+* preview ясно объясняет proposed changes;
+* preserved fraction of important blocks остаётся приемлемой;
+* apply result соответствует approved preview;
+* placeholder checks надёжно предотвращают unsafe patches;
+* rewrite полезен хотя бы на representative composition set.
 
-== 5. Offline Evaluation
+== 4. Стратегия датасета
 
-* compare preview output to expected preservation goals
-* inspect applied result against preview
+Нужно собирать:
 
-== 6. Manual Review
+* representative compositions с mixed block types;
+* cases с safety и constraint blocks;
+* update cases, где измениться должна только часть composition;
+* cases with repeated references to same block;
+* negative cases с ambiguous instruction.
 
-* reviewers check clarity, preservation and semantic improvement
+== 5. Offline evaluation
 
-== 7. Thresholds and Decision Rule
+Нужно проводить:
 
-* go when rewrite stays reviewable and mostly preserves intended structure
-* no-go when destructive patches are frequent
+* сравнение preview output с expected preservation goals;
+* inspection applied result against preview;
+* проверку placeholder-preservation;
+* review patch clarity;
+* сравнение эффективности с полностью ручным массовым редактированием.
 
-== 8. Regression Policy
+== 6. Ручная проверка
 
-* regression: lower preservation, worse preview clarity, mismatch between preview and apply
+Ревьюеры:
 
-== 9. Post-Release Quality Review
+* composition author;
+* domain owner;
+* владелец composition workflow.
 
-* collect failed rewrite cases
-* refine preservation prompts and golden compositions
+Что проверять:
+
+* clarity;
+* preservation;
+* semantic improvement;
+* safety of apply.
+
+== 7. Пороговые значения и правило решения
+
+`Go`, если:
+
+* rewrite остаётся reviewable;
+* intended structure mostly preserved;
+* preview и apply согласованы;
+* destructive patches редки и корректно отсеиваются.
+
+`No-Go`, если:
+
+* preview часто непонятен;
+* apply расходится с preview;
+* destructive patches frequent;
+* placeholder violations часто появляются на representative cases.
+
+== 8. Политика регрессий
+
+Регрессией считается:
+
+* lower preservation;
+* worse preview clarity;
+* mismatch between preview and apply;
+* more placeholder-related apply failures.
+
+== 9. Post-release review
+
+После изменений prompt policy или apply logic нужно:
+
+* собирать failed rewrite cases;
+* анализировать rejected previews;
+* обновлять golden compositions;
+* отдельно отслеживать mismatch между preview и apply.

@@ -1,47 +1,109 @@
 = Prompt Server Evaluation Plan
 
-== 1. Evaluation Goal
+Статус: planned capability.
 
-* quality means the server stays deterministic, read-only and contract-stable
-* main risks: accidental draft access, inconsistent render behavior, weak validation
+== 1. Цель оценки
 
-== 2. Quality Dimensions
+Качество будущего `Prompt Server` означает:
+
+* published-only access действительно соблюдается;
+* render остаётся deterministic;
+* API contract стабилен и предсказуем;
+* delivery runtime не размывает authoring boundaries.
+
+Главные риски:
+
+* accidental draft access;
+* inconsistent render behavior;
+* weak parameter validation;
+* contract drift;
+* security boundary violations.
+
+== 2. Измерения качества
+
+Оцениваемые измерения:
 
 * access boundary correctness
+  Может ли сервис увидеть или вернуть draft data.
+
 * render reproducibility
+  Даёт ли одинаковый вход одинаковый output.
+
 * API contract stability
+  Насколько предсказуемы inputs, outputs и errors.
 
-== 3. Acceptance Criteria
+* validation strictness
+  Насколько последовательно сервис отвергает invalid requests.
 
-* published-only access is enforced
-* same input yields same render output
-* parameter validation is predictable and testable
+== 3. Критерии приёмки
 
-== 4. Dataset Strategy
+Capability будет считаться проходящей проверку, если:
 
-* representative published assets
-* valid and invalid parameter sets
-* not-found and forbidden access cases
+* published-only access enforced;
+* same input yields same render output;
+* parameter validation predictable and testable;
+* draft data не доступны через runtime paths;
+* service clearly fail-closed on repository problems.
 
-== 5. Offline Evaluation
+== 4. Стратегия датасета
 
-* contract tests
-* deterministic render replay
+Нужно использовать:
 
-== 6. Manual Review
+* representative published assets;
+* valid and invalid parameter sets;
+* not-found cases;
+* forbidden/draft-access attempts;
+* replay наборы для deterministic render.
 
-* architecture and security review before go-live
+== 5. Offline evaluation
 
-== 7. Thresholds and Decision Rule
+Нужно проводить:
 
-* go only if published-only boundary is proven in tests
-* no-go if service can access drafts or render unreproducibly
+* contract tests;
+* deterministic render replay;
+* boundary tests на published-only access;
+* validation tests для required and invalid params;
+* compatibility checks при изменении API shape.
 
-== 8. Regression Policy
+== 6. Ручная проверка
 
-* regression: broken access boundary or changed deterministic output for same inputs
+До go-live нужны:
 
-== 9. Post-Release Quality Review
+* architecture review;
+* security review;
+* review published-only policy;
+* review failure behavior under degraded conditions.
 
-* track access boundary incidents
-* review compatibility after API changes
+== 7. Пороговые значения и правило решения
+
+`Go`, только если:
+
+* published-only boundary доказана тестами;
+* service не может access drafts;
+* deterministic render replay стабилен;
+* validation behavior предсказуем.
+
+`No-Go`, если:
+
+* сервис может читать drafts;
+* output меняется без изменения inputs;
+* parameter validation двусмысленна;
+* degradation leads to unsafe fallback.
+
+== 8. Политика регрессий
+
+Регрессией считается:
+
+* broken access boundary;
+* changed deterministic output for same inputs;
+* weakened validation;
+* contract instability for clients.
+
+== 9. Post-release review
+
+После будущего запуска нужно:
+
+* track access boundary incidents;
+* review compatibility after API changes;
+* collect client-facing error cases;
+* separately audit any attempt to reach draft data.

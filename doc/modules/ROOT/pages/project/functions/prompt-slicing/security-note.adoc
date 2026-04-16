@@ -1,26 +1,62 @@
 = Prompt Slicing Security Note
 
-== 1. Data Sensitivity
+== 1. Область чувствительности данных
 
-Source prompt может содержать целые рабочие инструкции, внутренние процессы и
-чувствительные формулировки.
+`Prompt Slicing` особенно чувствителен, потому что в provider boundary может
+уходить не фрагмент, а целый большой рабочий prompt.
 
-== 2. Key Risks
+Во входе могут быть:
 
-Риски:
+* целые рабочие инструкции;
+* внутренние процессы;
+* policy text;
+* legacy prompts с чувствительным operational content.
 
-* source prompt может содержать конфиденциальный контент
-* provider получает полный raw input
-* generated decomposition может раскрывать лишнюю структуру
+== 2. Основные риски
 
-== 3. Storage and Retention
+Ключевые риски:
 
-* raw source prompt пересекает provider boundary
-* retention policy must be reviewed per provider
+* source prompt может содержать конфиденциальный контент;
+* provider получает полный raw input;
+* generated decomposition может выявить внутреннюю структуру и логику prompt;
+* логирование source prompt создаёт дополнительный риск утечки.
 
-== 4. Required Controls
+== 3. Граница внешнего провайдера
+
+Нужно считать, что:
+
+* raw source prompt пересекает provider boundary;
+* provider retention policy должна быть заранее проверена;
+* large-prompt workflows несут больший риск, чем single-block generation.
+
+== 4. Хранение и retention
+
+Требования:
+
+* не сохранять source prompt локально без необходимости;
+* избегать логирования полного raw input;
+* проверять retention policy внешнего провайдера;
+* учитывать чувствительность legacy prompts перед отправкой наружу.
+
+== 5. Обязательные меры контроля
+
+Базовые меры:
+
+* классифицировать sensitivity input перед использованием;
+* использовать review-before-publish;
+* не отправлять секреты и credentials в source prompt;
+* считать AI provider внешней системой с отдельной trust boundary.
+
+== 6. Специфические product-риски
+
+Особые риски:
+
+* update mode может переносить чувствительные существующие структуры;
+* summaries reusable blocks тоже могут содержать значимый внутренний контекст;
+* generated decomposition может упростить или раскрыть скрытую internal logic.
 
 Меры:
 
-* классифицировать input sensitivity
-* использовать review-before-apply
+* ручной review generated set;
+* аккуратная работа с update mode;
+* дополнительная осторожность для prompts с policy/safety content.
