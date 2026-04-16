@@ -1,62 +1,165 @@
 = Prompt Slicing PRD
 
-== 1. Goal and Business Context
+== 1. Цель и продуктовый контекст
 
-* Business problem: большие raw prompts трудно переносить в block model вручную.
-* Service goal: быстро разложить длинный prompt на reviewable block suggestions.
-* Expected effect: ускорить migration from raw prompt to structured composition.
+`Prompt Slicing` нужен для перевода больших raw prompts в структурированную
+модель блоков без полностью ручной декомпозиции.
 
-== 2. Problem Statement
+Проблема продукта:
 
-* Current state: перенос сложных prompt assets делается вручную.
-* Pain points: медленная декомпозиция, ошибки в ids, потеря структуры.
-* Why ML/LLM is needed: длинный prompt лучше сначала интерпретировать семантически.
+* legacy prompts часто длинные, сложные и плохо поддаются ручному переносу;
+* при ручной миграции теряется структура, появляются ошибки в `block_id`,
+  ухудшается переиспользуемость;
+* обновление уже существующей композиции по новому исходному тексту требует
+  много рутинной работы.
 
-== 3. Users and Use Cases
+Цель функции:
 
-* Primary users: prompt authors migrating existing prompts
-* Main use cases:
-* initial slicing нового большого prompt
-* update existing composition from updated source prompt
-* bootstrap новой block library из legacy assets
+* быстро получить reviewable набор block suggestions;
+* поддержать режим обновления существующей композиции;
+* сохранить структуру и переиспользование там, где это возможно.
 
-== 4. Scope and Non-Goals
+== 2. Постановка проблемы
 
-=== In Scope
+Без slicing пользователь вынужден:
 
-* batch generation of block suggestions
-* update mode with preservation expectations
-* review before save/apply
+* разбирать большой prompt вручную;
+* придумывать id и типы для каждого будущего блока;
+* следить за сохранением структуры;
+* отдельно публиковать блоки и переоформлять композицию.
 
-=== Out of Scope
+Основные боли:
 
-* automatic apply without user review
-* deterministic parsing of every arbitrary format
+* медленная миграция длинных prompts;
+* потеря логических границ между секциями;
+* конфликты id;
+* высокий риск разрушить уже существующую composition structure.
 
-== 5. Success Criteria and KPI
+Почему здесь нужен ML/LLM:
 
-* long prompt can be converted into a usable block set
-* generated ids and blocks are reviewable and mostly saveable
-* update mode preserves enough existing structure to remain useful
+* семантическая декомпозиция больших prompt-текстов плохо ложится на набор
+  жёстких deterministic правил;
+* системе нужно уметь распознавать логические части, а не только механически
+  резать текст.
 
-== 6. Requirements Summary
+== 3. Пользователи и сценарии
 
-* system MUST support batch suggestion flow
-* system MUST validate duplicate ids and reuse collisions
-* user MUST review generated blocks before persistence
+Основные пользователи:
 
-== 7. Assumptions and Constraints
+* prompt authors, мигрирующие legacy assets;
+* владельцы composiion workflows;
+* авторы, которые хотят обновить существующую композицию по изменённому source
+  prompt.
 
-* quality depends on source prompt quality
-* provider has no direct write access to storage
-* current workflow is GUI-first
+Ключевые сценарии:
 
-== 8. Dependencies and Stakeholders
+* первичное slicing длинного raw prompt;
+* update existing composition from updated source prompt;
+* bootstrap новой block library из legacy prompt assets;
+* разбор уже размеченного prompt с минимальным AI-вмешательством.
 
-* Dependencies: `PromptSlicingRequest`, generator adapter, GUI dialog
-* Stakeholders: prompt authors, AI workflow owner, composition workflow owner
+== 4. Область охвата и не-цели
 
-== 9. Pilot / Release Acceptance
+=== В области охвата
 
-* Pilot: representative legacy prompts can be decomposed into usable blocks
-* Release: update mode is stable enough for repeated review cycles
+* batch generation of block suggestions;
+* deterministic fast path для tagged sections;
+* режим update с сохранением структуры;
+* review before publish;
+* reuse existing ids, когда это безопасно и уместно.
+
+=== Вне области охвата
+
+* автоматическое применение результата без review;
+* гарантированно идеальная декомпозиция любого произвольного текста;
+* транзакционный atomic publish всей пачки как одной сущности;
+* скрытая background migration без участия пользователя.
+
+== 5. Критерии успеха
+
+Функция считается успешной, если:
+
+* большой prompt можно быстро преобразовать в полезный набор блоков;
+* generated ids и структура в большинстве типовых случаев пригодны для review и
+  публикации;
+* update mode сохраняет достаточно существующей структуры, чтобы быть полезным;
+* пользователь получает ускорение миграции без потери контроля.
+
+Качественные индикаторы:
+
+* снижение времени миграции legacy prompt в block model;
+* уменьшение числа ручных ошибок при назначении ids;
+* повышение доли успешных update cycles без полной переработки композиции.
+
+== 6. Функциональные требования
+
+Система должна:
+
+* принимать source prompt как основной входной артефакт;
+* поддерживать batch suggestion flow;
+* валидировать duplicate ids и unsafe collisions;
+* поддерживать update mode с reuse existing block ids;
+* давать пользователю preview generated blocks перед публикацией;
+* публиковать блоки только после явного подтверждения.
+
+Система должна уметь:
+
+* обходиться без AI, если source уже содержит хорошо размеченные tagged sections;
+* принимать hints о namespace, языке и силе сохранения структуры;
+* различать create mode и update mode.
+
+== 7. Нефункциональные требования
+
+Функция должна:
+
+* оставаться reviewable;
+* явно показывать ошибки и ограничения;
+* не выполнять silent overwrite существующих assets;
+* не зависеть от AI как единственного возможного способа разбора;
+* сохранять human-in-the-loop модель публикации.
+
+== 8. Ограничения и допущения
+
+Ограничения:
+
+* качество slicing зависит от качества source prompt;
+* AI provider не имеет прямого доступа к storage;
+* GUI-first workflow сейчас является основным пользовательским входом.
+
+Допущения:
+
+* existing composition может быть использована как источник hints для update mode;
+* summaries и reusable ids помогают стабилизировать поведение модели;
+* пользователь готов review-ить результат перед публикацией.
+
+== 9. Зависимости и заинтересованные стороны
+
+Зависимости:
+
+* `PromptSlicingRequest`;
+* generator adapter;
+* `BlockSliceViewModel`;
+* block и composition repositories;
+* engine batch generation methods.
+
+Заинтересованные стороны:
+
+* prompt authors;
+* владелец composition workflow;
+* владелец AI authoring layer;
+* владелец block library.
+
+== 10. Критерии приёмки
+
+Пилот считается успешным, если:
+
+* representative legacy prompts можно декомпозировать в usable block set;
+* tagged inputs часто обрабатываются корректно и без лишнего AI rewriting;
+* update mode полезен на реальных изменениях существующих композиций.
+
+Функция считается готовой к регулярному использованию, если:
+
+* review/publish workflow стабилен;
+* update mode достаточно предсказуем;
+* ошибки и ограничения понятны пользователю;
+* ручной fallback остаётся возможным.

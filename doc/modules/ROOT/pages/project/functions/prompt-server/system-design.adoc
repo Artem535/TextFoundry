@@ -2,50 +2,122 @@
 
 Статус: planned, not implemented.
 
-== 1. Executive Summary
+== 1. Краткое резюме
 
-Prompt Server задуман как deterministic delivery boundary поверх published
+`Prompt Server` задуман как deterministic delivery boundary поверх published
 assets. Он должен отделить authoring system от runtime consumption и работать
-только с published data.
+только с опубликованными данными, не наследуя draft или GUI-specific semantics.
 
-== 2. Context and Scope
+== 2. Контекст и границы
 
-* In scope: read-only resolve/render API, parameter validation, published-only access
-* Out of scope: authoring, draft mutation, automatic semantic rewrite
+В области охвата:
 
-== 3. Requirements Summary
+* read-only resolve/render API;
+* published-only access;
+* parameter validation;
+* deterministic delivery runtime.
 
-* Functional: resolve published assets, render with parameters, expose runtime API
-* NFR: reproducibility, access control, no authoring side effects
+Вне области охвата:
 
-== 4. Components and Integrations
+* authoring;
+* draft mutation;
+* AI-assisted editing;
+* automatic semantic rewrite;
+* доступ к GUI review states и raw preview semantics.
 
-Предполагаемые компоненты:
+== 3. Архитектурные требования
 
-* server API
-* published repository access
+Будущий server boundary должен:
+
+* работать только с published repository view;
+* использовать deterministic render path как основной runtime contract;
+* не иметь mutation endpoints;
+* fail closed при недоступности published data;
+* не fallback-ить к draft state;
+* иметь более строгий API, чем внутренний authoring engine.
+
+== 4. Предполагаемые компоненты
+
+Планируемые компоненты:
+
+* server API layer
+  Внешний контракт для downstream clients.
+
+* published repository access layer
+  Читает только published assets.
+
 * renderer
+  Выполняет deterministic resolve/render published compositions.
+
 * optional parameter validation layer
+  Проверяет runtime params до render.
 
-== 5. Key System Scenario
+* authn/authz layer
+  Ограничивает доступ к delivery API.
 
-Поток:
+== 5. Базовый сценарий
 
 [mermaid]
 ----
 flowchart LR
   Client --> Server["Prompt Server API"]
-  Server --> Published["Published Repository"]
+  Server --> Published["Published Repository View"]
   Published --> Renderer["Renderer"]
   Renderer --> Server
   Server --> Client
 ----
 
-== 6. Reliability and Degradation
+Шаги:
 
-* published repository unavailability should fail closed
-* service should not fallback to draft data
+1. Клиент запрашивает published asset.
+2. Server resolve-ит composition/block через published repository.
+3. Выполняется parameter validation.
+4. Renderer строит deterministic result.
+5. Server возвращает response клиенту.
 
-== 7. Operations Summary
+== 6. Границы безопасности и доверия
 
-* server работает только с published данными и deterministic rendering
+Ключевые правила:
+
+* draft assets недоступны server runtime;
+* publish/update/delete не являются частью server API;
+* server не должен выполнять authoring-side AI workflows;
+* GUI-specific preview modes не являются частью delivery contract.
+
+== 7. Надёжность и деградация
+
+При недоступности published repository:
+
+* сервис должен fail closed.
+
+При некорректных параметрах:
+
+* сервер должен возвращать validation error.
+
+При отсутствии runtime implementation:
+
+* документация должна явно помечать capability как planned, а не как уже
+  работающий сервис.
+
+== 8. Операционные свойства
+
+Ожидаемые свойства:
+
+* published-only policy;
+* deterministic rendering;
+* stricter runtime API surface;
+* отдельный operational surface по сравнению с GUI/TUI workbench.
+
+== 9. Связанные документы
+
+Upstream:
+
+* xref:project/functions/prompt-server/prd.adoc[PRD]
+* xref:project/functions/prompt-server/adr.adoc[ADR]
+* xref:project/architecture/system/hld.adoc[High-Level Design]
+
+Downstream:
+
+* xref:project/functions/prompt-server/service-spec.adoc[Service Spec]
+* xref:project/functions/prompt-server/security-note.adoc[Security Note]
+* xref:project/functions/prompt-server/runbook.adoc[Runbook]

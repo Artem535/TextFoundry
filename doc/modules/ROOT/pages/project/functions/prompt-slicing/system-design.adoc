@@ -1,72 +1,169 @@
 = Prompt Slicing System Design
 
-== 1. Executive Summary
+== 1. Краткое резюме
 
-Функция строит batch-oriented AI workflow для перевода raw prompt в block set.
-Она использует тот же generator abstraction, что и single-block generation,
-но добавляет batch contract, GUI validation и preservation checks.
+`Prompt Slicing` строит batch-oriented AI workflow для перевода длинного raw
+prompt в набор reusable blocks. В отличие от single-block generation, здесь
+система работает с целой пачкой кандидатов и отдельно решает задачу сохранения
+структуры в update mode.
 
-== 2. Context and Scope
+== 2. Контекст и границы
 
-* In scope: prompt decomposition, update mode, generated block validation
-* Out of scope: auto-save of generated blocks, hidden prompt migration
-* Assumption: provider возвращает JSON-структуру для нескольких candidate blocks
+В области охвата:
 
-== 3. Requirements Summary
+* prompt decomposition;
+* deterministic parse of tagged sections;
+* AI batch generation;
+* update mode with preservation hints;
+* generated block validation;
+* publish-all workflow.
 
-* Functional: produce block batch, preserve structure in update mode, validate ids
-* NFR: reviewability, explicit errors, no silent overwrite
-* UX: update mode must expose target composition and preservation strength
+Вне области охвата:
 
-== 4. Components and Integrations
+* automatic apply without review;
+* hidden migration;
+* server-side batch slicing;
+* atomic batch transaction semantics.
 
-Компоненты:
+== 3. Архитектурные требования
+
+Функция должна:
+
+* иметь отдельный batch contract;
+* поддерживать create mode и update mode;
+* валидировать generated ids и набор в целом;
+* не изменять storage до явного publish step;
+* уметь деградировать к deterministic fast path, если input уже хорошо размечен.
+
+== 4. Компоненты и интеграции
+
+Основные компоненты:
 
 * `BlockSliceViewModel`
+  Управляет source prompt, режимами работы, генерацией, preview и публикацией.
+
 * `PromptSlicingRequest`
-* engine batch generation methods
-* generator adapter
-* validation of generated ids and preservation heuristics
-* block/composition repositories for publish step
+  Передаёт source text, namespace, preservation hints и reusable ids.
 
-== 5. Key System Scenario
+* `tf::Engine`
+  Выполняет batch generation и domain-level validation.
 
-Поток:
+* `IBlockGenerator`
+  Используется для AI-assisted decomposition.
+
+* `OpenAiCompatibleBlockGenerator`
+  Конкретный AI adapter.
+
+* block/composition repositories
+  Используются на стадии публикации результатов.
+
+== 5. Потоки данных
+
+Источник данных:
+
+* пользовательский source prompt;
+* в update mode - текущая composition structure, reusable ids и summaries.
+
+Выходные артефакты:
+
+* generated block suggestions;
+* preview composition id/text;
+* опубликованные блоки;
+* при update mode - обновлённая composition-oriented структура публикации.
+
+== 6. Основной сценарий
 
 [mermaid]
 ----
 flowchart LR
-  Source["Source Prompt"] --> Dialog["Block Slice Dialog"]
-  Dialog --> Engine["Engine.GenerateBlockBatchData / GenerateBlockDrafts"]
+  Source["Source Prompt"] --> Dialog["BlockSliceViewModel"]
+  Dialog --> FastPath{"Tagged sections?"}
+  FastPath -->|Да| Parse["Deterministic section parse"]
+  FastPath -->|Нет| Engine["Engine.GenerateBlockBatchData"]
   Engine --> Generator["IBlockGenerator"]
   Generator --> Provider["OpenAI-compatible API"]
   Provider --> Generator
   Generator --> Engine
-  Engine --> Validate["Client-side Validation"]
-  Validate --> Drafts["Suggested Blocks + Composition Preview"]
-  Drafts --> Publish["Publish All"]
+  Parse --> Validate["Workflow validation"]
+  Engine --> Validate
+  Validate --> Preview["Generated Blocks Preview"]
+  Preview --> Publish["Publish All"]
 ----
 
-== 6. Reliability and Degradation
+Шаги:
 
-* GUI validation catches duplicate ids and unsafe replacements
-* provider failure leaves source prompt unchanged
-* user may switch to manual block editing
-* reusable block hints materially improve update-mode stability
+1. Пользователь вводит source prompt.
+2. GUI пытается сначала распарсить tagged sections.
+3. Если fast path не сработал, вызывается batch generator.
+4. Результат проходит workflow validation.
+5. Пользователь просматривает suggestions.
+6. По явному действию выполняется публикация блоков.
 
-== 7. Operations Summary
+== 7. Update mode
 
-* generated block ids должны быть уникальны
-* update mode должен учитывать preservation of existing block set
+Update mode отличается от create mode:
 
-== Upstream / Downstream
+* загружается target composition;
+* source text может быть предварительно заполнен её текущим render;
+* вычисляется namespace prefix;
+* в request передаются reusable ids и их summaries;
+* включается сохранение порядка и регулируемая сила preservation.
+
+Это делает update mode более консервативным и пригодным для эволюции уже
+существующих assets.
+
+== 8. Валидация и guardrails
+
+Валидация идёт на двух уровнях:
+
+* engine-level validation
+  Проверяет корректность generated block data.
+
+* workflow-level validation
+  Проверяет пригодность всей пачки к публикации в конкретном UI-сценарии.
+
+Ключевые guardrails:
+
+* уникальность generated ids;
+* защита от unsafe collisions;
+* сохранение структуры в update mode;
+* отсутствие auto-publish.
+
+== 9. Надёжность и деградация
+
+Если tagged parse успешен:
+
+* AI вообще не вызывается.
+
+Если AI недоступен:
+
+* source prompt остаётся неизменным;
+* пользователь может перейти к ручному authoring.
+
+Если validation не пройдена:
+
+* generated set не публикуется;
+* пользователь видит explicit error message.
+
+== 10. Операционные свойства
+
+Функция:
+
+* чувствительна к качеству source prompt;
+* зависит от hints и summaries в update mode;
+* требует явной review stage;
+* публикует результат через обычный block lifecycle.
+
+== 11. Связанные документы
 
 Upstream:
 
 * xref:project/functions/prompt-slicing/prd.adoc[PRD]
+* xref:project/functions/prompt-slicing/adr.adoc[ADR]
 * xref:project/architecture/ui-ux.adoc[UI/UX]
 
 Downstream:
 
 * xref:project/functions/prompt-slicing/service-spec.adoc[Service Spec]
 * xref:project/functions/prompt-slicing/evaluation-plan.adoc[Evaluation Plan]
+* xref:project/functions/prompt-slicing/runbook.adoc[Runbook]

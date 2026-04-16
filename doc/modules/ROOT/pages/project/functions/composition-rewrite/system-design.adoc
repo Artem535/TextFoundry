@@ -1,70 +1,146 @@
 = Composition Rewrite System Design
 
-== 1. Executive Summary
+== 1. Краткое резюме
 
-Функция строит patch-oriented AI workflow для composition rewrite. Вместо
-слепой замены текста система сначала создаёт preview, затем даёт отдельный apply
-step, что сохраняет review boundary между suggestion и mutation.
+`Composition Rewrite` реализует patch-oriented AI workflow для controlled
+переписывания существующих блоков внутри композиции. Вместо слепой замены
+текста система сначала создаёт preview, а только потом по явному approve
+выпускает новые версии блоков и новую версию композиции.
 
-== 2. Context and Scope
+== 2. Контекст и границы
 
-* In scope: preview generation, apply over approved preview, block-preserving rewrite
-* Out of scope: hidden mutation of composition, implicit publish
-* Assumption: rewrite instruction is authored by user and non-empty
+В области охвата:
 
-== 3. Requirements Summary
+* preview generation;
+* apply over approved preview;
+* block-preserving rewrite;
+* versioned publication of changed blocks and composition.
 
-* Functional: produce preview, apply approved rewrite, preserve structure where possible
-* NFR: inspectability, explicitness, graceful degradation
+Вне области охвата:
 
-== 4. Components and Integrations
+* hidden mutation of composition;
+* structural rewrite;
+* automatic apply;
+* добавление новых блоков через эту capability.
 
-Компоненты:
+== 3. Архитектурные требования
+
+Функция должна:
+
+* разделять preview и apply;
+* работать через отдельный rewriter contract;
+* собирать rewrite context из уникальных blocks композиции;
+* проверять placeholders до публикации;
+* использовать обычный block/composition versioning workflow.
+
+== 4. Компоненты и интеграции
+
+Основные компоненты:
 
 * `CompositionBlockRewriteViewModel`
+  Управляет instruction, preview, apply и статусами в UI.
+
 * `CompositionBlockRewriteRequest`
+  Описывает исходную композицию, версию и пользовательскую инструкцию.
+
 * `ICompositionBlockRewriter`
+  Порт для preview-based AI rewrite.
+
 * `OpenAiCompatibleCompositionBlockRewriter`
-* preview/apply workflow in engine and GUI
+  Конкретная provider implementation.
 
-== 5. Key System Scenario
+* `tf::Engine`
+  Собирает rewrite context, валидирует preview, применяет approved patches и
+  публикует новые версии.
 
-Поток:
+== 5. Контракты данных
+
+Основные структуры:
+
+* `CompositionRewriteContextBlock`
+* `CompositionBlockRewriteContext`
+* `BlockRewritePatch`
+* `CompositionBlockRewritePreview`
+* `AppliedCompositionBlockRewriteResult`
+
+Ключевые свойства patch model:
+
+* patch ссылается на существующий `block_id`;
+* меняются только ограниченные поля;
+* composition structure не является частью patch contract.
+
+== 6. Основной сценарий
 
 [mermaid]
 ----
 flowchart LR
-  Composition["Current Composition"] --> Preview["Preview Rewrite Request"]
-  Preview --> Engine["PreviewCompositionBlockRewrite"]
+  Composition["Current Composition"] --> PreviewReq["Preview Rewrite Request"]
+  PreviewReq --> Engine["PreviewCompositionBlockRewrite"]
   Engine --> Rewriter["ICompositionBlockRewriter"]
   Rewriter --> Provider["OpenAI-compatible API"]
   Provider --> Rewriter
   Rewriter --> Engine
-  Engine --> Patch["CompositionBlockRewritePreview"]
-  Patch --> Apply["ApplyCompositionBlockRewrite"]
-  Apply --> Publish["Publish new block versions + new composition version"]
+  Engine --> Preview["CompositionBlockRewritePreview"]
+  Preview --> Apply["ApplyCompositionBlockRewrite"]
+  Apply --> Publish["Update blocks + publish new composition version"]
 ----
 
-== 6. Reliability and Degradation
+Шаги:
 
-* provider failure leaves source composition unchanged
-* preview quality acts as primary safety gate
-* user can fall back to manual composition editing
-* apply step should only operate on an already reviewed preview object
+1. Пользователь выбирает composition и пишет instruction.
+2. GUI вызывает preview.
+3. Engine загружает composition и уникальные referenced blocks.
+4. Rewriter возвращает patch preview.
+5. Пользователь review-ит summary.
+6. По явному apply engine публикует новые версии блоков и новую версию
+   композиции.
 
-== 7. Operations Summary
+== 7. Validation и guardrails
 
-* preview и apply разделены
-* stored data меняются только после explicit apply
+Ключевые guardrails:
 
-== Upstream / Downstream
+* preview невозможен без выбранной composition и непустой инструкции;
+* duplicate patches по `block_id` отклоняются;
+* patch не может ссылаться на блок, которого нет в source composition;
+* placeholder sets исходного и rewritten template сравниваются;
+* composition structure не меняется.
+
+== 8. Надёжность и деградация
+
+При ошибке provider:
+
+* source composition остаётся неизменной;
+* preview не создаётся.
+
+При ошибке apply:
+
+* пользователь получает explicit error;
+* нет hidden overwrite already reviewed source assets.
+
+Если preview пустой:
+
+* apply либо не требуется, либо возвращает исходную composition version без
+  structural mutation.
+
+== 9. Операционные свойства
+
+Функция:
+
+* explicit и review-driven;
+* опирается на quality user instruction;
+* чувствительна к понятности preview summary;
+* интегрируется с существующим versioning и publish lifecycle.
+
+== 10. Связанные документы
 
 Upstream:
 
 * xref:project/functions/composition-rewrite/prd.adoc[PRD]
+* xref:project/functions/composition-rewrite/adr.adoc[ADR]
 * xref:project/architecture/ui-ux.adoc[UI/UX]
 
 Downstream:
 
 * xref:project/functions/composition-rewrite/service-spec.adoc[Service Spec]
 * xref:project/functions/composition-rewrite/runbook.adoc[Runbook]
+* xref:project/functions/composition-rewrite/security-note.adoc[Security Note]

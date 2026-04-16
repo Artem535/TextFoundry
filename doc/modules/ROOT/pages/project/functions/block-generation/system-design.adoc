@@ -1,72 +1,164 @@
 = Block Generation System Design
 
-== 1. Executive Summary
+== 1. Краткое резюме
 
-Функция строит AI-assisted draft generation для одного блока и сохраняет
-границу между suggestion и mutation. Генерация идёт через adapter layer,
-а публикация и versioning остаются в core authoring workflow.
+`Block Generation` реализует AI-assisted authoring workflow для одного блока.
+Архитектурно функция отделяет:
 
-== 2. Context and Scope
+* пользовательскую инструкцию;
+* provider-specific generation;
+* engine-level validation;
+* ручную публикацию итогового результата.
 
-* In scope: single-block generation, provider call, review in GUI block editor
-* Out of scope: auto-publish, hidden generation in render path, batch slicing
-* Assumption: provider возвращает структуру, пригодную для `GeneratedBlockData`
+Главный принцип:
+AI помогает получить draft, но не становится частью deterministic rendering и
+не обходит обычный lifecycle блока.
 
-== 3. Requirements Summary
+== 2. Контекст и границы
 
-* Functional: generate block data, convert to draft, show result in editor tab
-* NFR: понятные ошибки, opt-in execution, отсутствие влияния на deterministic mode
-* UX: generated result must remain editable before save
+В области охвата:
 
-== 4. Components and Integrations
+* single-block generation;
+* AI revision существующего блока;
+* структурная валидация результата;
+* загрузка результата в редактор блока;
+* ручное сохранение новой версии.
 
-Компоненты:
+Вне области охвата:
+
+* batch slicing;
+* автоматическая публикация;
+* hidden invocation из render path;
+* quality ranking нескольких кандидатов;
+* server-side orchestration.
+
+== 3. Архитектурные требования
+
+Функция должна:
+
+* вызываться только по explicit user action;
+* зависеть в core только от `IBlockGenerator`;
+* не изменять storage без отдельного `Save`;
+* валидировать generated data до попадания в authoring flow;
+* поддерживать graceful degradation при отсутствии AI-конфигурации;
+* быть совместимой с versioned block lifecycle.
+
+== 4. Компоненты и интеграции
+
+Основные компоненты:
 
 * `BlockEditorViewModel`
+  Управляет формой, режимами `generate` и `revise`, статусами и загрузкой
+  результата в UI.
+
 * `tf::Engine`
+  Вызывает generator, валидирует результат, обеспечивает единый orchestration
+  layer.
+
 * `IBlockGenerator`
+  Порт для AI-assisted block generation.
+
 * `OpenAiCompatibleBlockGenerator`
+  Конкретная реализация провайдера.
+
 * `QtHttpTransport`
-* session-level AI configuration in `SessionViewModel`
+  Сетевой транспорт для AI adapter layer.
 
-== 5. Key System Scenario
+* `SessionViewModel`
+  Пересобирает engine при изменении AI-конфигурации и подключает generator.
 
-Поток:
+== 5. Данные и контракты
+
+Входной контракт:
+
+* `BlockGenerationRequest`
+  Содержит `prompt`, optional hints и список существующих `block_id`.
+
+Выходной контракт:
+
+* `GeneratedBlockData`
+  Содержит `id`, `type`, `language`, `description`, `templ`, `defaults`, `tags`.
+
+Связанные доменные ограничения:
+
+* `id` должен быть валидным и стабильным;
+* template не должен быть пустым;
+* коллизии с уже существующими id недопустимы, кроме контролируемого revision
+  сценария.
+
+== 6. Основной сценарий
 
 [mermaid]
 ----
 flowchart LR
-  User["User Instruction"] --> GUI["GUI Block Editor"]
-  GUI --> Engine["Engine.GenerateBlockData / GenerateBlockDraft"]
+  User["Пользовательская инструкция"] --> GUI["BlockEditorViewModel"]
+  GUI --> Engine["Engine.GenerateBlockData"]
   Engine --> Generator["IBlockGenerator"]
   Generator --> Provider["OpenAI-compatible API"]
   Provider --> Generator
   Generator --> Engine
-  Engine --> GUI["Populate editor fields"]
-  GUI --> Save["Manual Save / PublishBlock or UpdateBlock"]
+  Engine --> Validate["Валидация generated data"]
+  Validate --> GUI["Заполнение формы редактора"]
+  GUI --> Save["Ручное сохранение через PublishBlock/UpdateBlock"]
 ----
 
-== 6. Reliability and Degradation
+Шаги:
 
-* при отсутствии generator engine возвращает explicit error
-* при ошибке provider пользователь остаётся в ручном authoring workflow
-* generated output не должен автоматически записываться в storage
-* смена `base_url`, `model` или `api_key` пересобирает engine через session layer
+1. Пользователь вводит AI instruction.
+2. GUI собирает `BlockGenerationRequest`.
+3. Engine вызывает `IBlockGenerator`.
+4. Ответ модели проходит engine-level validation.
+5. Валидный результат загружается в форму.
+6. Пользователь вручную редактирует и сохраняет новую версию.
 
-== 7. Operations Summary
+== 7. Режим ревизии существующего блока
 
-* функция explicit и opt-in
-* результат сначала попадает в editor workspace
-* сохранение новой версии остаётся отдельным действием пользователя
+Для `revise` используется тот же базовый генератор, но другой orchestration:
 
-== Upstream / Downstream
+* в prompt включается текущий блок;
+* identity блока должна сохраняться;
+* `allow_id_collision = true`, потому что обновляется тот же `id`;
+* результат не публикуется автоматически;
+* пользователь сохраняет новую версию вручную.
+
+Это позволяет не плодить отдельный AI service contract для revision, но
+сохранять другой policy.
+
+== 8. Обработка ошибок и деградация
+
+При отсутствии generator:
+
+* engine возвращает explicit error;
+* GUI сообщает о необходимости настроить AI settings.
+
+При ошибке провайдера:
+
+* storage не меняется;
+* пользователь остаётся в обычном ручном authoring workflow.
+
+При невалидном результате:
+
+* engine отклоняет его до попадания в form state.
+
+== 9. Операционные свойства
+
+Функция:
+
+* explicit и opt-in;
+* не меняет deterministic render behavior;
+* зависит от конфигурации `base_url`, `model`, `api_key`, timeout;
+* пересобирается через session layer при изменении AI settings.
+
+== 10. Связанные документы
 
 Upstream:
 
 * xref:project/functions/block-generation/prd.adoc[PRD]
+* xref:project/functions/block-generation/adr.adoc[ADR]
 * xref:project/architecture/ui-ux.adoc[UI/UX]
 
 Downstream:
 
 * xref:project/functions/block-generation/service-spec.adoc[Service Spec]
 * xref:project/functions/block-generation/runbook.adoc[Runbook]
+* xref:project/functions/block-generation/security-note.adoc[Security Note]

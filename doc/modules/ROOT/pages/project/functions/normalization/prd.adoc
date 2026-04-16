@@ -1,62 +1,159 @@
 = Normalization PRD
 
-== 1. Goal and Business Context
+== 1. Цель и продуктовый контекст
 
-* Business problem: пользователю нужен controlled rewrite без потери deterministic base flow.
-* Service goal: применять semantic style changes только по explicit request.
-* Expected effect: быстрее получать согласованный tone/tense/language output.
+`Normalization` нужна для controlled semantic rewrite поверх deterministic
+базового контура `TextFoundry`.
 
-== 2. Problem Statement
+Проблема продукта:
 
-* Current state: raw render не меняет семантику текста.
-* Pain points: manual rewrite после render занимает время.
-* Why ML/LLM is needed: semantic rewrite трудно описать чисто deterministic правилами.
+* пользователю часто нужен более согласованный tone, tense, language или стиль;
+* ручная правка после render занимает время;
+* при этом нельзя потерять детерминированный базовый output и исходные assets.
 
-== 3. Users and Use Cases
+Цель функции:
 
-* Primary users: пользователи render и composition workflows
-* Main use cases:
-* normalize rendered text
-* normalize composition blocks while preserving structure
-* prepare alternate tone/language variants
+* дать explicit semantic rewrite по запросу пользователя;
+* сохранить разделение между canonical render и AI-derived output;
+* поддержать как text-level normalization, так и composition-level derivation.
 
-== 4. Scope and Non-Goals
+== 2. Постановка проблемы
 
-=== In Scope
+Обычный render в `TextFoundry`:
 
-* text normalization
-* composition normalization
-* explicit semantic style application
+* воспроизводим;
+* детерминирован;
+* не меняет семантику текста автоматически.
 
-=== Out of Scope
+Этого достаточно для runtime truth, но недостаточно в сценариях, где нужно:
 
-* automatic semantic mutation in `Render()`
-* silent overwrite of stored published data
+* смягчить тон;
+* привести стиль к единому виду;
+* подготовить альтернативный вариант языка или подачи;
+* получить производную композицию, адаптированную под semantic style.
 
-== 5. Success Criteria and KPI
+Почему deterministic rules недостаточны:
 
-* normalized result reflects requested semantic style
-* source meaning remains acceptable after rewrite
-* workflow remains optional and clearly separated from deterministic render
+* semantic rewrite плохо выражается набором жёстких правил;
+* качество результата зависит от контекста, значения и сохранения смысла.
 
-== 6. Requirements Summary
+== 3. Пользователи и сценарии
 
-* engine MUST require explicit normalize call
-* system MUST fail explicitly when normalizer is absent
-* user MUST review normalized output before reuse in authored content
+Основные пользователи:
 
-== 7. Assumptions and Constraints
+* пользователи render workflow;
+* авторы композиций;
+* владельцы prompt assets, которым нужны stylistic variants.
 
-* AI provider may be unavailable
-* normalization quality depends on source text and style clarity
-* core engine should remain deterministic without AI
+Ключевые сценарии:
 
-== 8. Dependencies and Stakeholders
+* normalize rendered text;
+* normalize composition blocks while preserving placeholders;
+* подготовить alternate tone/language variants;
+* получить производную normalized composition без изменения исходной.
 
-* Dependencies: `INormalizer`, `IBlockNormalizer`, GUI render/composition workflows
-* Stakeholders: content authors, AI workflow owner, core engine owner
+== 4. Область охвата и не-цели
 
-== 9. Pilot / Release Acceptance
+=== В области охвата
 
-* Pilot: users can create useful normalized variants for common styles
-* Release: normalization is stable enough to be part of regular explicit workflow
+* text normalization;
+* composition normalization;
+* explicit semantic style application;
+* derived composition/block creation;
+* optional normalization of static text in composition.
+
+=== Вне области охвата
+
+* automatic semantic mutation inside `Render()`;
+* silent overwrite of source blocks или source compositions;
+* скрытая background normalization;
+* quality ranking between multiple normalized candidates.
+
+== 5. Критерии успеха
+
+Функция считается успешной, если:
+
+* normalized result отражает requested semantic style;
+* исходный смысл остаётся приемлемо сохранённым;
+* placeholders и структурные ограничения не ломаются;
+* workflow остаётся optional и явно отделён от deterministic render.
+
+Качественные индикаторы:
+
+* пользователи могут получать полезные normalized variants для common styles;
+* composition normalization даёт usable derived assets;
+* AI availability не воспринимается как обязательное условие базового render.
+
+== 6. Функциональные требования
+
+Система должна:
+
+* выполнять normalization только по explicit user action;
+* поддерживать text normalization через `INormalizer`;
+* поддерживать block-preserving normalization через `IBlockNormalizer`;
+* создавать derived composition и derived blocks, а не переписывать source;
+* проверять placeholders до публикации normalized block;
+* уметь повторно использовать cached normalized assets при совпадающем style и
+  fingerprint.
+
+Пользователь должен:
+
+* видеть различие между исходным и normalized результатом;
+* отдельно решать, использовать ли normalized output дальше.
+
+== 7. Нефункциональные требования
+
+Функция должна:
+
+* не влиять на базовый deterministic core;
+* явно деградировать при отсутствии normalizer;
+* не скрывать AI-derived semantics под обычным render result;
+* поддерживать понятные сообщения об ошибках;
+* сохранять трассируемость происхождения derived assets.
+
+== 8. Ограничения и допущения
+
+Ограничения:
+
+* AI provider может быть недоступен;
+* качество normalization зависит от source text и ясности style request;
+* derived assets увеличивают объём хранимых данных.
+
+Допущения:
+
+* `SemanticStyle` задан осмысленно и не пуст;
+* пользователи понимают, что normalization - это optional rewrite, а не новая
+  canonical truth;
+* reuse cached normalized blocks полезен для повторяющихся сценариев.
+
+== 9. Зависимости и заинтересованные стороны
+
+Зависимости:
+
+* `INormalizer`;
+* `IBlockNormalizer`;
+* `SemanticStyle`;
+* `RenderViewModel`;
+* `CompositionsViewModel`;
+* OpenAI-compatible normalizer.
+
+Заинтересованные стороны:
+
+* content authors;
+* владельцы composiion workflows;
+* AI workflow owner;
+* core engine owner.
+
+== 10. Критерии приёмки
+
+Пилот считается успешным, если:
+
+* common styles дают полезные normalized variants;
+* composition normalization создаёт пригодные derived compositions;
+* placeholders не ломаются на representative cases.
+
+Функция считается готовой к регулярному использованию, если:
+
+* explicit workflow понятен пользователю;
+* stale-state и derived-result semantics не путают render truth;
+* отсутствие AI не ломает базовый deterministic продуктовый сценарий.

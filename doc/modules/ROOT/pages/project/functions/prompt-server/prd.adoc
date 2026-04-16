@@ -1,63 +1,153 @@
 = Prompt Server PRD
 
-== 1. Goal and Business Context
+Статус: planned capability, not implemented.
 
-* Business problem: delivery-side clients не должны ходить в authoring workflow напрямую.
-* Service goal: дать published-only runtime for prompt resolution.
-* Why now: capability уже описана в PRD как целевая архитектура.
+== 1. Цель и продуктовый контекст
 
-== 2. Problem Statement
+`Prompt Server` нужен как будущий delivery-side runtime для опубликованных
+prompt assets `TextFoundry`.
 
-* Current state: server capability отсутствует, доступ идёт через локальные authoring surfaces.
-* Pain points: нет выделенного delivery runtime и published-only boundary.
-* Why ML/LLM is needed: функция обслуживает prompt assets для LLM use cases, но сама должна оставаться deterministic.
+Проблема продукта:
 
-== 3. Users and Use Cases
+* внешние и внутренние клиенты не должны ходить напрямую в authoring workflow;
+* опубликованные assets требуют отдельной runtime boundary;
+* нужно отделить delivery consumption от локального GUI/TUI authoring.
 
-* Primary users: external/internal clients consuming published prompt assets
-* Main use cases:
-* resolve composition by id and version
-* render with runtime parameters
-* consume published prompt library in read-only mode
+Цель функции:
 
-== 4. Scope and Non-Goals
+* предоставить published-only runtime для resolve/render prompt assets;
+* сохранить deterministic delivery contract;
+* не превратить сервер в удалённый редактор.
 
-=== In Scope
+== 2. Постановка проблемы
 
-* published-only read access
-* composition resolution and render
-* parameter validation
+Текущее состояние:
 
-=== Out of Scope
+* capability включена в целевую архитектуру;
+* отдельного server runtime пока нет;
+* доступ к assets идёт через authoring-oriented surfaces и локальный engine.
 
-* authoring UI
-* draft mutation
-* implicit AI rewrite
+Основные боли:
 
-== 5. Success Criteria and KPI
+* нет выделенного delivery runtime;
+* published-only boundary пока не воплощена в отдельном сервисе;
+* есть риск смешать authoring и consumption semantics.
 
-* clients can consume published assets without touching drafts
-* render behavior is reproducible
-* service boundary cleanly separates authoring from delivery
+Почему эта функция относится к ML/LLM-контексту:
 
-== 6. Requirements Summary
+* сервер обслуживает prompt assets для LLM use cases;
+* при этом сам базовый delivery contract должен оставаться deterministic.
 
-* service MUST expose published-only access
-* service MUST not mutate draft or published authoring state
-* service MUST stay deterministic by default
+== 3. Пользователи и сценарии
 
-== 7. Assumptions and Constraints
+Основные пользователи:
 
-* capability is planned, not implemented
-* storage model already distinguishes published entities
-* server should not become hidden editor
+* external/internal clients, consuming published prompt assets;
+* platform owner;
+* integrators, которым нужен read-only runtime contract.
 
-== 8. Dependencies and Stakeholders
+Ключевые сценарии:
 
-* Dependencies: published repository access, renderer, API layer
-* Stakeholders: platform owner, prompt authors, downstream clients
+* resolve composition by id and version;
+* render with runtime parameters;
+* consume published prompt library in read-only mode;
+* использовать published assets без доступа к drafts и authoring operations.
 
-== 9. Pilot / Release Acceptance
+== 4. Область охвата и не-цели
 
-* Pilot: published-only resolve/render contract works on representative assets
-* Release: operational, security and compatibility constraints are formalized
+=== В области охвата
+
+* published-only read access;
+* composition and block resolution;
+* deterministic render;
+* parameter validation;
+* delivery-side API boundary.
+
+=== Вне области охвата
+
+* authoring UI;
+* draft mutation;
+* publish/update/delete operations;
+* implicit AI rewrite;
+* выдача GUI-specific preview semantics как runtime contract.
+
+== 5. Критерии успеха
+
+Capability будет считаться успешной, если:
+
+* клиенты смогут потреблять published assets без доступа к drafts;
+* runtime behavior будет воспроизводимым;
+* граница между authoring и delivery останется чистой и понятной.
+
+Качественные индикаторы:
+
+* published-only policy доказуема тестами и API shape;
+* server contract не требует знания внутренних authoring surfaces;
+* downstream clients не зависят от GUI/TUI semantics.
+
+== 6. Функциональные требования
+
+Будущий сервис должен:
+
+* предоставлять published-only access;
+* уметь resolve-ить published assets по идентичности и версии;
+* выполнять deterministic render с runtime params;
+* валидировать входные параметры;
+* возвращать понятные runtime errors;
+* не изменять authoring state.
+
+== 7. Нефункциональные требования
+
+Сервис должен:
+
+* быть воспроизводимым и предсказуемым;
+* fail closed при недоступности published data;
+* не fallback-ить к draft data;
+* иметь более узкий и строгий контракт, чем authoring engine;
+* поддерживать ясную security boundary.
+
+== 8. Ограничения и допущения
+
+Ограничения:
+
+* capability пока не реализована;
+* storage model уже различает published и draft сущности;
+* будущая реализация не должна размывать существующие authoring boundaries.
+
+Допущения:
+
+* published repositories и renderer останутся базой delivery runtime;
+* отдельный API слой будет добавлен позже;
+* operational, security и compatibility policy будут оформлены до реализации.
+
+== 9. Зависимости и заинтересованные стороны
+
+Зависимости:
+
+* published repository access;
+* renderer;
+* parameter validation layer;
+* server API layer;
+* authn/authz and deployment decisions.
+
+Заинтересованные стороны:
+
+* platform owner;
+* prompt authors;
+* downstream clients;
+* security and operations owners.
+
+== 10. Критерии приёмки
+
+Пилот будет считаться успешным, если:
+
+* published-only resolve/render contract работает на representative assets;
+* draft data не попадают в server responses;
+* failure behavior понятен и безопасен.
+
+Реализация будет считаться готовой к выпуску, если:
+
+* operational constraints формализованы;
+* security model определена;
+* compatibility policy согласована;
+* server не выполняет authoring mutations ни напрямую, ни косвенно.

@@ -1,62 +1,156 @@
 = Composition Rewrite PRD
 
-== 1. Goal and Business Context
+== 1. Цель и продуктовый контекст
 
-* Business problem: обновление composition вручную может быть медленным и ломать структуру.
-* Service goal: дать controlled rewrite без потери block-oriented model.
-* Expected effect: быстрее обновлять composition, сохраняя reviewability.
+`Composition Rewrite` нужен для controlled AI-assisted обновления существующей
+композиции без разрушения block-oriented model.
 
-== 2. Problem Statement
+Проблема продукта:
 
-* Current state: composition editing и rewrite делаются вручную или фрагментарно.
-* Pain points: сложно обновить набор блоков, не разрушив текущую композицию.
-* Why ML/LLM is needed: semantic rewrite нужно сочетать с preservation existing blocks.
+* ручное обновление composition может быть медленным;
+* при большой композиции легко нарушить текущую структуру;
+* пользователь хочет доработать содержание, но не пересобирать всё с нуля.
 
-== 3. Users and Use Cases
+Цель функции:
 
-* Primary users: authors editing compositions
-* Main use cases:
-* preview AI rewrite over current composition
-* inspect patches before apply
-* update composition while preserving important blocks
+* дать способ переписать содержание блоков по новой инструкции;
+* сохранить reviewability и versioning;
+* не превращать rewrite в скрытый redesign композиции.
 
-== 4. Scope and Non-Goals
+== 2. Постановка проблемы
 
-=== In Scope
+Текущий ручной путь:
 
-* preview/apply rewrite workflow
-* patch-oriented output
-* explicit user review
+* открыть composition;
+* найти нужные блоки;
+* редактировать их вручную;
+* выпустить новые версии;
+* затем сохранить новую версию композиции.
 
-=== Out of Scope
+Это надёжно, но затратно:
 
-* blind overwrite of composition
-* automatic apply without preview
+* сложно быстро обновить набор связанных блоков;
+* трудно массово улучшить phrasing, tone или policy wording;
+* есть риск случайно сломать placeholders или нарушить consistency.
 
-== 5. Success Criteria and KPI
+Почему здесь нужен ML/LLM:
 
-* preview explains changes well enough for human decision
-* apply updates composition without hidden mutations
-* rewrite preserves enough existing structure to stay useful
+* semantic rewrite по пользовательской инструкции естественно ложится на модель;
+* при этом нужно сочетать rewrite с жёсткими constraints на сохранение состава
+  и структуры.
 
-== 6. Requirements Summary
+== 3. Пользователи и сценарии
 
-* system MUST separate preview and apply
-* system MUST expose patch-like result
-* user MUST approve changes before mutation
+Основные пользователи:
 
-== 7. Assumptions and Constraints
+* authors editing compositions;
+* владельцы reusable prompt flows;
+* пользователи, которым нужно быстро адаптировать существующую композицию под
+  новую задачу, сохранив блоковую модель.
 
-* provider sees composition content
-* sensitive blocks may require manual review
-* quality depends on preservation guidance
+Ключевые сценарии:
 
-== 8. Dependencies and Stakeholders
+* preview AI rewrite over current composition;
+* inspect patches before apply;
+* update composition while preserving existing blocks and placeholders;
+* использовать AI как ускоритель controlled revision, а не как автогенератор
+  новой структуры.
 
-* Dependencies: `ICompositionBlockRewriter`, GUI rewrite dialog, engine apply flow
-* Stakeholders: composition authors, AI workflow owner, core composition owner
+== 4. Область охвата и не-цели
 
-== 9. Pilot / Release Acceptance
+=== В области охвата
 
-* Pilot: preview/apply is useful on representative compositions
-* Release: patch quality and preservation behavior are stable enough for repeated use
+* preview/apply rewrite workflow;
+* patch-oriented output;
+* explicit user review;
+* выпуск новых версий затронутых блоков;
+* публикация новой версии композиции после apply.
+
+=== Вне области охвата
+
+* blind overwrite of composition;
+* structural redesign composition;
+* automatic apply without preview;
+* добавление и удаление блоков через AI в рамках этой функции.
+
+== 5. Критерии успеха
+
+Функция считается успешной, если:
+
+* preview достаточно понятен для человеческого решения;
+* apply обновляет композицию без скрытых мутаций;
+* rewrite сохраняет placeholders и основную структуру;
+* пользователь получает ускорение в сравнении с полностью ручным массовым
+  редактированием.
+
+Качественные индикаторы:
+
+* полезность preview на representative compositions;
+* низкая доля reject из-за structural breakage;
+* стабильное поведение preview/apply в repeated use.
+
+== 6. Функциональные требования
+
+Система должна:
+
+* разделять preview и apply;
+* формировать patch-like результат по блокам;
+* работать только с блоками, уже присутствующими в композиции;
+* требовать явного пользовательского approve перед mutation;
+* выпускать новые версии затронутых блоков;
+* публиковать новую версию композиции после успешного apply;
+* проверять placeholders до сохранения rewritten blocks.
+
+== 7. Нефункциональные требования
+
+Функция должна:
+
+* сохранять inspectability;
+* явно сообщать об ошибках preview и apply;
+* не размывать границу между suggestion и mutation;
+* быть совместимой с текущим versioned lifecycle блоков и композиций.
+
+== 8. Ограничения и допущения
+
+Ограничения:
+
+* provider видит содержимое composition blocks;
+* качество результата зависит от ясности инструкции и preservation guidance;
+* некоторые sensitive blocks могут требовать ручной ревизии даже после preview.
+
+Допущения:
+
+* composition уже существует и выбрана пользователем;
+* пользователь готов review-ить patch summary перед apply;
+* block structure остаётся главной unit of maintenance.
+
+== 9. Зависимости и заинтересованные стороны
+
+Зависимости:
+
+* `ICompositionBlockRewriter`;
+* `CompositionBlockRewriteRequest`;
+* `CompositionBlockRewritePreview`;
+* GUI rewrite dialog;
+* engine apply flow.
+
+Заинтересованные стороны:
+
+* composition authors;
+* AI workflow owner;
+* core composition owner;
+* владельцы block library.
+
+== 10. Критерии приёмки
+
+Пилот считается успешным, если:
+
+* representative compositions дают полезные previews;
+* apply стабильно публикует новые версии без hidden mutation;
+* placeholders не ломаются на ключевых сценариях.
+
+Функция считается готовой к регулярному использованию, если:
+
+* preview/apply понятен пользователю;
+* patch quality достаточно стабильна;
+* manual fallback остаётся простым и доступным.

@@ -1,66 +1,167 @@
 = Normalization System Design
 
-== 1. Executive Summary
+== 1. Краткое резюме
 
-Функция добавляет explicit semantic rewrite поверх deterministic render path.
-Она использует `SemanticStyle` как input policy, но не меняет базовый render
-contract и может быть полностью отключена без потери core functionality.
+`Normalization` добавляет explicit semantic rewrite поверх deterministic render
+path. Архитектура разделяет:
 
-== 2. Context and Scope
+* canonical deterministic render;
+* text-level semantic rewrite;
+* block-preserving composition derivation.
 
-* In scope: text normalization, composition normalization, semantic style application
-* Out of scope: hidden rewrite in renderer, automatic persistence
-* Assumption: caller supplies non-empty `SemanticStyle`
+Таким образом AI остаётся optional transformation layer, а не частью базового
+контракта рендеринга.
 
-== 3. Requirements Summary
+== 2. Контекст и границы
 
-* Functional: normalize text, normalize composition, return reviewable result
-* NFR: explicitness, graceful degradation, separation from render path
+В области охвата:
 
-== 4. Components and Integrations
+* text normalization;
+* composition normalization;
+* derived block publishing;
+* derived composition publishing;
+* explicit semantic style application.
 
-Компоненты:
+Вне области охвата:
 
-* `RenderViewModel` and `CompositionsViewModel`
+* hidden rewrite in renderer;
+* automatic persistence of source assets;
+* неявное смешение normalized output с canonical render result.
+
+== 3. Архитектурные требования
+
+Функция должна:
+
+* требовать явного `Normalize()` вызова;
+* работать через engine contracts, а не только через GUI logic;
+* не переписывать source blocks и source compositions на месте;
+* сохранять placeholders при block normalization;
+* позволять reuse cached normalized assets.
+
+== 4. Компоненты и интеграции
+
+Основные компоненты:
+
+* `RenderViewModel`
+  Инициирует text normalization над текущим raw snapshot и управляет stale-state.
+
+* `CompositionsViewModel`
+  Инициирует composition normalization.
+
 * `SemanticStyle`
-* `INormalizer` / `IBlockNormalizer`
-* OpenAI-compatible normalizer
-* engine-side derived block/composition publishing for normalized compositions
+  Описывает желаемое semantic transformation policy.
 
-== 5. Key System Scenario
+* `INormalizer`
+  Переписывает произвольный текст.
 
-Поток:
+* `IBlockNormalizer`
+  Переписывает block templates с сохранением structural constraints.
+
+* `OpenAiCompatibleNormalizer`
+  Конкретная AI-реализация обоих интерфейсов.
+
+* `tf::Engine`
+  Оркестрирует normalize calls, validation, derivation и reuse cached assets.
+
+== 5. Контракты данных
+
+Основные структуры:
+
+* `SemanticStyle`
+* `BlockNormalizationRequest`
+* `NormalizedBlockData`
+* `CompositionNormalizationRequest`
+* `NormalizedCompositionResult`
+
+Ключевые свойства контрактов:
+
+* text normalization возвращает строку;
+* block normalization возвращает normalized template и optional metadata;
+* composition normalization возвращает идентичность производной композиции и
+  список rewritten blocks.
+
+== 6. Основные сценарии
+
+=== 6.1. Text normalization
 
 [mermaid]
 ----
 flowchart LR
-  Source["Rendered Text or Composition"] --> Engine["Normalize / NormalizeComposition"]
-  Engine --> Normalizer["INormalizer / IBlockNormalizer"]
+  Raw["Raw Text Snapshot"] --> Engine["Engine.Normalize"]
+  Engine --> Normalizer["INormalizer"]
   Normalizer --> Provider["OpenAI-compatible API"]
   Provider --> Normalizer
   Normalizer --> Engine
-  Engine --> Result["Normalized text or derived composition"]
+  Engine --> Result["Normalized Text"]
 ----
 
-== 6. Reliability and Degradation
+Особенности:
 
-* при отсутствии normalizer система остаётся в deterministic mode
-* empty style request должен приводить к validation error
-* provider failure не должен менять исходную composition
+* инициируется вручную;
+* работает поверх текущего snapshot;
+* результат может устаревать при изменении source snapshot.
 
-== 7. Operations Summary
+=== 6.2. Composition normalization
 
-* normalized result is derived, not silently committed
-* source snapshot and target style must remain inspectable
+[mermaid]
+----
+flowchart LR
+  Source["Source Composition"] --> Engine["Engine.NormalizeComposition"]
+  Engine --> BlockNorm["IBlockNormalizer"]
+  Engine --> TextNorm["INormalizer (optional static text)"]
+  BlockNorm --> Provider["OpenAI-compatible API"]
+  TextNorm --> Provider
+  Engine --> Derived["Derived Blocks + Derived Composition"]
+----
 
-== Upstream / Downstream
+Особенности:
+
+* source composition загружается из repository;
+* для каждого block ref создаётся или переиспользуется derived normalized block;
+* затем публикуется derived composition.
+
+== 7. Guardrails и validation
+
+Ключевые guardrails:
+
+* отсутствие normalizer приводит к explicit error;
+* empty semantic style отклоняется;
+* placeholder sets исходного и normalized block template сравниваются;
+* derived assets получают отдельную identity и tags;
+* reuse cached blocks/compositions опирается на fingerprint и normalization key.
+
+== 8. Надёжность и деградация
+
+При отсутствии AI:
+
+* render остаётся полностью работоспособным;
+* composition normalization не выполняется;
+* пользователь остаётся в deterministic workflow.
+
+При ошибке provider:
+
+* source assets не меняются;
+* derived assets не публикуются частично как canonical replacements.
+
+== 9. Операционные свойства
+
+Функция:
+
+* explicit и optional;
+* порождает derived assets вместо inplace mutation;
+* требует ясного разграничения между `Rendered` и `Normalized`;
+* поддерживает кэширование по style/fingerprint.
+
+== 10. Связанные документы
 
 Upstream:
 
 * xref:project/functions/normalization/prd.adoc[PRD]
+* xref:project/functions/normalization/adr.adoc[ADR]
 * xref:project/architecture/ui-ux.adoc[UI/UX]
 
 Downstream:
 
 * xref:project/functions/normalization/service-spec.adoc[Service Spec]
 * xref:project/functions/normalization/evaluation-plan.adoc[Evaluation Plan]
+* xref:project/functions/normalization/runbook.adoc[Runbook]
