@@ -1,0 +1,26 @@
+= Render Preview
+
+Функция отвечает за deterministic render, raw preview и optional normalized
+preview поверх выбранной composition в GUI.
+
+Текущее состояние:
+
+* реализована в `RenderViewModel`, `RenderPage.qml`, `tf::Engine` и `Renderer`
+* поддерживает три режима просмотра: `Raw`, `Rendered`, `Normalized`
+* работает с published compositions и version-aware render path
+* позволяет задавать runtime params и выбирать конкретную версию composition
+* normalization вызывается только явно и не является частью базового render path
+* поддерживает copy для rendered и raw output, а также reset/clear render state
+
+Upstream dependencies:
+
+* xref:project/architecture/system/hld.adoc[High-Level Design]
+* xref:project/architecture/ui-ux.adoc[UI/UX]
+* xref:project/functions/normalization/index.adoc[Normalization]
+
+Downstream docs to keep aligned:
+
+* xref:project/functions/render-preview/system-design.adoc[System Design]
+* xref:project/functions/render-preview/adr.adoc[ADR]
+* xref:project/functions/render-preview/service-spec.adoc[Service Spec]
+* xref:project/functions/render-preview/document-set.adoc[Document Set]

@@ -1,10 +1,67 @@
 = 3.4. Интеграции
 
-Раздел предназначен для внешних интеграций и контрактов с внешними системами.
+Раздел фиксирует внешние системы, с которыми уже интегрируется кодовая база,
+и planned boundaries, которые пока только описаны в документации.
 
-Для `TextFoundry` сюда логично относить:
+== 1. Реализованные интеграции
 
-* AI provider integrations
-* future prompt-server interfaces
-* import / export integrations
-* внешние tool contracts
+=== 1.1 OpenAI-compatible AI provider
+
+Текущая AI-интеграция построена вокруг OpenAI-compatible HTTP API:
+
+* configurable `base_url`
+* configurable `model`
+* bearer `api_key`
+* endpoint path по умолчанию `/chat/completions`
+
+Через этот boundary сейчас работают:
+
+* block generation
+* prompt slicing
+* text normalization
+* block normalization inside composition normalization
+* composition block rewrite
+
+=== 1.2 Local secret storage
+
+GUI использует `QtKeychain` для хранения API key:
+
+* API key не должен жить в plain-text project docs
+* key persistence отделена от обычных `QSettings`
+
+=== 1.3 Local persistent storage
+
+Локальная persistence-интеграция реализована через ObjectBox:
+
+* block repository
+* composition repository
+* versioned local store under configurable `dataPath`
+
+== 2. Частично покрытые или implicit интеграции
+
+В коде уже есть boundary, но пока без отдельного внешнего сервиса:
+
+* CLI/TUI frontend
+* Qt/QML GUI frontend
+* desktop packaging metadata (`.desktop`, metainfo, RPM packaging)
+
+== 3. Planned Integrations
+
+Пока не реализовано, но уже зафиксировано в function docs:
+
+* prompt server as published-only delivery boundary
+
+Это важно не смешивать с текущим desktop authoring runtime:
+
+* в текущем коде нет server API
+* нет remote published-only serving layer
+* нет authn/authz boundary для downstream clients
+
+== 4. Integration Constraints
+
+Текущие ограничения, которые должны оставаться согласованными в docs:
+
+* AI provider не должен напрямую мутировать local storage
+* AI вызовы должны оставаться explicit user action
+* deterministic rendering не должен зависеть от availability внешнего API
+* planned prompt server не должен описываться как уже реализованный

@@ -8,4 +8,16 @@
 * реализована через `PromptSlicingRequest`
 * использует batch generation path
 * доступна из GUI как `BlockSliceDialog`
-* поддерживает generate и update composition режимы
+* поддерживает create-batch и update-composition режимы
+* publish выполняется только после preview и явного `Publish All`
+
+Upstream dependencies:
+
+* xref:project/architecture/system/hld.adoc[High-Level Design]
+* xref:project/architecture/ui-ux.adoc[UI/UX]
+
+Downstream docs to keep aligned:
+
+* xref:project/functions/prompt-slicing/system-design.adoc[System Design]
+* xref:project/functions/prompt-slicing/service-spec.adoc[Service Spec]
+* xref:project/functions/prompt-slicing/document-set.adoc[Document Set]

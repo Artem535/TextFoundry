@@ -8,6 +8,7 @@
 * архитектура — `System Design`
 * контракт — `Service Spec`
 * эксплуатация — `Runbook`
+* prompt governance — `Prompt Template`
 
 == 2. Cross-Document Gaps
 
@@ -16,8 +17,25 @@
 * формальный benchmark set
 * versioned prompt governance
 * quality thresholds для release readiness
+* примеры `revise()` сценариев поверх существующих блоков
 
 == 3. Next Updates
 
 * синхронизировать prompt governance с provider implementation
 * собрать representative review corpus
+
+== 4. Upstream Dependencies
+
+Документы, на которые опирается этот набор:
+
+* xref:project/architecture/system/hld.adoc[High-Level Design]
+* xref:project/architecture/ui-ux.adoc[UI/UX]
+* xref:project/functions/block-generation/prd.adoc[PRD]
+
+== 5. Source of Truth in Code
+
+Основные code artifacts:
+
+* `src/textfoundry_engine/tf/engine.h`
+* `src/textfoundry_ai/openai_compatible_block_generator.*`
+* `src/text_foundry_gui/viewmodels/block_editor_view_model.*`

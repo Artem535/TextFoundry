@@ -34,9 +34,29 @@
 * xref:project/functions/prompt-slicing/index.adoc[Prompt Slicing]
 * xref:project/functions/normalization/index.adoc[Normalization]
 * xref:project/functions/composition-rewrite/index.adoc[Composition Rewrite]
+* xref:project/functions/block-authoring/index.adoc[Block Authoring]
+* xref:project/functions/render-preview/index.adoc[Render Preview]
 * xref:project/functions/prompt-server/index.adoc[Prompt Server]
 
 Текущее правило:
 
 * общие страницы описывают весь AI / ML контур проекта
 * подпапки функций описывают одну capability с собственным набором файлов
+
+== Реальный статус реализации
+
+По текущему состоянию кода:
+
+* `Block Generation` - реализована в engine и GUI
+* `Prompt Slicing` - реализована в engine и GUI
+* `Normalization` - реализована в engine и GUI
+* `Composition Rewrite` - реализована в engine и GUI
+* `Block Authoring` - реализована в engine и GUI
+* `Render Preview` - реализована в engine и GUI
+* `Prompt Server` - только planned boundary, без runtime implementation
+
+Важно:
+
+* все AI-функции являются explicit workflows
+* deterministic render path не вызывает их автоматически
+* GUI сейчас является основной рабочей поверхностью для AI сценариев

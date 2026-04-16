@@ -2,7 +2,7 @@
 
 == 1. Coverage Summary
 
-Минимальный комплект для функции уже создан.
+Минимальный комплект для функции уже создан и привязан к GUI-first workflow.
 
 == 2. Cross-Document Gaps
 
@@ -10,8 +10,21 @@
 
 * benchmark examples для slicing quality
 * explicit prompt schema и negative cases
+* publish semantics для update-mode reuse и collision handling
 
 == 3. Next Updates
 
 * связать representative prompts с evaluation corpus
 * выделить update-mode specific acceptance rules
+
+== 4. Upstream Dependencies
+
+* xref:project/architecture/system/hld.adoc[High-Level Design]
+* xref:project/architecture/ui-ux.adoc[UI/UX]
+* xref:project/functions/prompt-slicing/prd.adoc[PRD]
+
+== 5. Source of Truth in Code
+
+* `src/textfoundry_engine/tf/block_generation.h`
+* `src/textfoundry_ai/openai_compatible_block_generator.*`
+* `src/text_foundry_gui/viewmodels/block_slice_view_model.*`

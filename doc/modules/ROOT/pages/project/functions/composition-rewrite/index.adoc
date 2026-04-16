@@ -6,4 +6,17 @@
 
 * поддерживается preview/apply модель
 * отдельный rewriter подключается через engine
-* GUI уже поддерживает `Rewrite Blocks`
+* GUI поддерживает `Rewrite Blocks` dialog с patch preview
+* apply публикует новые block versions и новую composition version
+* blind overwrite composition не поддерживается
+
+Upstream dependencies:
+
+* xref:project/architecture/system/hld.adoc[High-Level Design]
+* xref:project/architecture/ui-ux.adoc[UI/UX]
+
+Downstream docs to keep aligned:
+
+* xref:project/functions/composition-rewrite/system-design.adoc[System Design]
+* xref:project/functions/composition-rewrite/service-spec.adoc[Service Spec]
+* xref:project/functions/composition-rewrite/document-set.adoc[Document Set]

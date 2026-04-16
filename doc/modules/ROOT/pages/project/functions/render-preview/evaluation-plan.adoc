@@ -1,0 +1,81 @@
+= Render Preview Evaluation Plan
+
+== 1. Evaluation Goal
+
+* quality means that render-preview stays understandable, reproducible and safe
+  for review-oriented usage
+* main risks:
+* user confusion between raw/rendered/normalized
+* incorrect params parsing
+* divergence between selected version and actual previewed source
+* stale normalized output interpreted as current truth
+
+== 2. Quality Dimensions
+
+* deterministic reproducibility
+* preview mode clarity
+* validation quality for params/version
+* consistency between composition selection and previewed data
+* normalization stale-state correctness
+
+== 3. Acceptance Criteria
+
+* identical composition version + identical params produce identical rendered
+  output
+* raw preview updates when composition/version selection changes
+* invalid params and invalid versions are surfaced clearly
+* normalized preview becomes stale after source snapshot change
+* clear/reload actions leave the screen in coherent state
+
+== 4. Dataset Strategy
+
+* representative published compositions with:
+* static text
+* separators
+* block refs with params
+* structural style usage
+* negative cases:
+* missing block reference
+* invalid required params
+* malformed version string
+* malformed params text
+
+== 5. Offline Evaluation
+
+* compare deterministic render results across repeated runs
+* validate version selection against known composition versions
+* verify raw preview for compositions with mixed fragment types
+* verify stale-state transitions for normalized output
+
+== 6. Manual Review
+
+* reviewer checks whether preview labels and actions make output semantics clear
+* reviewer checks whether copy actions export the intended content
+* reviewer checks whether errors are actionable for non-engine authors
+
+== 7. Thresholds and Decision Rule
+
+* go:
+* deterministic render reproducible for representative assets
+* users can reliably distinguish preview modes
+* invalid input paths are safely blocked
+* no-go:
+* mode confusion remains frequent
+* stale normalized output appears current
+* version/params selection can silently produce wrong preview
+
+== 8. Regression Policy
+
+Regression считается любой из случаев:
+
+* changed render output for same published version and params without intentional
+  render-contract change
+* raw preview no longer matches selected source snapshot
+* normalization stale flag no longer reflects source changes
+* copy/clear/reload actions leave inconsistent state
+
+== 9. Post-Release Quality Review
+
+* collect user reports about confusion between preview modes
+* maintain regression compositions for render reproducibility
+* review whether raw preview helper still matches intended authoring semantics

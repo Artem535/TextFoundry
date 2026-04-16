@@ -7,4 +7,17 @@ explicit AI call.
 
 * поддерживается `Normalize(...)`
 * поддерживается `NormalizeComposition(...)`
-* normalizer отделён от deterministic render path
+* normalizer и block normalizer отделены от deterministic render path
+* GUI expose-ит style controls для render и composition workflows
+* normalized result является derived artifact, а не hidden mutation render path
+
+Upstream dependencies:
+
+* xref:project/architecture/system/hld.adoc[High-Level Design]
+* xref:project/architecture/ui-ux.adoc[UI/UX]
+
+Downstream docs to keep aligned:
+
+* xref:project/functions/normalization/system-design.adoc[System Design]
+* xref:project/functions/normalization/service-spec.adoc[Service Spec]
+* xref:project/functions/normalization/document-set.adoc[Document Set]

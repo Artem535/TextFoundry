@@ -1,0 +1,32 @@
+= Render Preview Prompt Template
+
+== 1. Prompt Purpose
+
+Для deterministic render отдельный prompt-template не нужен: capability основана
+на engine + renderer, а не на LLM prompting.
+
+Этот документ нужен только для части normalized preview, где external provider
+используется как optional text rewrite utility.
+
+== 2. Required Prompt Elements
+
+Если normalized preview используется:
+
+* source должен быть текущим raw snapshot
+* semantic instructions должны derive-иться из `SemanticStyle`
+* prompt contract должен явно сохранять distinction между source text и
+  rewrite target
+* prompt не должен трактовать rewrite как publish or approval step
+
+== 3. Output Contract
+
+* output must be rewritten text only
+* output must not contain explanations, metadata or review prose
+* output is preview-only and does not imply storage mutation
+
+== 4. Governance
+
+* deterministic render path не зависит от prompt-template
+* provider-specific prompt assembly lives in normalizer implementation
+* любые изменения normalizer prompt policy должны review-иться совместно с
+  `Normalization` capability

@@ -8,3 +8,9 @@
 * read-only дистрибуция published prompt assets
 * runtime resolution of compositions and parameters
 * отделение authoring от delivery
+
+Фактический статус на April 16, 2026:
+
+* server runtime в `src/` отсутствует
+* отдельный UI для prompt server отсутствует
+* текущие desktop frontends работают напрямую с local engine и storage

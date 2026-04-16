@@ -2,7 +2,7 @@
 
 == 1. Coverage Summary
 
-Минимальный pipeline для функции создан.
+Минимальный pipeline для функции создан и соответствует preview/apply модели.
 
 == 2. Cross-Document Gaps
 
@@ -10,8 +10,21 @@
 
 * preservation benchmarks
 * ясные quality gates для preview acceptance
+* правила оценки patch readability в UI
 
 == 3. Next Updates
 
 * align preview UX with evaluation criteria
 * add golden composition set for regression testing
+
+== 4. Upstream Dependencies
+
+* xref:project/architecture/system/hld.adoc[High-Level Design]
+* xref:project/architecture/ui-ux.adoc[UI/UX]
+* xref:project/functions/composition-rewrite/prd.adoc[PRD]
+
+== 5. Source of Truth in Code
+
+* `src/textfoundry_engine/tf/engine.h`
+* `src/textfoundry_ai/openai_compatible_composition_block_rewriter.*`
+* `src/text_foundry_gui/viewmodels/composition_block_rewrite_view_model.*`

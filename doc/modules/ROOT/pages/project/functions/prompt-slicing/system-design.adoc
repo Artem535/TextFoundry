@@ -10,21 +10,24 @@
 
 * In scope: prompt decomposition, update mode, generated block validation
 * Out of scope: auto-save of generated blocks, hidden prompt migration
+* Assumption: provider возвращает JSON-структуру для нескольких candidate blocks
 
 == 3. Requirements Summary
 
 * Functional: produce block batch, preserve structure in update mode, validate ids
 * NFR: reviewability, explicit errors, no silent overwrite
+* UX: update mode must expose target composition and preservation strength
 
 == 4. Components and Integrations
 
 Компоненты:
 
-* GUI slice dialog
+* `BlockSliceViewModel`
 * `PromptSlicingRequest`
 * engine batch generation methods
 * generator adapter
 * validation of generated ids and preservation heuristics
+* block/composition repositories for publish step
 
 == 5. Key System Scenario
 
@@ -40,7 +43,8 @@ flowchart LR
   Provider --> Generator
   Generator --> Engine
   Engine --> Validate["Client-side Validation"]
-  Validate --> Drafts["Suggested Blocks"]
+  Validate --> Drafts["Suggested Blocks + Composition Preview"]
+  Drafts --> Publish["Publish All"]
 ----
 
 == 6. Reliability and Degradation
@@ -48,8 +52,21 @@ flowchart LR
 * GUI validation catches duplicate ids and unsafe replacements
 * provider failure leaves source prompt unchanged
 * user may switch to manual block editing
+* reusable block hints materially improve update-mode stability
 
 == 7. Operations Summary
 
 * generated block ids должны быть уникальны
 * update mode должен учитывать preservation of existing block set
+
+== Upstream / Downstream
+
+Upstream:
+
+* xref:project/functions/prompt-slicing/prd.adoc[PRD]
+* xref:project/architecture/ui-ux.adoc[UI/UX]
+
+Downstream:
+
+* xref:project/functions/prompt-slicing/service-spec.adoc[Service Spec]
+* xref:project/functions/prompt-slicing/evaluation-plan.adoc[Evaluation Plan]

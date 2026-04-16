@@ -1,0 +1,42 @@
+= Block Authoring Document Set
+
+== 1. Сводка покрытия
+
+Набор документов покрывает:
+
+* продуктовую цель управления библиотекой блоков
+* архитектуру просмотра, поиска, редактирования и публикации
+* ключевое решение о версионировании и ручной публикации
+* контракт данных и пользовательских действий
+* операционные ограничения
+* роль AI-подсказки как вспомогательного средства
+
+== 2. Сквозные пробелы
+
+Что ещё можно усилить:
+
+* набор эталонных сценариев на работу вкладок
+* подробные регрессионные случаи для удаления и зависимостей
+* более формальный контроль качества AI-ревизии
+
+== 3. Следующие обновления
+
+* связать проверки с реальными тестовыми сценариями
+* уточнить словарь терминов по состояниям блока и версиям
+* синхронизировать материалы с будущим набором документов по
+  `composition-authoring`
+
+== 4. Зависимости сверху
+
+* xref:project/architecture/system/hld.adoc[High-Level Design]
+* xref:project/architecture/ui-ux.adoc[UI/UX]
+* xref:project/functions/block-generation/index.adoc[Block Generation]
+* xref:project/functions/block-authoring/prd.adoc[PRD]
+
+== 5. Источники истины в коде
+
+* `src/text_foundry_gui/viewmodels/block_editor_view_model.*`
+* `src/text_foundry_gui/models/blocks_model.*`
+* `src/text_foundry_gui/qml/pages/BlocksPage.qml`
+* `src/textfoundry_engine/tf/engine.h`
+* `src/textfoundry_engine/tf/engine.cc`

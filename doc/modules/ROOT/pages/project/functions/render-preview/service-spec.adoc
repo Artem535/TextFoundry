@@ -1,0 +1,150 @@
+= Render Preview Service Spec
+
+== 1. Purpose and Service Boundary
+
+* Service responsibility: дать пользователю version-aware preview capability для
+  compositions, включая raw snapshot, deterministic rendered output и optional
+  normalized preview.
+* Consumers: `RenderViewModel`, `RenderPage.qml`, потенциально future review tools.
+* Non-goals: authoring mutation, publish/save, prompt server API contract.
+
+== 2. Consumers and Dependencies
+
+* Consumers:
+* `RenderViewModel`
+* `RenderPage.qml`
+* Dependencies:
+* `Engine.ListCompositions(...)`
+* `Engine.ListCompositionVersions(...)`
+* `Engine.LoadComposition(...)`
+* `Engine.Render(...)`
+* `Engine.Normalize(...)`
+* `Renderer`
+* optional `INormalizer`
+
+== 3. API / Tool Methods
+
+Прямо используемые engine methods:
+
+* `Engine.ListCompositions()`
+* `Engine.ListCompositionVersions(...)`
+* `Engine.LoadComposition(...)`
+* `Engine.Render(...)`
+* `Engine.Normalize(...)`
+
+GUI-local methods:
+
+* `RenderViewModel.render()`
+* `RenderViewModel.normalize()`
+* `RenderViewModel.renormalize()`
+* `RenderViewModel.copyRender()`
+* `RenderViewModel.copyRaw()`
+* `RenderViewModel.clear()`
+
+== 4. Input Schema
+
+Пользовательские входы:
+
+* `selectedCompositionId`
+* optional `versionText`
+* optional `paramsText`
+* optional semantic style fields:
+* `tone`
+* `tense`
+* `targetLanguage`
+* `person`
+* `rewriteStrength`
+* `audience`
+* `locale`
+* `terminologyRigidity`
+* `preserveFormatting`
+* `preserveExamples`
+
+Внутренние contracts:
+
+* render input: `CompositionId` + optional `Version` + `RenderContext`
+* normalize input: `raw_output_text` + non-empty `SemanticStyle`
+
+== 5. Output Schema
+
+UI-visible outputs:
+
+* `rawOutputText`
+* `outputText`
+* `normalizedOutputText`
+* `displayedOutputText`
+* `versionEntries`
+* `statusText`
+* `normalizationStatusText`
+* `normalizationStale`
+
+Underlying engine outputs:
+
+* `RenderResult`
+* normalized `std::string`
+
+== 6. Data Contract Rules
+
+* `Rendered` output is the canonical deterministic preview result.
+* `Raw` output is a GUI-local composition snapshot preview and must not be
+  treated as canonical runtime contract.
+* `Normalized` output is derived from current raw snapshot and must not be
+  treated as persisted source.
+* empty or invalid params/version must block render and surface explicit error
+* render preview must not mutate composition or block storage
+
+== 7. Prompting and Source Hierarchy
+
+Для deterministic render prompting отсутствует.
+
+Для normalized preview hierarchy такая:
+
+* primary source - current `rawOutputText`
+* semantic instructions - current `SemanticStyle`
+* provider-specific prompt policy - implementation detail normalizer adapter
+
+== 8. Error Handling and Retries
+
+* invalid params -> explicit validation error in UI
+* invalid version format -> explicit validation error in UI
+* missing composition/version -> surfaced engine error
+* block resolution/render failures -> surfaced engine error
+* missing normalizer -> normalization unavailable / explicit status
+* provider failure during normalization -> explicit failure without changing
+  raw/rendered outputs
+
+Retry behavior:
+
+* deterministic render retry is user-driven
+* normalization retry is user-driven through `Re-normalize`
+* no hidden storage retry logic exists in this capability
+
+== 9. Confidence / Routing Rules
+
+* deterministic render does not expose confidence score
+* normalized preview does not expose confidence score either
+* practical routing rule is binary:
+* if normalizer unavailable, only raw/rendered modes are available
+* if normalizer configured, normalized mode becomes explicit optional path
+
+== 10. Edge Cases and Fallback Behavior
+
+* composition not selected -> render is blocked with explicit status
+* selected version invalid -> render is blocked before engine call
+* params invalid -> render is blocked before engine call
+* raw snapshot changed after normalization -> normalized output marked stale
+* clipboard unavailable -> explicit status without crash
+* normalization requested with empty semantic style -> explicit status and no
+  provider call
+
+== Upstream / Downstream
+
+Upstream:
+
+* xref:project/functions/render-preview/system-design.adoc[System Design]
+* xref:project/functions/render-preview/adr.adoc[ADR]
+
+Downstream:
+
+* xref:project/functions/render-preview/runbook.adoc[Runbook]
+* xref:project/functions/render-preview/security-note.adoc[Security Note]

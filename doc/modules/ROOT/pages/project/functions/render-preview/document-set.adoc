@@ -1,0 +1,48 @@
+= Render Preview Document Set
+
+== 1. Coverage Summary
+
+Покрытие функции сейчас разложено так:
+
+* продуктовый intent - `PRD`
+* системная архитектура - `System Design`
+* ключевое решение по mode separation - `ADR`
+* контракт preview workflow - `Service Spec`
+* release quality expectations - `Evaluation Plan`
+* rollout and ownership - `Delivery Plan`
+* operations - `Runbook`
+* data handling constraints - `Security Note`
+* normalization-specific prompting note - `Prompt Template`
+
+== 2. Cross-Document Gaps
+
+Что ещё требует усиления:
+
+* targeted regression cases for raw-preview helper
+* explicit QA checklist for preview mode confusion
+* documented rationale for future prompt-server divergence from GUI raw preview
+
+== 3. Next Updates
+
+* sync testing guidance with render reproducibility checks
+* revisit ADR if raw preview helper is refactored or removed
+* align prompt-server future docs with canonical deterministic render contract
+
+== 4. Upstream Dependencies
+
+Документы, на которые опирается этот набор:
+
+* xref:project/architecture/system/hld.adoc[High-Level Design]
+* xref:project/architecture/ui-ux.adoc[UI/UX]
+* xref:project/functions/normalization/index.adoc[Normalization]
+* xref:project/functions/render-preview/prd.adoc[PRD]
+
+== 5. Source of Truth in Code
+
+Основные code artifacts:
+
+* `src/text_foundry_gui/viewmodels/render_view_model.*`
+* `src/text_foundry_gui/qml/pages/RenderPage.qml`
+* `src/textfoundry_engine/tf/engine.h`
+* `src/textfoundry_engine/tf/engine.cc`
+* `src/textfoundry_engine/tf/renderer.*`

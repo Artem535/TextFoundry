@@ -8,7 +8,7 @@
 
 == 2. Consumers and Dependencies
 
-* Consumers: Block Slice Dialog, composition update workflow
+* Consumers: `BlockSliceViewModel`, composition update workflow
 * Dependencies: `IBlockGenerator`, provider API, client-side validation
 
 == 3. API / Tool Methods
@@ -18,20 +18,30 @@
 
 == 4. Input Schema
 
-* `PromptSlicingRequest.source_text`
-* mode: generate or update
-* preservation-oriented parameters
+`PromptSlicingRequest`:
+
+* required: `source_text`
+* optional: `preferred_language`
+* optional: `namespace_prefix`
+* optional: `existing_block_ids`
+* optional: `reusable_block_ids`
+* optional: `reusable_block_summaries`
+* optional: `preserve_reuse_percent`
+* optional: `preserve_order`
+* optional: `allow_id_collision`
 
 == 5. Output Schema
 
 * `GeneratedBlockBatch`
 * `std::vector<BlockDraft>`
+* GUI-local composition preview text derived from generated batch
 
 == 6. Data Contract Rules
 
 * generated ids должны быть уникальны
 * output должен быть пригоден к review before apply
 * collisions with existing ids must be surfaced
+* update mode may reuse existing block ids only when workflow explicitly allows it
 
 == 7. Prompting and Source Hierarchy
 
@@ -55,3 +65,14 @@
 * empty source prompt -> validation failure
 * duplicate ids -> reject generated batch
 * too-aggressive update -> user reviews and falls back to manual editing
+
+== Upstream / Downstream
+
+Upstream:
+
+* xref:project/functions/prompt-slicing/system-design.adoc[System Design]
+
+Downstream:
+
+* xref:project/functions/prompt-slicing/runbook.adoc[Runbook]
+* xref:project/functions/prompt-slicing/evaluation-plan.adoc[Evaluation Plan]

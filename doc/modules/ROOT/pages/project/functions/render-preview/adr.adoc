@@ -1,0 +1,259 @@
+= Render Preview ADR
+
+== 1. Context
+
+В `TextFoundry` render screen уже давно перестал быть просто кнопкой
+`Render()`. По факту в коде реализована отдельная capability для review и
+inspection composition assets, которая объединяет:
+
+* raw preview composition snapshot
+* deterministic rendered output
+* optional normalized text preview
+* version selection
+* runtime param injection
+* clipboard-friendly output handling
+
+Нужно зафиксировать архитектурное решение: почему render-preview оформлен как
+многоступенчатый read-only workflow, а не как один вызов render с одним полем
+результата.
+
+== 2. Problem
+
+Без явного архитектурного решения render workflow легко упростить слишком
+агрессивно и потерять важные свойства:
+
+* прозрачность source snapshot
+* воспроизводимость deterministic output
+* явную границу между render и semantic rewrite
+* понятность пользователю, какой именно текст он видит
+
+Главный риск - смешать три разных артефакта в одну сущность `preview`:
+
+* raw template-level snapshot
+* fully rendered deterministic output
+* AI-rewritten normalized text
+
+Если не разделить их архитектурно:
+
+* пользователю будет непонятно, какой output является runtime truth
+* QA сложнее проверять воспроизводимость
+* команда может неосознанно встроить normalization в render path
+* future prompt-server boundary может унаследовать UI-specific behavior вместо
+  базового deterministic contract
+
+== 3. Decision Drivers
+
+Ключевые силы, влияющие на решение:
+
+* deterministic rendering должен оставаться reproducible и testable
+* normalization должна быть optional и explicit
+* authoring UI должен давать inspectable snapshot до final render
+* workflow должен быть удобен для review, а не только для runtime execution
+* storage mutation в render screen недопустима
+* version-aware preview нужен как отдельная capability
+
+== 4. Alternatives Considered
+
+=== Alternative A: Один output, только `Engine.Render(...)`
+
+Описание:
+
+* UI показывает только final rendered text
+* raw preview отсутствует
+* normalization либо скрыта, либо вынесена в другой экран
+
+Плюсы:
+
+* проще UI и меньше состояния
+* меньше когнитивной нагрузки на пользователя
+
+Минусы:
+
+* пользователь не видит source snapshot composition
+* сложнее отлаживать, где ошибка: в block template, params или structural style
+* review composition до render становится менее прозрачным
+* normalization приходится либо прятать, либо дублировать в другом месте
+
+Вердикт:
+
+* отклонено, потому что этот вариант ухудшает authoring/review workflow и
+  делает render screen слишком "runtime-only" для desktop workbench.
+
+=== Alternative B: Raw и Rendered, но normalization встроить в render
+
+Описание:
+
+* deterministic render остается
+* normalization применяется автоматически как post-processing stage
+* пользователь видит только один "улучшенный" final output
+
+Плюсы:
+
+* output может выглядеть более polished
+* меньше ручных действий
+
+Минусы:
+
+* теряется воспроизводимость deterministic render как основного контракта
+* AI availability начинает влиять на ожидаемый render result
+* сложно различать, где renderer, а где semantic rewrite
+* render output перестает быть надежным runtime truth
+
+Вердикт:
+
+* отклонено, потому что это ломает главную архитектурную границу проекта:
+  explicit AI workflow поверх deterministic core.
+
+=== Alternative C: Три режима preview в одном workflow
+
+Описание:
+
+* UI хранит и показывает `Raw`, `Rendered`, `Normalized`
+* `Raw` строится из текущей composition snapshot
+* `Rendered` идет через canonical deterministic render path
+* `Normalized` создается только по explicit user action и может быть stale
+
+Плюсы:
+
+* максимальная inspectability
+* четкое разделение source snapshot, runtime truth и AI-derived text
+* удобно для authoring, review и QA
+* не смешивает AI behavior с deterministic engine contract
+
+Минусы:
+
+* UI state и logic заметно сложнее
+* требуется дополнительная работа по stale-state management
+* raw preview дублирует часть логики render path на view-model стороне
+
+Вердикт:
+
+* выбранный вариант.
+
+== 5. Decision
+
+Принято решение сохранить `render-preview` как трехрежимный read-only workflow:
+
+* `Raw` - author-facing snapshot текущей composition
+* `Rendered` - canonical deterministic runtime output
+* `Normalized` - explicit AI-derived preview over current raw snapshot
+
+Ключевые правила решения:
+
+* canonical runtime truth - это только deterministic `Rendered`
+* normalization никогда не встроена в базовый render path
+* raw preview существует ради inspectability и review, а не как замена render
+* normalized preview не должен восприниматься как новый persisted asset
+* source snapshot changes делают normalized output stale, пока пользователь не
+  выполнит re-normalize
+
+== 6. Chosen Architecture Slice
+
+[mermaid]
+----
+flowchart TD
+  A["Loaded Composition Snapshot"] --> B["Raw Preview Builder"]
+  A --> C["Engine.Render + Renderer"]
+  B --> D["Raw Output"]
+  C --> E["Rendered Output"]
+  D --> F["Engine.Normalize (optional)"]
+  F --> G["Normalized Output"]
+----
+
+Распределение ответственности:
+
+* `RenderViewModel`:
+* composition/version selection
+* parse and validate inputs
+* manage preview mode and stale-state
+* orchestration of render and normalize actions
+* `Engine`:
+* load composition
+* list versions
+* execute canonical render
+* optionally normalize text
+* `Renderer`:
+* expand block refs
+* resolve params
+* apply structural style
+
+== 7. Consequences
+
+Положительные:
+
+* deterministic render остается чистым и проверяемым
+* пользователь видит, как composition выглядит до и после render
+* AI rewrite остается explicit feature, а не скрытым behavior
+* render screen становится полезен и для review, и для runtime preview
+
+Негативные:
+
+* raw preview builder дублирует часть render-like logic вне `Renderer`
+* в UI появляется больше состояний и edge cases
+* документация и тестирование должны явно покрывать различия между preview modes
+
+Operational consequences:
+
+* bug reports по render screen нужно классифицировать по mode:
+  raw/rendered/normalized
+* QA должен отдельно проверять deterministic render и stale-state normalization
+
+== 8. Risks and Mitigations
+
+* risk: пользователь перепутает raw preview и final render
+  mitigation: явные mode labels, отдельные copy actions и документация
+
+* risk: normalized output будет восприниматься как canonical result
+  mitigation: explicit normalize action, stale marker и разделение mode labels
+
+* risk: raw preview diverges from true source semantics of render path
+  mitigation: фиксировать, что raw preview - authoring snapshot, а canonical
+  runtime truth - `Rendered`
+
+* risk: дальнейшие изменения в renderer не будут отражены в raw preview helper
+  mitigation: держать ADR и system design синхронизированными с кодом, а также
+  добавить targeted regression checks
+
+== 9. Rejected Follow-up Decisions
+
+Сознательно не принимаем следующие решения в рамках этой capability:
+
+* не превращаем render screen в authoring/editor surface
+* не сохраняем normalized output автоматически как block или composition
+* не объединяем raw/rendered/normalized в одно текстовое поле без mode semantics
+* не публикуем server-side contract на основе GUI raw preview behavior
+
+== 10. Migration and Future Considerations
+
+Если в будущем появится prompt server:
+
+* deterministic `Rendered` должен стать основой server runtime contract
+* `Raw` вероятнее всего останется только authoring-side capability
+* `Normalized` не должен автоматически переноситься в delivery runtime без
+  отдельного product decision
+
+Если будет проводиться refactor render stack:
+
+* нельзя убирать mode distinction без пересмотра этого ADR
+* нужно явно решить судьбу raw preview helper
+* нужно сохранить разделение deterministic и AI-derived paths
+
+== 11. Links to Impacted Documents
+
+Связанные документы:
+
+* xref:project/functions/render-preview/prd.adoc[PRD]
+* xref:project/functions/render-preview/system-design.adoc[System Design]
+* xref:project/functions/render-preview/service-spec.adoc[Service Spec]
+* xref:project/functions/render-preview/evaluation-plan.adoc[Evaluation Plan]
+* xref:project/functions/normalization/index.adoc[Normalization]
+* xref:project/architecture/system/hld.adoc[High-Level Design]
+
+== 12. Lifecycle
+
+* Status: Accepted
+* Decision date: 2026-04-16
+* Review trigger:
+* появление prompt server runtime
+* перенос normalization внутрь render pipeline
+* отказ от raw preview mode

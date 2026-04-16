@@ -13,3 +13,16 @@
 
 * convert placeholders to final contracts when implementation starts
 * align service spec with deployment and security decisions
+
+== 4. Upstream Dependencies
+
+* xref:project/architecture/system/hld.adoc[High-Level Design]
+* xref:project/architecture/integrations.adoc[Integrations]
+* xref:project/functions/prompt-server/prd.adoc[PRD]
+
+== 5. Current Gap to Code
+
+На сегодня source of truth таков:
+
+* docs describe future boundary only
+* codebase does not contain prompt-server executable or API handlers

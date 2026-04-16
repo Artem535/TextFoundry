@@ -18,9 +18,23 @@
 
 == 4. Input Schema
 
-* `CompositionBlockRewriteRequest`
-* rewrite strength
-* preservation hints / context
+Preview input uses `CompositionBlockRewriteRequest`:
+
+* `source_composition_id`
+* optional `source_version`
+* `instruction`
+* `preserve_language`
+* `preserve_placeholders`
+
+Preview context assembled by engine also includes ordered block metadata:
+
+* block id
+* type
+* language
+* description
+* defaults
+* tags
+* template
 
 == 5. Output Schema
 
@@ -32,6 +46,7 @@
 * preview must remain inspectable by caller
 * apply depends on approved preview
 * storage mutation occurs only in explicit apply path
+* patches may modify only existing blocks from the selected composition context
 
 == 7. Prompting and Source Hierarchy
 
@@ -53,3 +68,14 @@
 * no rewriter configured -> explicit error
 * too aggressive rewrite -> do not apply, user reviews preview
 * ambiguous patch set -> fall back to manual composition editing
+
+== Upstream / Downstream
+
+Upstream:
+
+* xref:project/functions/composition-rewrite/system-design.adoc[System Design]
+
+Downstream:
+
+* xref:project/functions/composition-rewrite/evaluation-plan.adoc[Evaluation Plan]
+* xref:project/functions/composition-rewrite/security-note.adoc[Security Note]

@@ -2,7 +2,10 @@
 
 == 1. Coverage Summary
 
-Минимальный pipeline для функции создан.
+Минимальный pipeline для функции создан и покрывает оба режима:
+
+* raw text normalization
+* derived composition normalization
 
 == 2. Cross-Document Gaps
 
@@ -10,8 +13,22 @@
 
 * curated semantic regression set
 * explicit prompt versioning
+* зафиксированные expectations для cache/reuse normalized blocks
 
 == 3. Next Updates
 
 * sync evaluation corpus with real tone/language examples
 * formalize prompt governance
+
+== 4. Upstream Dependencies
+
+* xref:project/architecture/system/hld.adoc[High-Level Design]
+* xref:project/architecture/ui-ux.adoc[UI/UX]
+* xref:project/functions/normalization/prd.adoc[PRD]
+
+== 5. Source of Truth in Code
+
+* `src/textfoundry_engine/tf/engine.h`
+* `src/textfoundry_ai/openai_compatible_normalizer.*`
+* `src/text_foundry_gui/viewmodels/render_view_model.*`
+* `src/text_foundry_gui/viewmodels/compositions_view_model.*`

@@ -18,8 +18,19 @@
 
 == 4. Input Schema
 
-* source text or composition snapshot
+Text normalization input:
+
+* source text
 * `SemanticStyle`
+
+Composition normalization input:
+
+* `source_composition_id`
+* optional `source_version`
+* `SemanticStyle`
+* optional `target_composition_id`
+* `normalize_static_text`
+* `reuse_cached_blocks`
 
 == 5. Output Schema
 
@@ -31,6 +42,7 @@
 * caller must provide explicit style request
 * absence of configured normalizer is an error
 * derived result is review output, not implicit persistence
+* composition normalization preserves composition structure and rewrites block refs
 
 == 7. Prompting and Source Hierarchy
 
@@ -52,3 +64,14 @@
 * no normalizer configured -> explicit error
 * unclear style request -> provider result still requires review
 * provider unavailable -> fallback to raw deterministic output
+
+== Upstream / Downstream
+
+Upstream:
+
+* xref:project/functions/normalization/system-design.adoc[System Design]
+
+Downstream:
+
+* xref:project/functions/normalization/runbook.adoc[Runbook]
+* xref:project/functions/normalization/security-note.adoc[Security Note]

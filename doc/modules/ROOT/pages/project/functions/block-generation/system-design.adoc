@@ -4,28 +4,30 @@
 
 Функция строит AI-assisted draft generation для одного блока и сохраняет
 границу между suggestion и mutation. Генерация идёт через adapter layer,
-а публикация и versioning остаются в core workflow.
+а публикация и versioning остаются в core authoring workflow.
 
 == 2. Context and Scope
 
-* In scope: single-block generation, provider call, review in GUI
-* Out of scope: auto-publish, hidden generation in render path
-* Assumption: provider возвращает структуру, пригодную для конвертации в draft
+* In scope: single-block generation, provider call, review in GUI block editor
+* Out of scope: auto-publish, hidden generation in render path, batch slicing
+* Assumption: provider возвращает структуру, пригодную для `GeneratedBlockData`
 
 == 3. Requirements Summary
 
-* Functional: generate block data, convert to draft, show result in editor
+* Functional: generate block data, convert to draft, show result in editor tab
 * NFR: понятные ошибки, opt-in execution, отсутствие влияния на deterministic mode
+* UX: generated result must remain editable before save
 
 == 4. Components and Integrations
 
 Компоненты:
 
-* GUI block editor
+* `BlockEditorViewModel`
 * `tf::Engine`
 * `IBlockGenerator`
 * `OpenAiCompatibleBlockGenerator`
-* HTTP transport
+* `QtHttpTransport`
+* session-level AI configuration in `SessionViewModel`
 
 == 5. Key System Scenario
 
@@ -40,7 +42,8 @@ flowchart LR
   Generator --> Provider["OpenAI-compatible API"]
   Provider --> Generator
   Generator --> Engine
-  Engine --> GUI
+  Engine --> GUI["Populate editor fields"]
+  GUI --> Save["Manual Save / PublishBlock or UpdateBlock"]
 ----
 
 == 6. Reliability and Degradation
@@ -48,9 +51,22 @@ flowchart LR
 * при отсутствии generator engine возвращает explicit error
 * при ошибке provider пользователь остаётся в ручном authoring workflow
 * generated output не должен автоматически записываться в storage
+* смена `base_url`, `model` или `api_key` пересобирает engine через session layer
 
 == 7. Operations Summary
 
 * функция explicit и opt-in
-* результат сначала попадает в draft/workspace
+* результат сначала попадает в editor workspace
 * сохранение новой версии остаётся отдельным действием пользователя
+
+== Upstream / Downstream
+
+Upstream:
+
+* xref:project/functions/block-generation/prd.adoc[PRD]
+* xref:project/architecture/ui-ux.adoc[UI/UX]
+
+Downstream:
+
+* xref:project/functions/block-generation/service-spec.adoc[Service Spec]
+* xref:project/functions/block-generation/runbook.adoc[Runbook]

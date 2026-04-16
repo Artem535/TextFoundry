@@ -1,0 +1,62 @@
+= Render Preview Runbook
+
+== 1. Operational Overview
+
+* Service owner: GUI/engine render workflow owner
+* Criticality: high for local authoring and review, medium for AI-related paths
+* Support model: engineering support during active development and release review
+
+== 2. Ownership and Support Model
+
+* Primary owner: core engine/render owner
+* Secondary owner: GUI owner
+* AI-related secondary owner: normalization adapter owner
+
+== 3. Key Signals and Alerts
+
+* repeated render failures for valid published compositions
+* repeated params parsing failures on normal user input
+* version list not matching repository state
+* normalized output stale-state behaving incorrectly
+* copy actions silently failing
+
+== 4. Common Failure Modes
+
+* invalid `versionText`
+* invalid `paramsText`
+* selected composition missing from repository after reload
+* missing or unresolved block ref during render
+* missing normalizer configuration
+* provider failure during normalization
+
+== 5. Incident Response
+
+* verify selected composition and version still exist
+* verify render path works without normalization
+* verify `projectKey` and `dataPath` did not unexpectedly change session state
+* inspect engine error surfaced in UI
+* if issue is normalization-only, keep deterministic render available and disable
+  AI expectation in triage
+
+== 6. Degradation Modes
+
+* if normalization unavailable:
+* keep `Raw` and `Rendered` modes operational
+* if render fails due to asset/data issue:
+* preserve UI state and explicit error text
+* if clipboard unavailable:
+* keep preview available without copy support
+
+== 7. Recovery and Validation
+
+* reload compositions list
+* repeat preview with known-good published composition
+* render with empty params, then with representative params
+* trigger normalization and verify stale-state after source change
+
+== 8. Escalation Contacts
+
+* Team Lead: render workflow owner
+* Core owner: deterministic renderer owner
+* GUI owner: render screen owner
+* AI owner: normalization adapter owner

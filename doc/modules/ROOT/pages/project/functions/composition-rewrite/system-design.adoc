@@ -10,6 +10,7 @@ step, что сохраняет review boundary между suggestion и mutatio
 
 * In scope: preview generation, apply over approved preview, block-preserving rewrite
 * Out of scope: hidden mutation of composition, implicit publish
+* Assumption: rewrite instruction is authored by user and non-empty
 
 == 3. Requirements Summary
 
@@ -20,10 +21,11 @@ step, что сохраняет review boundary между suggestion и mutatio
 
 Компоненты:
 
-* GUI rewrite dialog
+* `CompositionBlockRewriteViewModel`
 * `CompositionBlockRewriteRequest`
 * `ICompositionBlockRewriter`
-* preview/apply workflow
+* `OpenAiCompatibleCompositionBlockRewriter`
+* preview/apply workflow in engine and GUI
 
 == 5. Key System Scenario
 
@@ -40,6 +42,7 @@ flowchart LR
   Rewriter --> Engine
   Engine --> Patch["CompositionBlockRewritePreview"]
   Patch --> Apply["ApplyCompositionBlockRewrite"]
+  Apply --> Publish["Publish new block versions + new composition version"]
 ----
 
 == 6. Reliability and Degradation
@@ -47,8 +50,21 @@ flowchart LR
 * provider failure leaves source composition unchanged
 * preview quality acts as primary safety gate
 * user can fall back to manual composition editing
+* apply step should only operate on an already reviewed preview object
 
 == 7. Operations Summary
 
 * preview и apply разделены
 * stored data меняются только после explicit apply
+
+== Upstream / Downstream
+
+Upstream:
+
+* xref:project/functions/composition-rewrite/prd.adoc[PRD]
+* xref:project/architecture/ui-ux.adoc[UI/UX]
+
+Downstream:
+
+* xref:project/functions/composition-rewrite/service-spec.adoc[Service Spec]
+* xref:project/functions/composition-rewrite/runbook.adoc[Runbook]

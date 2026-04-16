@@ -1,9 +1,125 @@
 = 3.3. Дизайн UI/UX
 
-Страница предназначена для UI / UX материалов:
+Текущий UI в кодовой базе - это desktop-first authoring workbench с двумя
+frontend-поверхностями:
 
-* сценарии редактирования
-* навигационные схемы
-* ссылки на Figma / Zeplin / guideline assets
+* Qt/QML GUI для основного сценария работы
+* FTXUI TUI для базовых операций без полноценного GUI
 
-Сейчас выделенного design-document набора в репозитории нет.
+Сейчас отдельного design-system документа или Figma-пакета в репозитории нет,
+поэтому эта страница фиксирует фактические пользовательские сценарии,
+реализованные в коде.
+
+== 1. Навигационная модель GUI
+
+В `Main.qml` реализована четырехсекционная навигация:
+
+* `Blocks` - библиотека блоков, поиск, дерево папок, просмотр версий и редактор
+* `Compositions` - список композиций, версии, редактор, normalization и rewrite
+* `Render` - выбор композиции, параметры рантайма, preview raw/rendered/normalized
+* `Settings` - session settings и AI provider configuration
+
+UI защищает от случайной потери данных:
+
+* при переходе между разделами проверяются dirty-state block editor и
+  composition editor
+* закрытие вкладок block editor и выход из editor workflow проходят через
+  confirm/discard flow
+
+== 2. Blocks UX
+
+Основной сценарий в `BlocksPage.qml` и `BlockEditorWorkspace`:
+
+* tree-view по namespace-папкам с expand/collapse и reload
+* поиск по `block id`, description, template и tags
+* просмотр деталей выбранного блока и доступных версий
+* create/edit workflow в tabbed editor, а не в одиночном modal
+* ручное сохранение новой версии с `Minor/Major` bump
+
+AI-assisted сценарии для блоков:
+
+* `Generate` создает черновик блока из user instruction
+* `Revise` использует текущий блок как основу для новой AI suggestion
+* AI никогда не публикует блок автоматически; результат попадает в editor form
+
+== 3. Compositions UX
+
+Основной сценарий в `CompositionsPage.qml` и `CompositionEditorWindow`:
+
+* список композиций с поиском, reload и context actions
+* просмотр version history, state, revision comment и fragment summary
+* composition editor с drag-and-drop reorder
+* вставка `BlockRef`, static text и separators
+* clipboard-like actions: cut, paste before/after, insert mode
+* utility actions: `Insert \n`, `Clean Seps`, save новой версии
+
+AI-assisted сценарии для композиций:
+
+* `Normalize` создает derived normalized composition с сохранением структуры
+* `Rewrite Blocks` открывает preview/apply workflow для block-preserving rewrite
+* `Update Blocks To Latest` помогает подтянуть block refs к последним версиям
+* compare flow показывает diff между текущей и актуальной версией
+
+== 4. Render UX
+
+`RenderPage.qml` поддерживает три режима предпросмотра:
+
+* `Raw` - composition snapshot без final deterministic render
+* `Rendered` - deterministic render с runtime params
+* `Normalized` - explicit AI-normalized variant поверх rendered text
+
+Доступные пользовательские операции:
+
+* выбор composition id и версии
+* ввод runtime parameters в формате `key=value`
+* запуск deterministic render
+* copy/export результата
+* optional normalization по `SemanticStyle`
+
+Style-панель expose-ит текущие поля semantic rewrite:
+
+* tone
+* tense
+* target language
+* person
+* rewrite strength
+* audience
+* locale
+* terminology rigidity
+* preserve formatting
+* preserve examples
+
+== 5. Settings UX
+
+`SettingsPage.qml` управляет как runtime-сессией, так и AI integration:
+
+* `projectKey`
+* `dataPath`
+* `strictMode`
+* default newline delimiter for new compositions
+* preview font size
+* `aiBaseUrl`
+* `aiModel`
+* `aiApiKey`
+* HTTP timeout
+
+Особенности поведения:
+
+* API key хранится через `QtKeychain`, а не в plain-text настройках
+* base URL, model и timeout сохраняются в `QSettings`
+* после изменения AI settings engine пересобирается
+
+== 6. TUI Coverage
+
+TUI пока покрывает не весь GUI-функционал, но поддерживает базовые workflows:
+
+* Blocks: browse folders, create/edit block
+* Compositions: browse/create/edit composition
+* Render: deterministic render и copy через OSC52
+* Settings: session parameters
+
+Пробелы относительно GUI:
+
+* нет полного AI authoring UX parity
+* нет богатого compare/rewrite preview
+* нет visual editor уровня QML composition workspace

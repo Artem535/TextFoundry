@@ -1,0 +1,41 @@
+= Render Preview Security Note
+
+== 1. Security Scope
+
+Render preview работает с локально сохраненными blocks и compositions, а
+опциональная normalization может отправлять raw snapshot во внешний provider.
+
+== 2. Data Sensitivity
+
+В raw/rendered output могут находиться:
+
+* system prompts
+* role/safety/constraint content
+* domain-specific instructions
+* placeholders and default values
+
+== 3. Key Risks
+
+* sensitive prompt content copied into clipboard outside intended boundary
+* raw snapshot accidentally sent to external provider during normalization
+* user may misinterpret normalized text as approved/published content
+* future serverization may incorrectly inherit GUI-local preview semantics
+
+== 4. Access and Logging
+
+* raw/rendered/normalized content should not be excessively logged
+* secrets and API key must not be logged in render-preview diagnostics
+* clipboard usage should be treated as user-driven export outside app boundary
+
+== 5. Required Controls
+
+* keep normalization explicit and opt-in
+* keep deterministic render available without external provider
+* treat normalized output as derived preview, not approved source
+* document clipboard export as manual user action
+
+== 6. Security Constraints for Future Work
+
+* prompt server contract must not assume GUI raw preview behavior
+* any future telemetry around render-preview must avoid collecting full prompt
+  payloads by default

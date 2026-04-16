@@ -1,11 +1,23 @@
 = Block Generation
 
 Функция отвечает за генерацию одного нового блока из пользовательской
-инструкции.
+инструкции и возврат reviewable draft в authoring workflow.
 
 Текущее состояние:
 
-* реализована в engine как explicit AI workflow
-* использует `IBlockGenerator` и OpenAI-compatible adapter
-* доступна из GUI block editor
-* не вызывается автоматически из обычного render path
+* реализована в `tf::Engine` как explicit AI workflow
+* использует `IBlockGenerator` и `OpenAiCompatibleBlockGenerator`
+* доступна из GUI block editor через `BlockEditorVm.generate()` и `revise()`
+* не вызывается автоматически из `Render()`
+* не публикует block version без ручного save
+
+Upstream dependencies:
+
+* xref:project/architecture/system/hld.adoc[High-Level Design]
+* xref:project/architecture/ui-ux.adoc[UI/UX]
+
+Downstream docs to keep aligned:
+
+* xref:project/functions/block-generation/system-design.adoc[System Design]
+* xref:project/functions/block-generation/service-spec.adoc[Service Spec]
+* xref:project/functions/block-generation/document-set.adoc[Document Set]

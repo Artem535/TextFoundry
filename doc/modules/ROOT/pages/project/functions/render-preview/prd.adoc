@@ -1,0 +1,115 @@
+= Render Preview PRD
+
+== 1. Goal and Business Context
+
+* Business problem: пользователю нужен быстрый и предсказуемый способ проверить,
+  как composition будет выглядеть в runtime, не переходя в код или внешний
+  сервис.
+* Service goal: дать единое рабочее место для preview composition до,
+  во время и после deterministic render.
+* Why now: render workflow уже является центральным сценарием GUI, но пока не
+  описан как самостоятельная capability.
+* Expected effect: быстрее проверять composition versions, runtime params и
+  итоговый render до использования в downstream системах.
+
+== 2. Problem Statement
+
+* Current state: в проекте есть полноценный render UI, но он не выделен в
+  отдельный function-level набор документов.
+* Pain points without this capability:
+* сложно объяснить пользователю разницу между raw snapshot, deterministic render
+  и normalized text
+* часть поведения render path скрыта в `RenderViewModel` и `Renderer`
+* требования к published-state, runtime params и preview modes не зафиксированы
+  в одном месте
+* Why current approach is insufficient: общие архитектурные страницы описывают
+  render только на высоком уровне и не фиксируют пользовательские решения,
+  ограничения и operational expectations.
+
+== 3. Users and Use Cases
+
+* Primary users: prompt authors, composition authors, reviewers prompt assets.
+* Secondary users: инженер, проверяющий render output перед интеграцией;
+  QA, проверяющий предсказуемость и error handling.
+* Main use cases:
+* выбрать composition и её версию для preview
+* просмотреть raw composition snapshot до final render
+* запустить deterministic render с runtime params
+* сравнить rendered output и raw snapshot в одном UI
+* выполнить semantic normalization поверх текущего raw snapshot
+* скопировать raw или rendered output для внешнего использования
+
+== 4. Scope and Non-Goals
+
+=== In Scope
+
+* list/select compositions for preview
+* select explicit composition version
+* parse runtime params and pass them into `RenderContext`
+* deterministic render through `Engine.Render(...)`
+* raw preview built from current composition snapshot
+* normalized preview as explicit text rewrite utility
+* copy raw/copy render/clear/reload UX
+
+=== Out of Scope
+
+* automatic semantic rewrite during render
+* remote rendering through prompt server
+* mutation of compositions from render screen
+* hidden publish, version bump or authoring side effects
+
+== 5. Success Criteria and KPI
+
+* пользователь понимает, что именно он сейчас смотрит: raw, rendered или
+  normalized output
+* runtime params и version selection дают воспроизводимый deterministic result
+* ошибки parse/render/normalization подаются явно и без скрытых side effects
+* render screen пригоден как основной preview workflow перед downstream usage
+
+== 6. Requirements Summary
+
+* Система MUST поддерживать deterministic render отдельно от normalization.
+* Система MUST позволять выбрать composition version, если такая версия
+  доступна.
+* Система MUST валидировать runtime params и version format до вызова engine.
+* Система MUST показывать raw preview даже без успешного final render, если
+  source snapshot доступен.
+* Система MUST не менять composition, blocks или storage в рамках render screen.
+* Пользователь MUST иметь возможность явно запустить normalization поверх
+  текущего raw snapshot, а не поверх неявного source.
+
+== 7. Assumptions and Constraints
+
+* базовый render path работает только для published compositions
+* raw preview в GUI собирается отдельным helper-путем и не является тем же самым
+  вызовом, что `Renderer::Render`
+* normalization зависит от configured AI normalizer и может быть недоступна
+* render capability в текущем состоянии привязана к GUI и local engine, а не к
+  внешнему runtime service
+
+== 8. Dependencies and Stakeholders
+
+* Dependencies:
+* `RenderViewModel`
+* `RenderPage.qml`
+* `tf::Engine`
+* `Renderer`
+* `SessionViewModel`
+* `INormalizer`
+* Stakeholders:
+* prompt author
+* composition author
+* AI workflow owner
+* core engine owner
+* GUI owner
+
+== 9. Pilot / Release Acceptance
+
+* Pilot acceptance:
+* пользователь может выбрать composition, версию и параметры
+* raw preview и rendered output согласованы по source snapshot
+* основные ошибки parse/render surfaced в UI
+* Release acceptance:
+* render preview остается стабильным при смене engine configuration
+* deterministic output воспроизводим для одинаковых version + params
+* normalized preview явно помечен как derived text, а не как новый source of truth

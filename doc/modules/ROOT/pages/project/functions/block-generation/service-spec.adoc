@@ -8,8 +8,8 @@
 
 == 2. Consumers and Dependencies
 
-* Consumers: block editor workflow
-* Dependencies: `IBlockGenerator`, provider API, transport layer
+* Consumers: `BlockEditorViewModel`
+* Dependencies: `IBlockGenerator`, provider API, `QtHttpTransport`
 
 == 3. API / Tool Methods
 
@@ -18,19 +18,38 @@
 
 == 4. Input Schema
 
-* required: prompt / instruction
-* optional: `BlockType`, language, tags, defaults hints
+`BlockGenerationRequest`:
+
+* required: `prompt`
+* optional: `preferred_id`
+* optional: `preferred_type`
+* optional: `preferred_language`
+* optional: `existing_block_ids`
+* optional: `allow_id_collision`
 
 == 5. Output Schema
 
+Primary outputs:
+
 * `GeneratedBlockData`
 * `BlockDraft`
+
+Returned block payload must contain:
+
+* stable block id
+* block type
+* language
+* description
+* template
+* defaults
+* tags
 
 == 6. Data Contract Rules
 
 * generator result должен быть конвертируем в block draft
 * missing generator configuration must surface as explicit error
 * output version не считается published version
+* generated block id валидируется в engine before editor receives it
 
 == 7. Prompting and Source Hierarchy
 
@@ -54,3 +73,14 @@
 * no generator configured -> explicit error
 * malformed provider response -> error + stay in manual editing
 * low-quality suggestion -> user edits or discards draft
+
+== Upstream / Downstream
+
+Upstream:
+
+* xref:project/functions/block-generation/system-design.adoc[System Design]
+
+Downstream:
+
+* xref:project/functions/block-generation/evaluation-plan.adoc[Evaluation Plan]
+* xref:project/functions/block-generation/runbook.adoc[Runbook]

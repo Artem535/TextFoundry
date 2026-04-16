@@ -1,0 +1,167 @@
+= Render Preview System Design
+
+== 1. Executive Summary
+
+Функция строит отдельный preview workflow поверх composition model и
+deterministic render engine. Важное архитектурное решение здесь в том, что GUI
+поддерживает сразу три представления одного и того же asset:
+
+* raw preview
+* rendered output
+* normalized output
+
+При этом только `Rendered` использует базовый deterministic render contract
+как конечный пользовательский результат, а `Raw` и `Normalized` выступают как
+сервисные preview-режимы для authoring и review.
+
+== 2. Context and Scope
+
+* In scope:
+* composition selection and version selection
+* runtime param parsing
+* deterministic render through engine
+* raw preview built from loaded composition snapshot
+* explicit normalization over current raw snapshot
+* clipboard actions and state reset
+* Out of scope:
+* composition mutation
+* remote runtime API
+* hidden semantic rewrite during render
+* Assumption: user chooses composition from local repository and works with the
+  current session engine configuration.
+
+== 3. Requirements Summary
+
+* Functional:
+* load available compositions and versions
+* build raw preview from current composition snapshot
+* execute deterministic render with explicit params
+* allow optional semantic normalization
+* expose copy and clear actions
+* NFR:
+* reproducibility
+* explicit state transitions
+* understandable errors
+* no unintended storage writes
+
+== 4. Components and Integrations
+
+Компоненты:
+
+* `RenderPage.qml` - UI shell and action surface
+* `RenderViewModel` - orchestration, state, validation and UX rules
+* `SessionViewModel` - current engine instance and session-wide settings
+* `tf::Engine` - composition loading, version listing, render and normalize APIs
+* `Renderer` - deterministic fragment rendering and structural style application
+* `INormalizer` - optional semantic rewrite for normalized preview
+
+Связанные данные:
+
+* `Composition`
+* `Fragment`
+* `RenderContext`
+* `SemanticStyle`
+* `RenderResult`
+
+== 5. Key System Scenario
+
+[mermaid]
+----
+flowchart LR
+  User["User"] --> Page["RenderPage.qml"]
+  Page --> Vm["RenderViewModel"]
+  Vm --> Engine["tf::Engine"]
+  Engine --> Repo["Composition Repository"]
+  Engine --> Renderer["Renderer"]
+  Renderer --> Vm
+  Vm --> Page
+  Vm --> Normalizer["INormalizer (optional)"]
+  Normalizer --> Provider["OpenAI-compatible API"]
+  Provider --> Normalizer
+----
+
+== 6. Detailed Runtime Flow
+
+=== 6.1 Load and Selection
+
+* `RenderViewModel.reload()` синхронизирует список composition ids
+* при выборе composition view model загружает список версий и metadata для
+  version list
+* при выборе версии view model refresh-ит raw preview без необходимости сразу
+  запускать final render
+
+=== 6.2 Raw Preview
+
+* raw preview строится через helper `BuildRawRender(...)`
+* helper загружает composition snapshot и подставляет block templates без
+  runtime expansion
+* structural style composition при этом применяется
+* raw preview нужен как author-facing snapshot текущей composition structure
+
+=== 6.3 Deterministic Render
+
+* пользователь запускает `Render`
+* view model валидирует composition id, version format и runtime params
+* после этого формируется `RenderContext`
+* `Engine.Render(...)` очищает block cache, загружает published composition и
+  передает её в `Renderer`
+* `Renderer` разворачивает block refs, применяет params и затем structural style
+
+=== 6.4 Normalized Preview
+
+* normalization доступна только при наличии configured normalizer
+* normalization применяется к текущему raw snapshot, а не к rendered output
+* в view model хранится hash последнего нормализованного raw snapshot
+* если source snapshot меняется, normalized output помечается stale
+
+== 7. Reliability and Degradation
+
+* invalid params не должны приводить к частичному render
+* invalid version format должен останавливаться до engine call
+* missing composition или block resolution error должны surface-иться как явный
+  error text
+* отсутствие normalizer не ломает основной render workflow
+* provider failure в normalization не меняет raw/rendered output
+
+== 8. Data and State Model
+
+Ключевые состояния в `RenderViewModel`:
+
+* selected composition id
+* selected version
+* params text
+* render output text
+* raw output text
+* normalized output text
+* preview mode
+* semantic style fields
+* normalization stale flag
+* normalization status text
+* page-level status text
+
+Это не просто UI fields, а state machine preview workflow:
+
+* raw snapshot может быть актуален даже без успешного render
+* normalized snapshot может быть stale относительно нового raw snapshot
+* displayed output зависит от выбранного preview mode
+
+== 9. Operations Summary
+
+* render preview - read-only capability относительно storage
+* normalization в этом workflow - текстовая утилита, а не publish action
+* source of truth для runtime output - deterministic `Renderer`
+* source of truth для raw preview - current loaded composition snapshot
+
+== Upstream / Downstream
+
+Upstream:
+
+* xref:project/functions/render-preview/prd.adoc[PRD]
+* xref:project/architecture/ui-ux.adoc[UI/UX]
+* xref:project/architecture/system/hld.adoc[High-Level Design]
+
+Downstream:
+
+* xref:project/functions/render-preview/adr.adoc[ADR]
+* xref:project/functions/render-preview/service-spec.adoc[Service Spec]
+* xref:project/functions/render-preview/runbook.adoc[Runbook]

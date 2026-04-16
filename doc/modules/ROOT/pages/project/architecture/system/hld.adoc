@@ -1,17 +1,128 @@
 = 1. High-Level Design
 
-Страница предназначена для high-level system design документа.
+`TextFoundry` в текущей кодовой базе - это desktop workbench для authoring,
+versioning и deterministic rendering prompt assets, с optional AI-assisted
+workflow поверх того же core engine.
 
-Основной кандидат на наполнение:
+== 1. System Summary
 
-* результат skill `ml-llm-system-design`
+Система разделена на пять крупных слоев:
 
-Для `TextFoundry` здесь стоит собирать:
+* `textfoundry_engine` - core domain model, versioning, rendering, validation
+* `ObjectBox repositories` - локальное persistent storage для blocks и compositions
+* `textfoundry_ai` - OpenAI-compatible adapters и HTTP transport
+* `text_foundry_gui` - Qt/QML desktop authoring UI
+* `text_foundry_cli` - FTXUI terminal frontend
 
-* core rendering path
-* composition model
-* storage layer
-* AI integration layer
-* CLI / GUI / future prompt server boundaries
+== 2. Architectural Boundary
+
+Главная архитектурная граница проекта:
+
+* deterministic authoring/rendering path живет в core engine
+* AI-функции подключаются как optional adapters через интерфейсы engine
+* UI инициирует AI-вызовы только явно, а не внутри обычного render path
+
+Это значит:
+
+* render остается воспроизводимым без LLM
+* при отсутствии AI configuration базовые block/composition workflows работают
+* AI влияет только на explicit authoring/rewrite actions
+
+== 3. Core Runtime Flow
+
+[mermaid]
+----
+flowchart LR
+  GUI["Qt/QML GUI"] --> Session["SessionViewModel"]
+  CLI["FTXUI TUI"] --> Engine["tf::Engine"]
+  Session --> Engine
+  Engine --> BlockRepo["BlockRepository"]
+  Engine --> CompRepo["CompositionRepository"]
+  Engine --> Renderer["Renderer"]
+  Engine --> AI["AI Adapter Interfaces"]
+  BlockRepo --> ObjectBox["ObjectBox Store"]
+  CompRepo --> ObjectBox
+  AI --> Provider["OpenAI-compatible HTTP API"]
+----
+
+== 4. Domain Model
+
+Основные сущности:
+
+* `Block` - versioned reusable template with defaults, tags, language and type
+* `Composition` - ordered list of fragments
+* `Fragment` - `BlockRef`, `StaticText` или `Separator`
+* `RenderContext` - runtime parameter overrides и strict-mode policy
+* `StyleProfile` - structural style и semantic style
+
+Versioning встроен в core:
+
+* blocks и compositions публикуются как immutable versions
+* update workflows создают новый version, а не перезаписывают старый
+* deprecate/delete выполняются отдельными explicit actions
+
+== 5. Implemented Capability Set
+
+Реально поддерживаемые capability на April 16, 2026:
+
+* block generation
+* prompt slicing
+* normalization
+* composition rewrite
+* deterministic render and preview
+* local authoring and storage
+
+Не реализовано, но описано в документации как future boundary:
+
+* prompt server
+
+== 6. Storage and Session Model
+
+Storage слой реализован через ObjectBox:
+
+* blocks и их версии хранятся как persistent entities
+* compositions и fragments хранятся отдельно
+* GUI session использует `projectKey` и `dataPath` для rebuild engine
+
+Практическое следствие:
+
+* приложение ориентировано на local-first desktop usage
+* AI provider не имеет прямого доступа к storage
+* persistence mutation остается на стороне engine после review/apply
+
+== 7. AI Integration Model
+
+`textfoundry_ai` содержит provider-specific реализации:
+
+* `OpenAiCompatibleBlockGenerator`
+* `OpenAiCompatibleNormalizer`
+* `OpenAiCompatibleCompositionBlockRewriter`
+* `QtHttpTransport`
+
+Engine contracts, через которые они подключаются:
+
+* `IBlockGenerator`
+* `INormalizer`
+* `IBlockNormalizer`
+* `ICompositionBlockRewriter`
+
+Все AI вызовы зависят от настроек `base_url`, `model`, `api_key` и timeout,
+получаемых из GUI session settings.
+
+== 8. Reliability Model
+
+Базовая стратегия деградации:
+
+* если AI adapter не настроен, deterministic core остается доступен
+* если provider вернул ошибку, UI остается в ручном workflow
+* auto-publish и hidden mutation отсутствуют
+
+== 9. Downstream Docs
+
+Следующими источниками детализации для этого HLD являются:
+
+* function-level `System Design` и `Service Spec` страницы
+* xref:project/architecture/ui-ux.adoc[UI/UX]
+* xref:project/architecture/integrations.adoc[Integrations]
 
 Диаграммы в этом разделе должны оформляться в `mermaid`.

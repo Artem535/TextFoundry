@@ -1,0 +1,31 @@
+= Block Authoring
+
+Функция отвечает за создание, просмотр, редактирование, версионирование и
+снятие с использования блоков в настольном интерфейсе `TextFoundry`.
+
+Текущее состояние:
+
+* реализована в `BlocksModel`, `BlockEditorViewModel`, `BlocksPage.qml` и
+  `tf::Engine`
+* поддерживает древовидное представление библиотеки блоков по пространствам имён
+* поддерживает поиск по идентификатору, описанию, шаблону, тегам и значениям по
+  умолчанию
+* использует вкладочный редактор вместо одного модального окна
+* сохраняет блок как новую опубликованную версию, а не перезаписывает старую
+* поддерживает снятие версии с использования и удаление блока при соблюдении
+  ограничений ссылочной целостности
+* поддерживает AI-черновик и AI-ревизию, но не публикует результат без ручной
+  проверки
+
+Зависимости сверху:
+
+* xref:project/architecture/system/hld.adoc[High-Level Design]
+* xref:project/architecture/ui-ux.adoc[UI/UX]
+* xref:project/functions/block-generation/index.adoc[Block Generation]
+
+Зависимые документы:
+
+* xref:project/functions/block-authoring/system-design.adoc[System Design]
+* xref:project/functions/block-authoring/adr.adoc[ADR]
+* xref:project/functions/block-authoring/service-spec.adoc[Service Spec]
+* xref:project/functions/block-authoring/document-set.adoc[Document Set]

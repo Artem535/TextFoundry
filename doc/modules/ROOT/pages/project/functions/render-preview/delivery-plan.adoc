@@ -1,0 +1,62 @@
+= Render Preview Delivery Plan
+
+== 1. Delivery Scope
+
+Scope capability:
+
+* GUI render screen
+* deterministic render orchestration
+* raw preview path
+* optional normalized preview
+* version-aware composition preview
+
+== 2. Current Status
+
+Текущий статус:
+
+* capability уже реализована в коде
+* отсутствовал отдельный function-level document set
+* ключевое следующее действие - закрепить terminology и test expectations
+
+== 3. Workstreams and Owners
+
+* GUI owner:
+* page layout
+* preview mode UX
+* status texts and clipboard actions
+* engine owner:
+* render contract
+* version loading
+* deterministic rendering guarantees
+* AI owner:
+* normalized preview behavior
+* normalizer availability and prompt policy
+
+== 4. Dependency Map
+
+* composition repository
+* version metadata loading
+* renderer and block cache
+* session-level engine configuration
+* optional normalizer configuration
+
+== 5. Rollout Steps
+
+* formalize docs for render-preview
+* align QA checks with deterministic render contract
+* add explicit regression set for params/version validation
+* review raw preview helper against future renderer changes
+
+== 6. Blockers and Risks
+
+* raw preview helper duplicates part of render-like behavior
+* user expectations may drift toward treating normalized output as canonical
+* future prompt server work may create pressure to reuse GUI-specific semantics
+
+== 7. Readiness Checklist
+
+* composition/version selection behavior documented
+* deterministic render path documented as canonical runtime output
+* normalization explicitly documented as optional derived preview
+* stale-state behavior documented
+* error surfaces documented
