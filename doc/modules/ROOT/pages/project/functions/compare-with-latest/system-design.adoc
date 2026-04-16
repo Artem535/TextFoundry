@@ -1,0 +1,83 @@
+= Compare With Latest System Design
+
+== 1. Краткое резюме
+
+`Compare With Latest` реализует read-only diff workflow. Он загружает latest и
+selected non-latest composition versions, строит raw composition text для обеих
+и отображает line-oriented compare rows в GUI.
+
+== 2. Контекст и границы
+
+В области охвата:
+
+* selection validation;
+* loading two versions of same composition;
+* raw composition text materialization;
+* LCS-like line compare;
+* GUI compare dialog state.
+
+Вне области охвата:
+
+* semantic comparison;
+* storage mutation;
+* version merge or apply.
+
+== 3. Компоненты и интеграции
+
+* `CompositionsViewModel`
+* `CompositionsPage.qml`
+* `Engine.LoadComposition`
+* `Engine.LoadBlock`
+
+== 4. Основной сценарий
+
+[mermaid]
+----
+flowchart LR
+  User["Пользователь"] --> Vm["openCompareWithLatest"]
+  Vm --> LoadLatest["Load latest composition"]
+  Vm --> LoadSelected["Load selected composition"]
+  LoadLatest --> Raw["buildRawCompositionText"]
+  LoadSelected --> Raw
+  Raw --> Diff["buildCompareDiff"]
+  Diff --> Dialog["Compare dialog"]
+----
+
+== 5. Детализация поведения
+
+Шаги:
+
+1. Пользователь выбирает non-latest version.
+2. View model проверяет, что выбранная версия не latest.
+3. Загружаются latest и selected versions.
+4. Для обеих версий строится raw composition text:
+   block refs materialize as block templates, static text and separators are
+   preserved.
+5. Строится line-oriented diff.
+6. Compare dialog shows titles, rows and summary.
+
+== 6. Надёжность и деградация
+
+Типовые ошибки:
+
+* composition not selected;
+* selected version is latest;
+* version parse error;
+* load composition/block failure.
+
+При ошибке:
+
+* compare dialog не открывается;
+* user получает explicit status.
+
+== 7. Операционные свойства
+
+* read-only workflow
+* deterministic diff
+* no AI dependency
+
+== 8. Связанные документы
+
+* xref:project/functions/compare-with-latest/prd.adoc[PRD]
+* xref:project/functions/compare-with-latest/adr.adoc[ADR]
+* xref:project/functions/compare-with-latest/service-spec.adoc[Service Spec]

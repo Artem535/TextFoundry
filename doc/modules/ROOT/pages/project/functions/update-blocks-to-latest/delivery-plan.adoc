@@ -1,0 +1,21 @@
+= Update Blocks To Latest Delivery Plan
+
+== 1. Область поставки
+
+В поставку входят:
+
+* GUI action in compositions workflow;
+* deterministic update logic;
+* composition republish behavior;
+* user-visible statuses.
+
+== 2. Текущий статус
+
+* capability already implemented in GUI and engine-based workflow
+* needs dedicated function-level documentation and later UX review
+
+== 3. Следующие шаги
+
+* confirm representative regression cases
+* verify behavior on mixed-fragment compositions
+* decide whether future selective-update UX is needed

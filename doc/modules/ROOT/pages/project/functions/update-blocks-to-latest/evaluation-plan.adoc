@@ -1,0 +1,35 @@
+= Update Blocks To Latest Evaluation Plan
+
+== 1. Цель оценки
+
+Нужно проверить, что workflow:
+
+* корректно переводит composition на latest block versions;
+* не меняет fragment order и local params;
+* не публикует лишние versions без изменений.
+
+== 2. Измерения качества
+
+* correctness of latest-version resolution
+* preservation of fragment structure
+* no-op behavior when already latest
+* update success/failure clarity
+
+== 3. Критерии приёмки
+
+* all block refs updated to latest published versions
+* static text and separators unchanged
+* local params preserved
+* no new version when nothing changed
+
+== 4. Стратегия датасета
+
+* compositions with mixed fragments
+* compositions already on latest
+* compositions with several outdated block refs
+* negative cases for missing composition or invalid version
+
+== 5. Post-release review
+
+* collect cases where latest version was not desired
+* review if users need selective update instead of all-to-latest

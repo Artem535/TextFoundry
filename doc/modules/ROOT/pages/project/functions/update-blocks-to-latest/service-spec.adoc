@@ -1,0 +1,81 @@
+= Update Blocks To Latest Service Spec
+
+== 1. Назначение и граница сервиса
+
+Функция:
+
+* обновляет `BlockRef` выбранной composition до latest published versions;
+* не переписывает содержание блоков;
+* публикует новую composition version только через explicit update path.
+
+== 2. Потребители и зависимости
+
+Потребитель:
+
+* `CompositionsViewModel`
+
+Зависимости:
+
+* `Engine.LoadComposition`
+* `Engine.GetLatestBlockVersion`
+* `Engine.UpdateComposition`
+* `CompositionDraftBuilder`
+
+== 3. Методы и точки вызова
+
+Основная точка входа:
+
+* `CompositionsViewModel::updateBlocksToLatest()`
+
+Используемые engine methods:
+
+* `LoadComposition`
+* `GetLatestBlockVersion`
+* `UpdateComposition`
+
+== 4. Входной контракт
+
+Пользовательские входы:
+
+* `selected_composition_id`
+* `selected_version`
+
+Внутренний контекст:
+
+* loaded `Composition`
+* block refs and local params
+
+== 5. Выходной контракт
+
+Результат:
+
+* новая published composition version при наличии изменений;
+* explicit status text, если изменений нет или произошла ошибка.
+
+== 6. Правила доменного контракта
+
+Функция обязана:
+
+* обновлять только block version references;
+* сохранять order, static text, separators и local params;
+* не публиковать новую version, если ничего не изменилось;
+* использовать обычный composition update lifecycle.
+
+== 7. Ошибки и fallback behavior
+
+Ошибки:
+
+* composition not selected;
+* invalid version;
+* composition loading failure;
+* latest block version lookup failure;
+* update failure.
+
+Fallback:
+
+* no-op with explicit status when everything already latest.
+
+== 8. Связанные документы
+
+* xref:project/functions/update-blocks-to-latest/system-design.adoc[System Design]
+* xref:project/functions/update-blocks-to-latest/runbook.adoc[Runbook]

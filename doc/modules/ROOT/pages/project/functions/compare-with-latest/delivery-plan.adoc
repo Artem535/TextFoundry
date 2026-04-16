@@ -1,0 +1,19 @@
+= Compare With Latest Delivery Plan
+
+== 1. Область поставки
+
+В поставку входят:
+
+* compare action on compositions page;
+* raw diff materialization;
+* dialog state and row rendering.
+
+== 2. Текущий статус
+
+* capability already implemented
+* needed separate function-level documentation
+
+== 3. Следующие шаги
+
+* review compare UX on large compositions
+* decide if block-aware compare is needed later

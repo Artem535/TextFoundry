@@ -1,0 +1,108 @@
+= Update Blocks To Latest System Design
+
+== 1. Краткое резюме
+
+`Update Blocks To Latest` реализует deterministic maintenance workflow для
+composition authoring. Функция читает выбранную composition version, заменяет
+каждый `BlockRef` на latest published block version и публикует новую
+minor-версию композиции только при наличии реальных изменений.
+
+== 2. Контекст и границы
+
+В области охвата:
+
+* selected composition loading;
+* latest block version lookup;
+* draft rebuild with preserved order and local params;
+* explicit update of composition version.
+
+Вне области охвата:
+
+* semantic rewrite;
+* AI-assisted migration;
+* structural editing;
+* direct in-place mutation of published version.
+
+== 3. Архитектурные требования
+
+Функция должна:
+
+* работать через existing composition and block repositories;
+* использовать versioned composition update workflow;
+* не публиковать новую version без фактических изменений;
+* сохранять non-block fragments as-is.
+
+== 4. Компоненты и интеграции
+
+Основные компоненты:
+
+* `CompositionsViewModel`
+  Запускает workflow, строит новый draft, публикует status.
+
+* `tf::Engine`
+  Загружает композицию, возвращает latest block versions, публикует новую
+  composition version.
+
+* `CompositionDraftBuilder`
+  Собирает новый draft из существующих fragments.
+
+== 5. Основной сценарий
+
+[mermaid]
+----
+flowchart LR
+  User["Пользователь"] --> Vm["CompositionsViewModel.updateBlocksToLatest"]
+  Vm --> Load["Engine.LoadComposition"]
+  Vm --> Latest["Engine.GetLatestBlockVersion"]
+  Latest --> Draft["CompositionDraftBuilder"]
+  Draft --> Update["Engine.UpdateComposition"]
+  Update --> Vm
+----
+
+== 6. Детализация поведения
+
+Шаги:
+
+1. Пользователь выбирает composition и version.
+2. View model загружает выбранную composition.
+3. Для каждого `BlockRef` запрашивается latest published block version.
+4. Собирается новый composition draft:
+   `BlockRef` обновляются, `StaticText` и `Separator` копируются без изменений.
+5. Если изменённых ссылок нет, update не выполняется.
+6. При наличии изменений публикуется новая minor-version composition.
+
+== 7. Надёжность и деградация
+
+Типовые ошибки:
+
+* composition не выбрана;
+* version format invalid;
+* composition loading failed;
+* latest block version lookup failed;
+* update composition failed.
+
+При ошибке:
+
+* исходная composition version не меняется;
+* user получает explicit status.
+
+== 8. Операционные свойства
+
+Функция:
+
+* deterministic;
+* read-modify-publish;
+* не требует AI configuration;
+* оставляет history trace через новую version и revision comment.
+
+== 9. Связанные документы
+
+Upstream:
+
+* xref:project/functions/update-blocks-to-latest/prd.adoc[PRD]
+* xref:project/functions/update-blocks-to-latest/adr.adoc[ADR]
+
+Downstream:
+
+* xref:project/functions/update-blocks-to-latest/service-spec.adoc[Service Spec]
+* xref:project/functions/update-blocks-to-latest/runbook.adoc[Runbook]

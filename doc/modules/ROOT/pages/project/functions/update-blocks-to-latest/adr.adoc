@@ -1,0 +1,89 @@
+= Update Blocks To Latest ADR
+
+== 1. Статус и назначение документа
+
+Статус: принят и отражает текущее реализованное поведение.
+
+Назначение: зафиксировать, почему обновление composition на latest block
+versions оформлено как отдельный explicit maintenance workflow с выпуском новой
+composition version, а не как скрытое поведение render path или in-place
+переписывание ссылок.
+
+== 2. Контекст
+
+В `TextFoundry` композиция ссылается на конкретные published block versions.
+Это важно для воспроизводимости, но создаёт operational задачу: по мере
+развития block library composition может отставать от latest versions.
+
+Нужен способ:
+
+* обновить ссылки быстро;
+* сохранить structure и local params;
+* не нарушить versioning discipline.
+
+== 3. Рассмотренные варианты
+
+=== Вариант A. Всегда использовать latest block versions во время render
+
+Почему отвергнуто:
+
+* ломает воспроизводимость published composition version;
+* делает runtime behavior неявно зависимым от изменившейся block library.
+
+=== Вариант B. Переписывать выбранную composition version на месте
+
+Почему отвергнуто:
+
+* уничтожает versioned history;
+* нарушает базовую модель published artifacts.
+
+=== Вариант C. Выпускать новую composition version через explicit update workflow
+
+Почему выбрано:
+
+* сохраняется history;
+* обновление становится inspectable и controlled;
+* можно явно сообщать пользователю, были ли реальные изменения.
+
+== 4. Принятое решение
+
+Принято решение:
+
+* оформлять update на latest blocks как отдельное explicit действие;
+* читать выбранную composition version;
+* заменить только block version references;
+* публиковать новую minor-version composition при наличии изменений;
+* не менять static text, separators и local params.
+
+== 5. Последствия решения
+
+Положительные:
+
+* versioning остаётся чистым;
+* update workflow быстрый и deterministic;
+* легко объясним пользователю.
+
+Компромиссы:
+
+* latest published block version не всегда автоматически означает business-best
+  version;
+* пользователь всё равно должен осознанно запускать update.
+
+== 6. Риски и меры снижения
+
+Риски:
+
+* latest version может быть нежелательной для конкретной composition;
+* пользователь может не понимать, что будет создана новая version.
+
+Меры:
+
+* explicit action;
+* новая composition version вместо in-place mutation;
+* user-visible status texts.
+
+== 7. Связанные документы
+
+* xref:project/functions/update-blocks-to-latest/prd.adoc[PRD]
+* xref:project/functions/update-blocks-to-latest/system-design.adoc[System Design]
+* xref:project/functions/update-blocks-to-latest/service-spec.adoc[Service Spec]

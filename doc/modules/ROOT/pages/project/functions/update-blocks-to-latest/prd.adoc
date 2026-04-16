@@ -1,0 +1,131 @@
+= Update Blocks To Latest PRD
+
+== 1. Цель и продуктовый контекст
+
+`Update Blocks To Latest` нужен для сопровождения композиций, которые ссылаются
+на старые published версии блоков.
+
+Проблема продукта:
+
+* composition может отставать от актуальной block library;
+* ручное обновление каждой ссылки на блок занимает время;
+* пользователь хочет быстро подтянуть latest published versions без ручной
+  пересборки всей структуры.
+
+Цель функции:
+
+* дать быстрый и контролируемый migration path для block references;
+* сохранить versioned workflow композиции;
+* не смешивать обновление ссылок с AI rewrite или ручным authoring.
+
+== 2. Постановка проблемы
+
+Без этой функции пользователь должен:
+
+* открыть composition;
+* найти все block refs;
+* проверить latest version каждого блока;
+* вручную пересохранить composition.
+
+Это создаёт:
+
+* лишнюю операционную рутину;
+* риск пропустить часть ссылок;
+* лишнюю стоимость сопровождения versioned compositions.
+
+== 3. Пользователи и сценарии
+
+Основные пользователи:
+
+* authors and maintainers of compositions;
+* владельцы prompt libraries, которые регулярно обновляют блоки;
+* reviewers, которым нужно быстро перевести composition на latest block set.
+
+Ключевые сценарии:
+
+* обновить выбранную composition version на latest block versions;
+* быстро выпустить новую composition version без изменения структуры;
+* понять, что все ссылки уже актуальны и обновление не требуется.
+
+== 4. Область охвата и не-цели
+
+=== В области охвата
+
+* чтение выбранной composition version;
+* вычисление latest version для каждого referenced block;
+* пересборка composition draft с теми же fragment types и local params;
+* minor update композиции при наличии изменений.
+
+=== Вне области охвата
+
+* semantic rewrite блоков;
+* structural redesign композиции;
+* AI-assisted migration;
+* изменение описания, style profile или business logic композиции сверх
+  revision comment.
+
+== 5. Критерии успеха
+
+Функция считается успешной, если:
+
+* пользователь может подтянуть latest block versions одним действием;
+* новая composition version публикуется только при реальных изменениях;
+* local params и fragment order сохраняются;
+* если обновление не требуется, система явно сообщает об этом.
+
+== 6. Функциональные требования
+
+Система должна:
+
+* требовать выбранную composition и корректную version;
+* загружать latest version для каждого referenced block;
+* сохранять static text и separators без изменений;
+* публиковать новую minor-версию композиции при наличии обновлённых ссылок;
+* не выполнять update, если все ссылки уже latest.
+
+== 7. Нефункциональные требования
+
+Функция должна:
+
+* быть deterministic;
+* не зависеть от AI provider;
+* не менять исходную version на месте;
+* возвращать понятные user-visible statuses.
+
+== 8. Ограничения и допущения
+
+Ограничения:
+
+* функция работает только с published blocks and compositions;
+* latest version определяется через current block repository state;
+* workflow привязан к GUI compositions page.
+
+Допущения:
+
+* latest published version действительно является желаемой целевой версией;
+* пользователь осознанно запускает обновление и понимает, что будет выпущена
+  новая composition version.
+
+== 9. Зависимости и заинтересованные стороны
+
+Зависимости:
+
+* `CompositionsViewModel`
+* `tf::Engine::LoadComposition`
+* `tf::Engine::GetLatestBlockVersion`
+* `tf::Engine::UpdateComposition`
+
+Заинтересованные стороны:
+
+* composition authors;
+* block library owner;
+* core engine owner;
+* GUI owner.
+
+== 10. Критерии приёмки
+
+Пилот считается успешным, если:
+
+* representative compositions корректно обновляются на latest block versions;
+* unchanged compositions не публикуют лишнюю версию;
+* local params and ordering остаются прежними.

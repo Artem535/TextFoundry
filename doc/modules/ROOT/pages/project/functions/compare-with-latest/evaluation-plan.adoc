@@ -1,0 +1,30 @@
+= Compare With Latest Evaluation Plan
+
+== 1. Цель оценки
+
+Нужно проверить, что compare workflow:
+
+* открывается только в корректном scenario;
+* показывает понятный raw diff;
+* не путает пользователя в том, какая версия latest, а какая selected.
+
+== 2. Измерения качества
+
+* correctness of version selection rules
+* clarity of left/right titles
+* diff usefulness
+* read-only safety
+
+== 3. Критерии приёмки
+
+* compare unavailable for latest version
+* compare opens for non-latest version
+* left/right labels correct
+* rows reflect raw differences
+
+== 4. Стратегия датасета
+
+* compositions with several versions
+* unchanged neighboring versions
+* versions with clear textual changes
+* negative cases for invalid selection

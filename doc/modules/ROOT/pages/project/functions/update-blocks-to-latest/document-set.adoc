@@ -1,0 +1,25 @@
+= Update Blocks To Latest Document Set
+
+== 1. Покрытие набора документов
+
+Для capability покрыты:
+
+* `PRD`
+* `ADR`
+* `System Design`
+* `Service Spec`
+* `Evaluation Plan`
+* `Delivery Plan`
+* `Runbook`
+* `Security Note`
+* `Prompt Template`
+
+== 2. Source of truth в коде
+
+* `src/text_foundry_gui/viewmodels/compositions_view_model.*`
+* `src/textfoundry_engine/tf/engine.h`
+* `src/textfoundry_engine/tf/engine.cc`
+
+== 3. Основной пробел
+
+* пока нет отдельного selective-update workflow

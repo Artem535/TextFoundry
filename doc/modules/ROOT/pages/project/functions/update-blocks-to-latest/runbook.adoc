@@ -1,0 +1,29 @@
+= Update Blocks To Latest Runbook
+
+== 1. Операционный обзор
+
+Функция:
+
+* обновляет block refs до latest versions;
+* не зависит от AI provider;
+* должна безопасно деградировать в explicit error/no-op statuses.
+
+== 2. Типовые сбои
+
+* invalid selected version
+* missing composition
+* latest block version lookup failure
+* composition update failure
+
+== 3. Реакция на инцидент
+
+1. Проверить выбранные composition и version.
+2. Проверить доступность block and composition repositories.
+3. Проверить, воспроизводится ли ошибка на representative composition.
+4. Убедиться, что unchanged compositions correctly return no-op.
+
+== 4. Эскалация
+
+* GUI owner
+* core composition owner
+* block repository owner

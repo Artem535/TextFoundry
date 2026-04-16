@@ -1,0 +1,20 @@
+= Update Blocks To Latest
+
+Функция описывает controlled workflow обновления ссылок композиции на последние
+доступные версии блоков без ручного редактирования каждого `BlockRef`.
+
+Ключевые свойства capability:
+
+* работает только по явному действию пользователя;
+* читает выбранную published composition version;
+* заменяет версии `BlockRef` на latest published block versions;
+* публикует новую minor-версию композиции только если есть реальные изменения;
+* не меняет текст блоков и не вызывает AI provider.
+
+Связанные документы:
+
+* xref:project/functions/update-blocks-to-latest/prd.adoc[PRD]
+* xref:project/functions/update-blocks-to-latest/system-design.adoc[System Design]
+* xref:project/functions/update-blocks-to-latest/adr.adoc[ADR]
+* xref:project/functions/update-blocks-to-latest/service-spec.adoc[Service Spec]
+* xref:project/functions/update-blocks-to-latest/document-set.adoc[Document Set]

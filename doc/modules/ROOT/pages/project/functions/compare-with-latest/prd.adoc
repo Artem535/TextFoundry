@@ -1,0 +1,99 @@
+= Compare With Latest PRD
+
+== 1. Цель и продуктовый контекст
+
+`Compare With Latest` нужен для review и inspection старых composition versions
+на фоне latest published version.
+
+Проблема продукта:
+
+* version history есть, но без compare workflow пользователю трудно быстро
+  понять, что изменилось;
+* перед update, rollback reasoning или review нужен понятный raw diff.
+
+Цель функции:
+
+* дать пользователю быстрый visual diff между selected non-latest version и
+  latest version одной composition;
+* не менять storage;
+* поддержать review-oriented maintenance workflow.
+
+== 2. Постановка проблемы
+
+Без функции пользователь должен:
+
+* по очереди открывать разные versions;
+* вручную сравнивать raw text;
+* помнить, какая версия latest, а какая selected.
+
+Это:
+
+* замедляет review;
+* увеличивает cognitive load;
+* делает version maintenance менее inspectable.
+
+== 3. Пользователи и сценарии
+
+Основные пользователи:
+
+* composition authors;
+* reviewers of prompt assets;
+* maintainers preparing update or rollback decisions.
+
+Сценарии:
+
+* сравнить старую version с latest;
+* понять, что изменилось в raw prompt structure;
+* использовать diff как review aid before update/rewrite actions.
+
+== 4. Область охвата и не-цели
+
+=== В области охвата
+
+* latest-vs-selected comparison for same composition;
+* raw composition text compare;
+* line-oriented diff rows in GUI dialog.
+
+=== Вне области охвата
+
+* semantic diff;
+* block-level explainability;
+* mutation of compared versions;
+* cross-composition compare.
+
+== 5. Критерии успеха
+
+* пользователь может быстро увидеть, чем selected version отличается от latest
+* compare workflow доступен только там, где comparison осмыслен
+* GUI clearly labels left/right versions
+
+== 6. Функциональные требования
+
+Система должна:
+
+* требовать selected non-latest version;
+* загрузить latest и selected versions одной composition;
+* построить raw text compare;
+* показать line-oriented difference rows;
+* не менять storage.
+
+== 7. Нефункциональные требования
+
+* deterministic behavior
+* read-only workflow
+* explicit statuses on invalid selection or load failure
+
+== 8. Зависимости и заинтересованные стороны
+
+Зависимости:
+
+* `CompositionsViewModel`
+* `Engine.LoadComposition`
+* `Engine.LoadBlock`
+* compare dialog in `CompositionsPage.qml`
+
+Stakeholders:
+
+* composition authors
+* GUI owner
+* core composition owner

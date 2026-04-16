@@ -1,0 +1,72 @@
+= Compare With Latest Service Spec
+
+== 1. Назначение и граница сервиса
+
+Функция:
+
+* строит latest-vs-selected compare for one composition;
+* materializes raw composition text;
+* returns read-only diff state for GUI dialog.
+
+== 2. Потребители и зависимости
+
+Потребитель:
+
+* `CompositionsViewModel`
+
+Зависимости:
+
+* `Engine.LoadComposition`
+* `Engine.LoadBlock`
+* internal diff builder in view model
+
+== 3. Методы и точки вызова
+
+Основная точка входа:
+
+* `CompositionsViewModel::openCompareWithLatest()`
+
+Связанные helpers:
+
+* `buildRawCompositionText(...)`
+* `buildCompareDiff(...)`
+
+== 4. Входной контракт
+
+Пользовательские входы:
+
+* `selected_composition_id`
+* `selected_version`
+* `selected_versions_` list with latest at front
+
+== 5. Выходной контракт
+
+GUI-visible outputs:
+
+* `compareOpen`
+* `compareLeftTitle`
+* `compareRightTitle`
+* `compareRows`
+* `compareSummary`
+
+== 6. Правила доменного контракта
+
+Функция обязана:
+
+* compare only same composition across versions;
+* require selected non-latest version;
+* remain read-only;
+* surface explicit errors instead of opening broken compare dialog.
+
+== 7. Ошибки и fallback behavior
+
+Ошибки:
+
+* no composition selected
+* selected version is latest
+* invalid version parse
+* load failure for composition or block
+
+Fallback:
+
+* no dialog open, explicit status message.

@@ -36,6 +36,8 @@
 * xref:project/functions/composition-rewrite/index.adoc[Composition Rewrite]
 * xref:project/functions/block-authoring/index.adoc[Block Authoring]
 * xref:project/functions/composition-authoring/index.adoc[Composition Authoring]
+* xref:project/functions/update-blocks-to-latest/index.adoc[Update Blocks To Latest]
+* xref:project/functions/compare-with-latest/index.adoc[Compare With Latest]
 * xref:project/functions/render-preview/index.adoc[Render Preview]
 * xref:project/functions/prompt-server/index.adoc[Prompt Server]
 
@@ -54,6 +56,8 @@
 * `Composition Rewrite` - реализована в engine и GUI
 * `Block Authoring` - реализована в engine и GUI
 * `Composition Authoring` - реализована в engine и GUI
+* `Update Blocks To Latest` - реализована в GUI и engine lifecycle workflows
+* `Compare With Latest` - реализована в GUI как read-only review workflow
 * `Render Preview` - реализована в engine и GUI
 * `Prompt Server` - только planned boundary, без runtime implementation
 

@@ -1,0 +1,24 @@
+= Compare With Latest Document Set
+
+== 1. Покрытие набора документов
+
+Для capability покрыты:
+
+* `PRD`
+* `ADR`
+* `System Design`
+* `Service Spec`
+* `Evaluation Plan`
+* `Delivery Plan`
+* `Runbook`
+* `Security Note`
+* `Prompt Template`
+
+== 2. Source of truth в коде
+
+* `src/text_foundry_gui/viewmodels/compositions_view_model.*`
+* `src/text_foundry_gui/qml/pages/CompositionsPage.qml`
+
+== 3. Основной пробел
+
+* compare пока raw-oriented, not semantic

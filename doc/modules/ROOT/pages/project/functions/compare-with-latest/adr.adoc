@@ -1,0 +1,67 @@
+= Compare With Latest ADR
+
+== 1. Статус и назначение документа
+
+Статус: принят и отражает текущее реализованное поведение.
+
+Назначение: зафиксировать, почему compare workflow оформлен как read-only raw
+diff between selected version and latest version, а не как mutation tool или
+semantic compare.
+
+== 2. Контекст
+
+Versioned compositions полезны только тогда, когда их различия можно быстро
+inspect-ить. Пользователю часто нужно понять, чем старая version отличается от
+latest before any further action.
+
+== 3. Рассмотренные варианты
+
+=== Вариант A. Не делать compare вообще
+
+Отвергнуто:
+
+* history остаётся труднее review-ить;
+* maintenance workflow замедляется.
+
+=== Вариант B. Делать semantic/AI diff
+
+Отвергнуто:
+
+* усложняет реализацию;
+* добавляет интерпретацию там, где сначала нужен inspectable raw compare.
+
+=== Вариант C. Read-only raw compare latest vs selected
+
+Выбрано:
+
+* deterministic;
+* easy to explain;
+* no storage mutation;
+* good maintenance aid.
+
+== 4. Принятое решение
+
+Принято:
+
+* сравнивать только selected non-latest version against latest;
+* использовать raw composition text as compare material;
+* показывать line-oriented diff rows;
+* держать workflow read-only.
+
+== 5. Последствия решения
+
+Положительные:
+
+* compare remains simple and inspectable;
+* no AI dependency;
+* useful before update/rewrite decisions.
+
+Компромиссы:
+
+* compare is raw, not semantic;
+* block-level meaning changes are not summarized separately.
+
+== 6. Связанные документы
+
+* xref:project/functions/compare-with-latest/prd.adoc[PRD]
+* xref:project/functions/compare-with-latest/system-design.adoc[System Design]

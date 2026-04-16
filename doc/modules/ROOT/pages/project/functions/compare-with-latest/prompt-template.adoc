@@ -1,0 +1,9 @@
+= Compare With Latest Prompt Template
+
+Для этой capability отдельный prompt-template не нужен.
+
+Причина:
+
+* функция deterministic;
+* не использует LLM provider;
+* не требует prompt assembly.

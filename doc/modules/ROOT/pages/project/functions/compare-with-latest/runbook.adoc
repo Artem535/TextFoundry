@@ -1,0 +1,22 @@
+= Compare With Latest Runbook
+
+== 1. Операционный обзор
+
+Функция:
+
+* read-only;
+* deterministic;
+* should fail safely with explicit statuses.
+
+== 2. Типовые сбои
+
+* invalid version selection
+* composition load failure
+* missing block while materializing raw compare text
+
+== 3. Реакция на инцидент
+
+1. Verify selected composition and selected version.
+2. Verify latest version list ordering.
+3. Verify compare opens on representative non-latest version.
+4. Check raw materialization for missing blocks.

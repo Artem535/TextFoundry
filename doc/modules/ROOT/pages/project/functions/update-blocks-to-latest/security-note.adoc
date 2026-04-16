@@ -1,0 +1,17 @@
+= Update Blocks To Latest Security Note
+
+== 1. Область безопасности
+
+Функция не использует внешний AI provider и не отправляет content наружу.
+
+Основные риски лежат в:
+
+* unintended republish of composition;
+* incorrect repository reads;
+* misleading user expectation about latest-version choice.
+
+== 2. Базовые меры
+
+* explicit user action
+* versioned republish instead of in-place mutation
+* no hidden external data transfer

@@ -1,0 +1,12 @@
+= Compare With Latest
+
+Функция описывает read-only workflow сравнения выбранной не-latest версии
+композиции с её latest published version через raw diff preview.
+
+Связанные документы:
+
+* xref:project/functions/compare-with-latest/prd.adoc[PRD]
+* xref:project/functions/compare-with-latest/system-design.adoc[System Design]
+* xref:project/functions/compare-with-latest/adr.adoc[ADR]
+* xref:project/functions/compare-with-latest/service-spec.adoc[Service Spec]
+* xref:project/functions/compare-with-latest/document-set.adoc[Document Set]

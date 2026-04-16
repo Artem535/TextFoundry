@@ -1,0 +1,17 @@
+= Compare With Latest Security Note
+
+== 1. Область безопасности
+
+Функция не использует внешний provider и не отправляет content наружу.
+
+Основные риски:
+
+* exposing internal prompt content to user who already has local authoring access;
+* misleading compare labels;
+* accidental assumption that compare result implies mutation.
+
+== 2. Базовые меры
+
+* read-only workflow
+* explicit dialog titles and summary
+* no storage mutation
