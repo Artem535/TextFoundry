@@ -7,6 +7,7 @@
 В будущую поставку должны входить:
 
 * runtime API;
+* prompt registry endpoints для published assets;
 * published-only repository boundary;
 * deployment/runtime topology;
 * authn/authz;
@@ -33,6 +34,9 @@
 * security owner
   Access control, published-only enforcement, audit.
 
+* integration owner
+  Client contract, Python SDK/client strategy, downstream adoption.
+
 == 4. Карта зависимостей
 
 Ключевые зависимости:
@@ -41,18 +45,20 @@
 * published-only repository access model;
 * deployment topology;
 * authn/authz policy;
-* compatibility policy.
+* compatibility policy;
+* decision on first downstream client surface.
 
 == 5. Предварительные этапы rollout
 
 Рациональная последовательность:
 
-1. Выделить API contract.
+1. Выделить API contract для registry, resolve и render.
 2. Formalize repository access model.
 3. Определить deployment topology.
 4. Зафиксировать compatibility policy.
 5. Провести architecture and security review.
 6. Реализовать representative deterministic runtime path.
+7. Добавить первый downstream client, например Python client.
 
 == 6. Блокеры и риски
 
@@ -66,7 +72,9 @@
 
 * server accidentally becomes authoring surface;
 * server sees draft data;
-* runtime contract окажется слишком широким и нестабильным.
+* runtime contract окажется слишком широким и нестабильным;
+* server mistakenly drifts toward generic LLM gateway;
+* client strategy будет выбрана раньше, чем server boundary.
 
 == 7. Критерии готовности
 
@@ -76,12 +84,14 @@ Capability можно считать готовой к запуску тольк
 * deployment topology agreed;
 * security review passed;
 * deterministic render replay stable;
-* no draft access paths remain.
+* no draft access paths remain;
+* registry endpoints и render endpoints согласованы как единый contract.
 
 == 8. Следующий шаг после текущей итерации
 
 Следующая полезная работа:
 
-* не писать дальше “общее описание сервера”, а ждать начала реализации;
-* при старте реализации конвертировать planned документы в concrete contracts;
+* при старте реализации не смешать server rollout с Python bindings rollout;
+* сначала зафиксировать API для published prompt registry and render;
+* затем отдельно принять решение о Python client/bindings strategy;
 * отдельно оформить authn/authz и deployment ADR, если это потребуется.

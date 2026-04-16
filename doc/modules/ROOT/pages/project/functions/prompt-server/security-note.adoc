@@ -10,7 +10,8 @@
 * access control;
 * data boundary correctness;
 * parameter handling;
-* published-only enforcement.
+* published-only enforcement;
+* compatibility between registry and render contract.
 
 == 2. Ключевые требования
 
@@ -21,7 +22,8 @@
 * no draft access;
 * parameter input validation;
 * authn/authz policy для external clients;
-* fail-closed behavior при нарушении доступа или недоступности published store.
+* fail-closed behavior при нарушении доступа или недоступности published store;
+* одинаково строгую policy для registry endpoints и render endpoints.
 
 == 3. Основные риски
 
@@ -31,7 +33,9 @@
 * обход authoring boundary;
 * неверная parameter validation;
 * доступ к assets неавторизованными клиентами;
-* неконсистентная compatibility policy.
+* неконсистентная compatibility policy;
+* разные классы клиентов получают разные security semantics для одних и тех же
+  published assets.
 
 == 4. Базовые меры контроля
 
@@ -42,7 +46,8 @@
 * reject draft ids and draft access attempts;
 * deterministic render only in base contract;
 * no fallback to draft data;
-* audit access to sensitive endpoints and assets.
+* audit access to sensitive endpoints and assets;
+* единая authorization policy для registry, resolve и render.
 
 == 5. Особые замечания
 
@@ -51,4 +56,6 @@
 * документ фиксирует требования к будущей security boundary;
 * он не должен трактоваться как описание уже существующих защитных механизмов;
 * по мере реализации потребуется отдельная детализация authn/authz, rate
-  limiting, audit logging и secret management.
+  limiting, audit logging и secret management;
+* если появится Python SDK, он не должен обходить server security boundary через
+  "особый" local-only contract по умолчанию.

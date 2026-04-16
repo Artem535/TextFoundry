@@ -1,26 +1,31 @@
 = Prompt Server Service Spec
 
-Статус: draft placeholder для planned capability.
+Статус: draft для planned capability.
 
 == 1. Назначение и граница сервиса
 
 Назначение будущего сервиса:
 
 * обслуживать published prompt assets;
+* выполнять роль prompt registry для published blocks and compositions;
 * детерминированно resolve-ить и render-ить их;
 * не предоставлять authoring и draft access.
 
 Потребители:
 
 * downstream runtime clients;
-* internal/external services, использующие published prompts.
+* internal/external services, использующие published prompts;
+* Python clients and SDK;
+* backend and agent integrations.
 
 Не-цели:
 
 * authoring;
 * draft access;
 * hidden rewrite;
-* GUI preview semantics as delivery contract.
+* GUI preview semantics as delivery contract;
+* generic model gateway;
+* live LLM completion API as default contract.
 
 == 2. Потребители и зависимости
 
@@ -28,6 +33,7 @@
 
 * downstream services
 * runtime clients
+* Python-side integrations
 
 Зависимости:
 
@@ -35,11 +41,13 @@
 * renderer
 * authn/authz layer
 * parameter validation layer
+* compatibility/versioning policy
 
 == 3. Ожидаемые методы и контрактные точки
 
 Ожидаемые базовые контракты:
 
+* inspect published blocks/compositions and versions
 * resolve published composition
 * render with runtime parameters
 * inspect available published assets
@@ -48,6 +56,17 @@
 
 * это ожидаемые методы planned capability, а не уже реализованный API.
 
+Ожидаемые семейства endpoint-ов:
+
+* registry
+  `GET /blocks/{id}`, `GET /compositions/{id}`, `GET /compositions/{id}/versions`
+
+* resolve
+  `POST /resolve`
+
+* render
+  `POST /render`
+
 == 4. Входной контракт
 
 Ожидаемые входы:
@@ -55,6 +74,7 @@
 * asset id / version
 * runtime params
 * optional response format
+* optional latest-published resolution mode
 
 Недопустимые входы:
 
@@ -67,6 +87,7 @@
 Ожидаемые выходы:
 
 * resolved published asset metadata
+* resolved block/version list
 * rendered text
 * validation errors
 * not-found / unavailable errors
@@ -74,7 +95,9 @@
 Семантика:
 
 * возвращаемые данные должны соответствовать published-only view;
-* response не должен содержать draft state.
+* response не должен содержать draft state;
+* render response должен явно показывать, какие published versions участвовали в
+  результате.
 
 == 6. Правила доменного контракта
 
@@ -84,7 +107,9 @@
 * draft ids/versions должны отклоняться;
 * contract changes требуют compatibility policy;
 * delivery runtime не должен мутировать authoring state;
-* deterministic render - базовая норма поведения.
+* deterministic render - базовая норма поведения;
+* blocks and compositions должны оставаться first-class runtime entities, а не
+  быть скрытыми за одним render endpoint.
 
 == 7. Источники данных и иерархия
 
@@ -127,6 +152,12 @@ Primary source:
 * confidence routing отсутствует;
 * model routing отсутствует;
 * AI-derived behavior не должен быть частью default contract.
+
+Отдельно фиксируется:
+
+* server не должен позиционироваться как replacement для full LLM inference
+  gateway;
+* его primary job - published prompt registry and render delivery.
 
 == 10. Edge cases и fallback behavior
 

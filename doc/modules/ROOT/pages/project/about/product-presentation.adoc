@@ -29,6 +29,12 @@ Standalone one-page версия:
 * применять AI как явный инструмент редактирования, а не как скрытое ядро
   всей системы.
 
+В целевой траектории продукт включает не только workbench, но и server-side
+слой:
+
+* workbench для authoring;
+* future `Prompt Server` для published prompt registry and render API.
+
 Короткая формула продукта:
 
 * `TextFoundry` превращает prompt engineering из набора разрозненных текстов в
@@ -157,6 +163,10 @@ AI-assisted функции:
 * Qt/QML GUI для основного сценария;
 * FTXUI TUI для базовых операций.
 
+Планируемое следующее направление:
+
+* `Prompt Server` как published prompt registry и сервер рендера.
+
 == Слайд 7. Что в инструменте особенного
 
 У `TextFoundry` есть несколько особенностей, которые редко встречаются вместе в
@@ -219,7 +229,9 @@ AI-assisted функции:
 * deterministic render отделён от AI assistance;
 * human-in-the-loop модель заложена в продукт;
 * compare, update, review и publish являются частью пользовательского процесса;
-* локальное storage и локальная библиотека артефактов встроены в систему.
+* локальное storage и локальная библиотека артефактов встроены в систему;
+* целевая серверная траектория включает prompt registry/render server, а не
+  только desktop authoring.
 
 Иначе говоря:
 
@@ -244,7 +256,8 @@ AI-assisted функции:
 * он лучше подходит для authoring and delivery workbench, чем для полной
   исследовательской платформы;
 * часть advanced evaluation и automation дисциплины ещё нужно развивать;
-* planned `Prompt Server` пока не реализован как runtime capability.
+* planned `Prompt Server` пока не реализован как runtime capability;
+* Python integration story пока не оформлена как готовый продуктовый слой.
 
 Поэтому `TextFoundry` не нужно позиционировать как "универсально лучше".
 Корректнее говорить так:
@@ -265,6 +278,13 @@ AI-assisted функции:
 * даёт контролируемый способ использовать AI без скрытых мутаций;
 * позволяет обсуждать prompt changes как версии и артефакты;
 * помогает отделить "черновое AI-предложение" от "утверждённой версии".
+
+Следующий уровень пользы, который открывает серверная траектория:
+
+* один и тот же prompt asset можно будет использовать не только в workbench, но
+  и в backend/runtime clients по API;
+* `TextFoundry` сможет выступать не только как editor, но и как prompt
+  registry/render platform.
 
 Для команды это означает:
 
@@ -313,6 +333,12 @@ AI-функций продукта.
 * возможность деградации без потери базовой функциональности;
 * меньший риск скрытого изменения артефактов.
 
+Следующий логический шаг этой архитектуры:
+
+* published assets должны стать доступными через отдельный `Prompt Server`;
+* server должен отдавать deterministic render и metadata published versions;
+* authoring и delivery должны остаться разными поверхностями.
+
 == Слайд 14. Что можно честно сказать про текущее состояние
 
 Продукт уже выглядит как рабочий authoring workbench, но не как полностью
@@ -330,7 +356,8 @@ AI-функций продукта.
 
 * зрелость evaluation-практик;
 * расширение интеграционного контура;
-* возможный prompt server;
+* prompt server как published prompt registry and render API;
+* Python client/bindings strategy;
 * более широкий operational story для командного использования.
 
 Это важный message для презентации:

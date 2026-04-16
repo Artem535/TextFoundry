@@ -4,20 +4,35 @@
 
 == 1. Цель и продуктовый контекст
 
-`Prompt Server` нужен как будущий delivery-side runtime для опубликованных
-prompt assets `TextFoundry`.
+`Prompt Server` нужен как будущий server-side runtime для опубликованных prompt
+assets `TextFoundry`.
+
+Его продуктовая роль шире, чем просто "удалённый рендер":
+
+* он должен стать published prompt registry;
+* он должен предоставлять deterministic resolve/render API;
+* он должен отделить authoring workbench от runtime consumption;
+* он должен дать командам способ использовать `TextFoundry` не только как
+  desktop tool, но и как инфраструктурный prompt layer.
 
 Проблема продукта:
 
-* внешние и внутренние клиенты не должны ходить напрямую в authoring workflow;
-* опубликованные assets требуют отдельной runtime boundary;
-* нужно отделить delivery consumption от локального GUI/TUI authoring.
+* внешние и внутренние клиенты не должны ходить напрямую в authoring workflow
+  или local storage;
+* опубликованные prompt assets требуют отдельной runtime boundary;
+* нужен способ получать render по `composition id + version + params`;
+* нужен registry-side контракт для published blocks and compositions;
+* есть продуктовая возможность закрыть часть сценариев, для которых сейчас
+  команды используют Langfuse-like prompt storage или самописные registry.
 
 Цель функции:
 
 * предоставить published-only runtime для resolve/render prompt assets;
+* сделать published prompt assets адресуемыми и доступными по API;
 * сохранить deterministic delivery contract;
-* не превратить сервер в удалённый редактор.
+* не превратить сервер в удалённый редактор;
+* создать server boundary, поверх которой позже можно строить Python SDK или
+  bindings-friendly client layer.
 
 == 2. Постановка проблемы
 
@@ -31,17 +46,26 @@ prompt assets `TextFoundry`.
 
 * нет выделенного delivery runtime;
 * published-only boundary пока не воплощена в отдельном сервисе;
-* есть риск смешать authoring и consumption semantics.
+* есть риск смешать authoring и consumption semantics;
+* нет внешнего API для published prompt registry;
+* downstream clients не могут стабильно запрашивать render как серверную
+  функцию;
+* продукт пока сильнее как workbench, чем как runtime platform.
 
 Почему эта функция относится к ML/LLM-контексту:
 
 * сервер обслуживает prompt assets для LLM use cases;
-* при этом сам базовый delivery contract должен оставаться deterministic.
+* он может стать альтернативой prompt-storage части Langfuse-like решений;
+* при этом сам базовый delivery contract должен оставаться deterministic, а не
+  зависеть от live model execution.
 
 == 3. Пользователи и сценарии
 
 Основные пользователи:
 
+* backend services, которым нужен published render;
+* Python-based clients и evaluation scripts;
+* agent runtimes и orchestration layers;
 * external/internal clients, consuming published prompt assets;
 * platform owner;
 * integrators, которым нужен read-only runtime contract.
@@ -50,8 +74,11 @@ prompt assets `TextFoundry`.
 
 * resolve composition by id and version;
 * render with runtime parameters;
-* consume published prompt library in read-only mode;
-* использовать published assets без доступа к drafts и authoring operations.
+* inspect available published assets and versions;
+* получать metadata о том, какие block versions вошли в render;
+* использовать published assets без доступа к drafts и authoring operations;
+* вызывать один и тот же published prompt из Python, backend и agent clients по
+  единому API.
 
 == 4. Область охвата и не-цели
 
@@ -61,7 +88,8 @@ prompt assets `TextFoundry`.
 * composition and block resolution;
 * deterministic render;
 * parameter validation;
-* delivery-side API boundary.
+* delivery-side API boundary;
+* prompt registry semantics для published assets.
 
 === Вне области охвата
 
@@ -69,29 +97,40 @@ prompt assets `TextFoundry`.
 * draft mutation;
 * publish/update/delete operations;
 * implicit AI rewrite;
-* выдача GUI-specific preview semantics как runtime contract.
+* выдача GUI-specific preview semantics как runtime contract;
+* observability platform уровня full Langfuse;
+* generic LLM gateway;
+* automatic provider routing as part of default server contract.
 
 == 5. Критерии успеха
 
 Capability будет считаться успешной, если:
 
 * клиенты смогут потреблять published assets без доступа к drafts;
+* published blocks and compositions будут адресуемыми как registry entities;
+* render будет вызываться как понятная серверная функция;
 * runtime behavior будет воспроизводимым;
-* граница между authoring и delivery останется чистой и понятной.
+* граница между authoring и delivery останется чистой и понятной;
+* downstream clients смогут использовать `TextFoundry` как prompt registry, а
+  не только как локальный editor.
 
 Качественные индикаторы:
 
 * published-only policy доказуема тестами и API shape;
 * server contract не требует знания внутренних authoring surfaces;
-* downstream clients не зависят от GUI/TUI semantics.
+* downstream clients не зависят от GUI/TUI semantics;
+* API позволяет безопасно строить Python client поверх того же server boundary.
 
 == 6. Функциональные требования
 
 Будущий сервис должен:
 
 * предоставлять published-only access;
+* адресовать blocks and compositions по identity и version;
 * уметь resolve-ить published assets по идентичности и версии;
 * выполнять deterministic render с runtime params;
+* возвращать metadata о resolved versions;
+* поддерживать server-side lookup published assets;
 * валидировать входные параметры;
 * возвращать понятные runtime errors;
 * не изменять authoring state.
@@ -104,7 +143,9 @@ Capability будет считаться успешной, если:
 * fail closed при недоступности published data;
 * не fallback-ить к draft data;
 * иметь более узкий и строгий контракт, чем authoring engine;
-* поддерживать ясную security boundary.
+* поддерживать ясную security boundary;
+* быть пригодным для использования из нескольких типов клиентов;
+* иметь version-aware compatibility policy.
 
 == 8. Ограничения и допущения
 
@@ -112,13 +153,17 @@ Capability будет считаться успешной, если:
 
 * capability пока не реализована;
 * storage model уже различает published и draft сущности;
-* будущая реализация не должна размывать существующие authoring boundaries.
+* будущая реализация не должна размывать существующие authoring boundaries;
+* `Prompt Server` не должен описываться как complete Langfuse replacement.
 
 Допущения:
 
 * published repositories и renderer останутся базой delivery runtime;
 * отдельный API слой будет добавлен позже;
-* operational, security и compatibility policy будут оформлены до реализации.
+* operational, security и compatibility policy будут оформлены до реализации;
+* Python bindings, если появятся, будут строиться либо как thin wrapper поверх
+  core engine, либо как client к server API, но не должны становиться причиной
+  размывания delivery boundary.
 
 == 9. Зависимости и заинтересованные стороны
 
@@ -128,13 +173,16 @@ Capability будет считаться успешной, если:
 * renderer;
 * parameter validation layer;
 * server API layer;
-* authn/authz and deployment decisions.
+* authn/authz and deployment decisions;
+* compatibility policy;
+* client SDK decisions.
 
 Заинтересованные стороны:
 
 * platform owner;
 * prompt authors;
 * downstream clients;
+* Python/runtime integrators;
 * security and operations owners.
 
 == 10. Критерии приёмки
@@ -142,12 +190,17 @@ Capability будет считаться успешной, если:
 Пилот будет считаться успешным, если:
 
 * published-only resolve/render contract работает на representative assets;
+* published registry endpoints позволяют получать versions and metadata;
 * draft data не попадают в server responses;
-* failure behavior понятен и безопасен.
+* failure behavior понятен и безопасен;
+* базовый Python or backend client может вызвать render без знания desktop
+  internals.
 
 Реализация будет считаться готовой к выпуску, если:
 
 * operational constraints формализованы;
 * security model определена;
 * compatibility policy согласована;
-* server не выполняет authoring mutations ни напрямую, ни косвенно.
+* server не выполняет authoring mutations ни напрямую, ни косвенно;
+* целевая роль как `published prompt registry + deterministic render API`
+  зафиксирована и отражена в API shape.

@@ -4,6 +4,12 @@
 versioning и deterministic rendering prompt assets, с optional AI-assisted
 workflow поверх того же core engine.
 
+При этом целевая архитектурная траектория уже шире:
+
+* workbench для authoring;
+* core engine для deterministic assembly;
+* future prompt server для published prompt registry and render delivery.
+
 == 1. System Summary
 
 Система разделена на пять крупных слоев:
@@ -13,6 +19,10 @@ workflow поверх того же core engine.
 * `textfoundry_ai` - OpenAI-compatible adapters и HTTP transport
 * `text_foundry_gui` - Qt/QML desktop authoring UI
 * `text_foundry_cli` - FTXUI terminal frontend
+
+Целевой следующий слой, пока не реализованный:
+
+* `prompt_server` - published-only registry/render runtime для downstream clients
 
 == 2. Architectural Boundary
 
@@ -74,7 +84,7 @@ Versioning встроен в core:
 
 Не реализовано, но описано в документации как future boundary:
 
-* prompt server
+* prompt server as published prompt registry and deterministic render API
 
 == 6. Storage and Session Model
 
@@ -89,6 +99,12 @@ Storage слой реализован через ObjectBox:
 * приложение ориентировано на local-first desktop usage
 * AI provider не имеет прямого доступа к storage
 * persistence mutation остается на стороне engine после review/apply
+
+В future server model:
+
+* published assets будут доступны через server boundary;
+* backend и Python clients смогут получать render без desktop workflow;
+* draft/published separation должна сохраниться и на сервере.
 
 == 7. AI Integration Model
 

@@ -7,6 +7,7 @@
 Будущий сервис:
 
 * будет обслуживать downstream consumers published prompts;
+* будет обслуживать published prompt registry lookups и deterministic render;
 * должен иметь высокую значимость для delivery-side клиентов;
 * не должен зависеть от draft authoring state.
 
@@ -32,6 +33,7 @@
 * repository access failures;
 * authn/authz failures;
 * render error spikes;
+* registry lookup failures;
 * нарушения published-only policy;
 * latency and availability of deterministic resolve/render.
 
@@ -43,7 +45,8 @@
 * invalid runtime parameter requests;
 * misconfigured access control;
 * accidental attempt to access draft data;
-* compatibility mismatch between clients and runtime contract.
+* compatibility mismatch between clients and runtime contract;
+* registry metadata endpoints inconsistent with render endpoints.
 
 == 5. Реакция на инцидент
 
@@ -51,8 +54,9 @@
 
 1. Проверить published repository connectivity.
 2. Проверить authn/authz rules.
-3. Проверить published-only access enforcement.
-4. Проверить deterministic render path on representative published assets.
+3. Проверить registry resolution for affected asset ids and versions.
+4. Проверить published-only access enforcement.
+5. Проверить deterministic render path on representative published assets.
 5. Убедиться, что нет fallback to draft data.
 
 == 6. Режимы деградации
@@ -72,9 +76,9 @@
 После восстановления необходимо:
 
 1. Восстановить доступ к published repository.
-2. Повторить deterministic render test cases.
+2. Повторить registry lookup and deterministic render test cases.
 3. Проверить, что draft data не видны через runtime API.
-4. Проверить representative client flows.
+4. Проверить representative client flows, включая Python/backend clients.
 
 == 8. Когда эскалировать
 

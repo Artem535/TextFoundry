@@ -5,12 +5,20 @@
 
 Назначение:
 
-* read-only дистрибуция published prompt assets
-* runtime resolution of compositions and parameters
-* отделение authoring от delivery
+* published prompt registry для блоков и композиций
+* deterministic render API для runtime-клиентов
+* read-only delivery boundary между authoring и consumption
+* основа для будущих Python clients, backend integrations и agent runtimes
 
 Фактический статус на April 16, 2026:
 
 * server runtime в `src/` отсутствует
 * отдельный UI для prompt server отсутствует
 * текущие desktop frontends работают напрямую с local engine и storage
+
+Целевая роль в продукте:
+
+* `TextFoundry Workbench` отвечает за authoring, review и publish
+* `Prompt Server` отвечает за published-only resolve/render
+* downstream clients получают prompt assets через API, а не через desktop
+  workflow

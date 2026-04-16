@@ -449,6 +449,7 @@
       <nav class="nav">
         <a href="#problem">Проблема</a>
         <a href="#workflow">Как работает</a>
+        <a href="#server">Сервер</a>
         <a href="#special">Что особенного</a>
         <a href="#dspy">Сравнение с DSPy</a>
         <a href="#value">Практическая польза</a>
@@ -465,7 +466,8 @@
           <p class="lead">
             <strong>TextFoundry</strong> — это desktop-first workbench для
             хранения, сборки, версионирования, просмотра и controlled
-            AI-assisted редактирования prompt-артефактов.
+            AI-assisted редактирования prompt-артефактов, с целевой траекторией
+            в сторону published prompt registry и deterministic render API.
           </p>
           <div class="hero-actions">
             <a class="btn btn-primary" href="#problem">Зачем это нужно</a>
@@ -482,8 +484,8 @@
             AI подключается только как явный слой помощи, а не как скрытое ядро.
           </div>
           <div class="hero-stat">
-            <strong>GUI + TUI</strong>
-            Продуктом можно пользоваться как рабочим интерфейсом, а не только как библиотекой.
+            <strong>Workbench + Server</strong>
+            Сегодня центр продукта — GUI/TUI workbench, а следующий слой — future Prompt Server для published delivery.
           </div>
         </aside>
       </div>
@@ -524,7 +526,8 @@
           <p>
             TextFoundry строится вокруг доменной модели, в которой prompt
             разбивается на переиспользуемые блоки, собирается в композиции и
-            рендерится детерминированно.
+            рендерится детерминированно. Следующий шаг этой модели — server-side
+            published registry и render delivery для внешних клиентов.
           </p>
           <div class="badge-row">
             <span class="badge">Block</span>
@@ -555,6 +558,36 @@
               Просмотреть результат и вручную принять или отклонить изменение.
             </div>
           </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="server">
+      <div class="shell grid-2">
+        <article class="panel">
+          <div class="kicker">Следующий шаг</div>
+          <h2>Prompt Server как published prompt registry</h2>
+          <p>
+            Целевая серверная траектория продукта — это не generic LLM gateway,
+            а published-only слой, который умеет адресовать версии блоков и
+            композиций, resolve-ить их и отдавать deterministic render по API.
+          </p>
+          <ul>
+            <li>Published blocks and compositions становятся server-side сущностями.</li>
+            <li>Backend и Python clients получают единый runtime contract.</li>
+            <li>Authoring и delivery остаются разными поверхностями.</li>
+            <li>Сервер не должен читать drafts и не должен становиться remote editor.</li>
+          </ul>
+        </article>
+        <article class="panel">
+          <div class="kicker">Позиционирование</div>
+          <h3>Где это может быть особенно полезно</h3>
+          <ul>
+            <li>Когда prompt assets нужно использовать из нескольких сервисов.</li>
+            <li>Когда нужен render по version-aware API, а не чтение markdown-файлов.</li>
+            <li>Когда команда хочет отделить authoring workbench от runtime consumption.</li>
+            <li>Когда нужен prompt registry/render layer вместо самописного prompt storage.</li>
+          </ul>
         </article>
       </div>
     </section>
@@ -640,6 +673,7 @@
                 <li>Controlled publishing и review-first workflow.</li>
                 <li>Deterministic render как отдельное ядро.</li>
                 <li>Локальная библиотека prompt assets как first-class объект.</li>
+                <li>Целевая серверная траектория: prompt registry и render API.</li>
               </ul>
             </div>
             <div class="compare-card dspy">
@@ -671,6 +705,7 @@
             <li>Упрощает сопровождение длинных system prompts.</li>
             <li>Позволяет контролируемо использовать AI как редакторский инструмент.</li>
             <li>Даёт основу для prompt governance, quality review и дальнейшей автоматизации.</li>
+            <li>В целевой траектории даёт общий server-side registry/render слой для нескольких клиентов.</li>
           </ul>
         </article>
         <article class="panel">
@@ -681,6 +716,7 @@
             <li>Продукт сильнее в authoring and delivery, чем в full-scale research automation.</li>
             <li>Часть operational и evaluation практик ещё развивается.</li>
             <li>Prompt Server описан как planned capability, но ещё не реализован в runtime.</li>
+            <li>Python client или bindings пока не оформлены как реализованный продуктовый слой.</li>
           </ul>
         </article>
       </div>

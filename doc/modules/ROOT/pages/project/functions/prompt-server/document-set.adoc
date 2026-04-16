@@ -24,7 +24,8 @@
 * published-only delivery boundary;
 * отсутствие authoring surface;
 * deterministic base contract;
-* planned status без ложных заявлений о runtime implementation.
+* planned status без ложных заявлений о runtime implementation;
+* роль сервера как prompt registry and render API.
 
 == 3. Текущие пробелы
 
@@ -33,7 +34,8 @@
 * нет final API shape;
 * нет deployment details;
 * нет authn/authz specifics;
-* нет executable runtime.
+* нет executable runtime;
+* не выбрана окончательная Python client/bindings strategy.
 
 == 4. Следующие обновления
 
@@ -42,7 +44,8 @@
 * convert placeholders to final contracts;
 * align service spec with deployment and security decisions;
 * обновить runbook и evaluation plan на реальные runtime properties;
-* при необходимости выделить отдельные ADR по authn/authz и compatibility.
+* при необходимости выделить отдельные ADR по authn/authz, compatibility и
+  Python integration strategy.
 
 == 5. Входящие зависимости
 
@@ -55,4 +58,5 @@
 На сегодня source of truth таков:
 
 * docs describe future boundary only;
-* codebase does not contain prompt-server executable or API handlers.
+* codebase does not contain prompt-server executable or API handlers;
+* Python bindings/client implementation для server runtime тоже отсутствуют.

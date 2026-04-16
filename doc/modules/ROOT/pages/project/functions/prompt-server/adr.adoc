@@ -5,8 +5,13 @@
 Статус: planned capability, runtime implementation на April 16, 2026 отсутствует.
 
 Назначение: зафиксировать архитектурную границу будущего `Prompt Server`,
-чтобы по мере развития проекта не смешать delivery runtime с authoring system и
-не превратить сервер в удалённый редактор.
+чтобы по мере развития проекта:
+
+* не смешать delivery runtime с authoring system;
+* не превратить сервер в удалённый редактор;
+* не свести сервер только к "ещё одному API над storage";
+* зафиксировать его как будущий `published prompt registry + deterministic
+  render API`.
 
 == 2. Контекст
 
@@ -21,7 +26,11 @@
 При этом у продукта есть естественная следующая потребность:
 
 * дать внешним или внутренним клиентам runtime-доступ к опубликованным prompt
-  assets без подключения к полному authoring workflow.
+  assets без подключения к полному authoring workflow;
+* дать backend- и Python-клиентам способ использовать published prompts без
+  desktop UI;
+* вынести published prompt consumption в отдельную серверную boundary;
+* дать продукту возможность расти из workbench в prompt delivery platform.
 
 Именно здесь возникает `Prompt Server` как planned capability.
 
@@ -31,7 +40,9 @@
 * читать draft-состояние;
 * вызывать publish/update методы;
 * наследовать UI-специфичную semantics;
-* становиться удалённым обходным путём в authoring system.
+* становиться удалённым обходным путём в authoring system;
+* или, наоборот, быть спроектирован слишком узко и оказаться лишь thin file API,
+  а не настоящим prompt registry/render layer.
 
 == 3. Проблема, которую нужно было решить
 
@@ -40,9 +51,13 @@
 
 * отдавал только опубликованные артефакты;
 * сохранял deterministic render contract;
+* адресовал prompt assets как versioned registry entities;
 * не получал полномочий редактора;
 * не ломал текущую модель разделения `Draft` / `Published`;
-* не тянул в runtime AI-authoring semantics из GUI.
+* не тянул в runtime AI-authoring semantics из GUI;
+* давал устойчивый server contract для downstream clients;
+* и в продуктовой перспективе мог закрывать часть сценариев, для которых сейчас
+  команды используют Langfuse-like prompt storage.
 
 Иначе проект легко скатывается в смешанную систему, где один и тот же runtime
 одновременно:
@@ -51,6 +66,13 @@
 * рендерит assets;
 * читает незафиксированные изменения;
 * отдаёт их клиентам как будто это production truth.
+
+Нужно было отдельно решить, чем именно должен быть будущий сервер:
+
+* generic LLM gateway;
+* remote authoring API;
+* thin asset download endpoint;
+* или published prompt registry с deterministic render contract.
 
 == 4. Рассмотренные варианты
 
@@ -76,7 +98,31 @@
 
 * отклонено.
 
-=== Вариант B. Разрешить серверу видеть и draft, и published данные
+=== Вариант B. Построить generic LLM gateway с prompt storage рядом
+
+Идея:
+сделать сервер прежде всего прокси или orchestration layer для вызова моделей,
+а prompt storage/render рассматривать как один из дополнительных сценариев.
+
+Плюсы:
+
+* кажется универсальнее;
+* звучит ближе к "AI platform";
+* можно в одном месте собирать model access и prompts.
+
+Минусы:
+
+* смещает центр тяжести с prompt assets на live model execution;
+* делает deterministic render вторичным;
+* смешивает prompt registry с provider gateway;
+* усложняет security, latency и compatibility story;
+* уводит продукт в другую категорию, чем исходный asset-centric workbench.
+
+Вердикт:
+
+* отклонено.
+
+=== Вариант C. Разрешить серверу видеть и draft, и published данные
 
 Идея:
 сервер может обслуживать "предпросмотр" и production из одного и того же
@@ -98,24 +144,34 @@ runtime, выбирая нужный режим флагами.
 
 * отклонено.
 
-=== Вариант C. Сделать `Prompt Server` отдельным published-only delivery runtime
+=== Вариант D. Сделать `Prompt Server` отдельным published-only registry and render runtime
 
 Идея:
 серверный слой читает только published assets, выполняет deterministic resolve
 и render, и не предоставляет authoring mutation endpoints.
+
+При этом сервер рассматривается не как "хранилище файлов", а как version-aware
+prompt registry:
+
+* published blocks and compositions являются адресуемыми сущностями;
+* клиенты могут получать metadata, versions и deterministic render;
+* API становится единым runtime boundary для backend-, Python- и agent-клиентов.
 
 Плюсы:
 
 * чистая граница между authoring и delivery;
 * проще безопасность и access model;
 * runtime contract понятнее для клиентов;
-* меньше риск, что сервер станет "скрытым редактором".
+* меньше риск, что сервер станет "скрытым редактором";
+* появляется естественная основа для Python clients и service integrations;
+* продукт получает шанс выйти в класс prompt registry/render systems.
 
 Минусы:
 
 * появляется отдельная эксплуатационная поверхность;
 * нужно продумать authn/authz, compatibility policy и release discipline;
-* часть удобных authoring-возможностей сознательно недоступна через сервер.
+* часть удобных authoring-возможностей сознательно недоступна через сервер;
+* observability story уровня full Langfuse остаётся вне базового scope.
 
 Вердикт:
 
@@ -123,14 +179,22 @@ runtime, выбирая нужный режим флагами.
 
 == 5. Принятое решение
 
-Принято решение рассматривать `Prompt Server` как отдельную delivery boundary
-со следующими базовыми правилами:
+Принято решение рассматривать `Prompt Server` как отдельную delivery boundary и
+future server product layer со следующими базовыми правилами:
 
 * сервер работает только с `Published` сущностями;
 * сервер не читает и не отдает `Draft`-состояние;
 * сервер не предоставляет authoring operations;
-* основной контракт сервера - deterministic resolve/render published assets;
+* основной контракт сервера - version-aware resolve/render published assets;
+* сервер выполняет роль published prompt registry;
 * сервер не должен наследовать GUI-specific preview semantics.
+
+Это означает, что в целевой архитектуре продукт будет состоять из трёх разных
+поверхностей:
+
+* workbench для authoring;
+* core engine для deterministic assembly;
+* prompt server для published delivery.
 
 Важно:
 это решение зафиксировано архитектурно уже сейчас, хотя самого runtime пока нет.
@@ -188,7 +252,27 @@ AI-orchestration service.
 
 Иначе клиент перестанет понимать, что именно является стабильным runtime output.
 
-=== 6.4. Server boundary не должен наследовать UI-preview semantics
+=== 6.4. Сервер должен быть prompt registry, а не только render endpoint
+
+Причина:
+клиентам нужен не только итоговый текст, но и адресуемый доступ к published
+prompt assets.
+
+Если оставить сервер только как `POST /render`, продукт теряет часть своей
+сильной стороны:
+
+* blocks and compositions перестают быть first-class runtime entities;
+* version history и identity становятся внутренней деталью;
+* downstream clients не могут явно опираться на published asset model.
+
+Поэтому базовый server layer должен уметь:
+
+* адресовать published blocks and compositions;
+* показывать доступные версии;
+* возвращать metadata resolved assets;
+* отдельно рендерить composition по стабильному contract.
+
+=== 6.5. Server boundary не должен наследовать UI-preview semantics
 
 Причина:
 в GUI есть authoring-oriented представления вроде:
@@ -206,7 +290,7 @@ AI-orchestration service.
 * зависеть от логики review-mode;
 * повторять stateful authoring semantics клиента.
 
-=== 6.5. Runtime API должен быть уже и строже authoring engine API
+=== 6.6. Runtime API должен быть уже и строже authoring engine API
 
 Причина:
 наружу следует выносить только тот контракт, который действительно нужен
@@ -214,6 +298,7 @@ AI-orchestration service.
 
 Минимально разумный набор:
 
+* inspect published blocks/compositions and versions;
 * resolve published composition/block;
 * render composition с runtime params;
 * валидировать входные параметры;
@@ -226,7 +311,31 @@ AI-orchestration service.
 * composition rewrite;
 * draft lifecycle operations.
 
-=== 6.6. Planned status тоже является архитектурным решением
+=== 6.7. Python bindings не должны диктовать форму server boundary
+
+Причина:
+Python integration выглядит полезной и, вероятно, действительно понадобится:
+
+* для evaluation scripts;
+* для backend use cases;
+* для orchestration frameworks;
+* для research-side integration.
+
+Но это не должно вести к неправильной ставке, где сервер или engine shape
+определяются только удобством прямого binding слоя.
+
+Правильный порядок:
+
+* сначала зафиксировать продуктовую и server boundary;
+* потом строить Python client или bindings как интеграционный слой поверх неё.
+
+Следствие:
+
+* Python важен как клиентская поверхность;
+* но `Prompt Server` проектируется исходя из prompt delivery model, а не исходя
+  из локального FFI-first мышления.
+
+=== 6.8. Planned status тоже является архитектурным решением
 
 Причина:
 важно не документировать несуществующую реализацию как уже имеющуюся.
@@ -247,20 +356,25 @@ AI-orchestration service.
 * security model проще и яснее;
 * клиентам проще объяснить, что сервер работает только с canonical published
   assets;
-* deterministic render contract можно перенести в runtime без UI-зависимостей.
+* deterministic render contract можно перенести в runtime без UI-зависимостей;
+* `TextFoundry` получает траекторию в сторону prompt registry/render platform;
+* появляется естественная основа для Python clients и backend consumption.
 
 Компромиссы:
 
 * сервер не сможет удовлетворить все "удобные" authoring-сценарии;
 * часть пользователей может захотеть больше функций, чем разумно давать через
   delivery API;
-* появится отдельный operational surface.
+* появится отдельный operational surface;
+* observability story уровня full Langfuse остаётся за пределами базового
+  server scope.
 
 Отрицательные:
 
 * нужна отдельная работа по authn/authz, compatibility и release policy;
 * planned capability придётся удерживать в документации синхронно с кодом,
-  пока реализация не появилась.
+  пока реализация не появилась;
+* реализация будет больше, чем "тонкий HTTP wrapper".
 
 == 8. Риски и меры снижения
 
@@ -287,6 +401,13 @@ AI-orchestration service.
 * считать generate/normalize/rewrite вне базового server contract;
 * документировать server как deterministic delivery layer.
 
+=== Риск: клиентская стратегия будет выбрана раньше, чем server model
+
+Снижение:
+
+* сначала зафиксировать server boundary;
+* Python client и bindings рассматривать как downstream integration.
+
 === Риск: документация создаст ложное впечатление, что сервер уже реализован
 
 Снижение:
@@ -303,7 +424,8 @@ AI-orchestration service.
 * multi-tenant policy в деталях;
 * кэширование и rate limiting;
 * способы аутентификации и авторизации;
-* схему remote observability.
+* схему remote observability;
+* окончательное решение по Python SDK или bindings.
 
 Эти вопросы должны быть оформлены позже, когда начнётся реальная реализация
 сервера.

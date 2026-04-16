@@ -8,10 +8,14 @@
 assets. Он должен отделить authoring system от runtime consumption и работать
 только с опубликованными данными, не наследуя draft или GUI-specific semantics.
 
+В целевом виде это не просто remote render endpoint, а `published prompt
+registry + deterministic render API`.
+
 == 2. Контекст и границы
 
 В области охвата:
 
+* published prompt registry;
 * read-only resolve/render API;
 * published-only access;
 * parameter validation;
@@ -25,12 +29,19 @@ assets. Он должен отделить authoring system от runtime consump
 * automatic semantic rewrite;
 * доступ к GUI review states и raw preview semantics.
 
+Смежные, но не базовые будущие клиенты:
+
+* Python client / SDK;
+* backend services;
+* agent runtimes.
+
 == 3. Архитектурные требования
 
 Будущий server boundary должен:
 
 * работать только с published repository view;
 * использовать deterministic render path как основной runtime contract;
+* делать blocks and compositions адресуемыми server entities;
 * не иметь mutation endpoints;
 * fail closed при недоступности published data;
 * не fallback-ить к draft state;
@@ -41,7 +52,7 @@ assets. Он должен отделить authoring system от runtime consump
 Планируемые компоненты:
 
 * server API layer
-  Внешний контракт для downstream clients.
+  Внешний контракт для registry lookups, resolve и render.
 
 * published repository access layer
   Читает только published assets.
@@ -54,6 +65,10 @@ assets. Он должен отделить authoring system от runtime consump
 
 * authn/authz layer
   Ограничивает доступ к delivery API.
+
+* future client SDK layer
+  Вне server runtime, но может включать Python client или thin bindings-friendly
+  wrapper.
 
 == 5. Базовый сценарий
 
@@ -69,13 +84,35 @@ flowchart LR
 
 Шаги:
 
-1. Клиент запрашивает published asset.
-2. Server resolve-ит composition/block через published repository.
-3. Выполняется parameter validation.
+1. Клиент запрашивает published composition, block или render.
+2. Server resolve-ит identity и version через published repository.
+3. Для render-запроса выполняется parameter validation.
 4. Renderer строит deterministic result.
-5. Server возвращает response клиенту.
+5. Server возвращает metadata и, если нужно, rendered text клиенту.
 
-== 6. Границы безопасности и доверия
+== 6. Целевые API-группы
+
+На уровне capability ожидаются три группы endpoint-ов:
+
+* registry endpoints
+  lookup published blocks/compositions, versions and metadata.
+
+* resolve endpoints
+  получить resolved composition view и входящие published dependencies.
+
+* render endpoints
+  получить deterministic rendered prompt с runtime params.
+
+На этом этапе не фиксируется окончательный transport, но shape контракта должен
+поддерживать примерно такие сценарии:
+
+* `GET /blocks/{id}`
+* `GET /compositions/{id}`
+* `GET /compositions/{id}/versions`
+* `POST /render`
+* `POST /resolve`
+
+== 7. Границы безопасности и доверия
 
 Ключевые правила:
 
@@ -84,7 +121,7 @@ flowchart LR
 * server не должен выполнять authoring-side AI workflows;
 * GUI-specific preview modes не являются частью delivery contract.
 
-== 7. Надёжность и деградация
+== 8. Надёжность и деградация
 
 При недоступности published repository:
 
@@ -99,16 +136,35 @@ flowchart LR
 * документация должна явно помечать capability как planned, а не как уже
   работающий сервис.
 
-== 8. Операционные свойства
+== 9. Сравнение с adjacent systems
+
+Этот server design ближе к `prompt registry/render service`, чем к:
+
+* generic LLM gateway;
+* observability platform;
+* remote authoring API.
+
+Поэтому его корректнее сравнивать с prompt-management частью Langfuse-like
+систем, а не с full tracing platform.
+
+Сильные стороны такого выбора:
+
+* сохраняется asset-centric модель;
+* версии и identity остаются first-class concepts;
+* deterministic render остаётся центральным runtime contract.
+
+== 10. Операционные свойства
 
 Ожидаемые свойства:
 
 * published-only policy;
 * deterministic rendering;
 * stricter runtime API surface;
-* отдельный operational surface по сравнению с GUI/TUI workbench.
+* отдельный operational surface по сравнению с GUI/TUI workbench;
+* возможность использовать один и тот же published prompt через несколько типов
+  клиентов.
 
-== 9. Связанные документы
+== 11. Связанные документы
 
 Upstream:
 

@@ -49,13 +49,22 @@ GUI использует `QtKeychain` для хранения API key:
 
 Пока не реализовано, но уже зафиксировано в function docs:
 
-* prompt server as published-only delivery boundary
+* prompt server as published-only prompt registry and render boundary
+* future Python client/bindings layer as downstream integration surface
 
 Это важно не смешивать с текущим desktop authoring runtime:
 
 * в текущем коде нет server API
 * нет remote published-only serving layer
 * нет authn/authz boundary для downstream clients
+* нет Python runtime package или bindings layer для engine/server consumption
+
+Целевая интеграционная модель:
+
+* workbench публикует versioned prompt assets;
+* prompt server отдает published assets и deterministic render;
+* Python/backend/agent clients обращаются к server boundary, а не к GUI/TUI
+  semantics напрямую.
 
 == 4. Integration Constraints
 
