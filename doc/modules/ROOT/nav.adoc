@@ -25,6 +25,7 @@
 *** xref:project/architecture/integrations.adoc[3.4. Интеграции]
 *** xref:project/architecture/prompt-server-sync-explainer.adoc[3.5. Как работает Prompt Server и синхронизация]
 *** xref:project/architecture/prompt-server-mvp-sync-strategy.adoc[3.6. Какую стратегию синхронизации выбрать для MVP]
+*** xref:project/architecture/runtime-surfaces-roadmap.adoc[3.7. Roadmap runtime surfaces и Prompt Server]
 ** xref:project/development/index.adoc[3. Командная и Разработка]
 *** xref:project/functions/index.adoc[3.1. Функции]
 **** xref:project/functions/block-generation/index.adoc[1. Function: Block Generation]

@@ -1,0 +1,275 @@
+= Roadmap: Runtime Surfaces и Prompt Server
+
+Этот документ нужен как единая дорожная карта по развитию `TextFoundry` из
+desktop workbench в multi-surface runtime platform.
+
+Он связывает три линии развития:
+
+* `C++ local` как canonical public local surface
+* `Python local` как first-class local bindings layer
+* `Prompt Server` и language-specific remote clients
+
+== 1. Цель roadmap
+
+Roadmap должен ответить на четыре вопроса:
+
+* в каком порядке развивать local и remote surfaces;
+* что является обязательной базой для следующего этапа;
+* что можно считать `MVP`, а что уже относится к более зрелой платформенной
+  стадии;
+* где проходит критический путь, а где можно вести работу параллельно.
+
+== 2. Исходная точка на April 16, 2026
+
+Что уже есть:
+
+* canonical implementation в `C++ engine`
+* desktop workbench поверх local engine
+* модель `Draft` / `Published`
+* deterministic render semantics
+* подробные docs по `Prompt Server` и `Runtime Surfaces`
+
+Чего ещё нет:
+
+* оформленного public `C++ local` SDK
+* `Python local` bindings
+* `Prompt Server` runtime
+* `C++ remote client`
+* `Python remote client`
+
+== 3. Принцип этапности
+
+Roadmap строится вокруг простой идеи:
+
+* сначала нужно стабилизировать `local semantic contract`;
+* потом можно безопасно расширять его на `Python local`;
+* только после этого стоит фиксировать first server runtime;
+* remote clients должны идти после server boundary, а не определять её заранее.
+
+Это снижает риск:
+
+* случайно спроектировать server под convenience bindings;
+* спутать authoring-capable и published-only boundary;
+* начать обещать parity до того, как определён supported subset.
+
+== 4. Этапы roadmap
+
+=== Фаза 0. Документальная фиксация
+
+Статус:
+
+* уже выполнена.
+
+Что вошло:
+
+* function-level набор `Runtime Surfaces`
+* function-level набор `Prompt Server`
+* matrix по `C++ local / Python local / C++ remote / Python remote`
+* explain-документы по sync strategy и MVP
+
+Результат:
+
+* тема перестала быть "одним длинным ADR";
+* архитектурная ставка и product scope теперь согласованы.
+
+=== Фаза 1. Public `C++ local` surface
+
+Цель:
+
+* выделить supported public local contract поверх существующего engine.
+
+Ключевые работы:
+
+* определить, какие engine operations входят в public supported set;
+* отделить public contract от GUI-oriented helper paths;
+* описать compatibility expectations;
+* подготовить golden fixtures для render/version/error semantics.
+
+Критерий завершения:
+
+* есть понятный public `C++ local` contract, пригодный для parity baseline.
+
+=== Фаза 2. `Python local` MVP
+
+Цель:
+
+* сделать `Python` first-class local surface поверх того же semantic contract.
+
+Ключевые работы:
+
+* выбрать binding technology;
+* отразить supported local subset в `Python`;
+* проверить local parity по golden fixtures;
+* описать packaging/distribution story.
+
+Критерий завершения:
+
+* `Python local` покрывает agreed local subset без semantic drift.
+
+=== Фаза 3. `Prompt Server` MVP
+
+Цель:
+
+* реализовать published-only remote boundary.
+
+Ключевые работы:
+
+* выбрать first server topology;
+* реализовать registry/resolve/render path;
+* закрепить published-only policy тестами;
+* оформить authn/authz и compatibility policy в минимально достаточном виде.
+
+Критерий завершения:
+
+* server умеет published-only `registry + resolve + render`.
+
+=== Фаза 4. `C++ remote` и `Python remote`
+
+Цель:
+
+* сделать оба языка first-class remote consumers одного server contract.
+
+Ключевые работы:
+
+* реализовать typed client для `C++`;
+* реализовать idiomatic client для `Python`;
+* проверить remote parity;
+* формализовать compatibility matrix client/server.
+
+Критерий завершения:
+
+* обе remote surfaces покрывают один и тот же supported remote contract.
+
+=== Фаза 5. Platform hardening
+
+Цель:
+
+* перевести capability из MVP-состояния в устойчивый platform layer.
+
+Ключевые работы:
+
+* hardening release process;
+* расширение regression suite;
+* улучшение deployment/runtime story;
+* observability, incident handling и compatibility governance.
+
+Критерий завершения:
+
+* продукт пригоден не только для первого пилота, но и для повторяемой
+  эксплуатации.
+
+== 5. Критический путь
+
+Критический путь выглядит так:
+
+1. `Runtime Surfaces` docs
+2. public `C++ local` contract
+3. `Python local` MVP
+4. `Prompt Server` MVP
+5. `C++ remote` и `Python remote`
+
+Почему именно так:
+
+* без local contract непонятно, что именно должно быть parity baseline;
+* без `Prompt Server` нет remote boundary;
+* remote clients не должны диктовать форму server contract.
+
+Параллельно можно вести:
+
+* evaluation fixtures;
+* compatibility policy draft;
+* packaging research;
+* deployment research;
+* security review preparation.
+
+== 6. Рекомендуемая MVP-граница
+
+Если резать scope жёстко, то MVP стоит считать достигнутым в точке, где есть:
+
+* public `C++ local` surface
+* `Python local` MVP
+* published-only `Prompt Server`
+* один минимальный remote client, лучше `Python remote`
+
+Если хочется более симметричного MVP, то можно считать MVP завершённым только
+при наличии:
+
+* `C++ remote`
+* `Python remote`
+
+Но это уже более тяжёлый и менее быстрый первый релиз.
+
+== 7. Mermaid Gantt
+
+[mermaid]
+....
+gantt
+    title TextFoundry Runtime Platform Roadmap
+    dateFormat  YYYY-MM-DD
+    axisFormat  %b %Y
+
+    section Foundation
+    Документальная фиксация                 :done, phase0, 2026-03-20, 2026-04-16
+    Public C++ local surface               :crit, phase1, 2026-04-20, 2026-06-05
+    Local parity fixtures                  :phase1b, 2026-05-01, 2026-06-15
+
+    section Local Multi-language
+    Python local MVP                       :crit, phase2, 2026-06-08, 2026-07-31
+    Packaging and distribution draft       :phase2b, 2026-06-22, 2026-07-20
+
+    section Server
+    Prompt Server MVP design freeze        :crit, phase3a, 2026-06-15, 2026-07-05
+    Prompt Server MVP implementation       :crit, phase3b, 2026-07-06, 2026-09-01
+    Server auth and compatibility baseline :phase3c, 2026-07-20, 2026-08-25
+
+    section Remote Clients
+    Python remote client MVP               :crit, phase4a, 2026-09-02, 2026-09-30
+    C++ remote client MVP                  :phase4b, 2026-09-09, 2026-10-15
+    Remote parity review                   :crit, phase4c, 2026-10-01, 2026-10-25
+
+    section Hardening
+    Platform hardening                     :phase5, 2026-10-26, 2026-12-10
+    Release readiness review               :milestone, phase5m, 2026-12-10, 1d
+....
+
+== 8. Карта зависимостей
+
+[mermaid]
+....
+flowchart LR
+    A["Docs and semantic baseline"]
+    B["Public C++ local surface"]
+    C["Python local MVP"]
+    D["Prompt Server MVP"]
+    E["Python remote client"]
+    F["C++ remote client"]
+    G["Remote parity review"]
+    H["Platform hardening"]
+
+    A --> B
+    B --> C
+    B --> D
+    C --> D
+    D --> E
+    D --> F
+    E --> G
+    F --> G
+    G --> H
+....
+
+== 9. Основные риски roadmap
+
+* слишком рано начать server implementation без stabilizing `C++ local` contract
+* выбрать binding strategy до фиксации supported local subset
+* смешать rollout `Python local` и `Python remote`
+* сделать server authoring-capable раньше, чем доказан published-only MVP
+* не выделить ownership на parity review
+
+== 10. Что обновлять вместе с roadmap
+
+При изменении этой дорожной карты нужно синхронно обновлять:
+
+* xref:project/functions/runtime-surfaces/delivery-plan.adoc[Runtime Surfaces Delivery Plan]
+* xref:project/functions/prompt-server/delivery-plan.adoc[Prompt Server Delivery Plan]
+* xref:project/architecture/prompt-server-mvp-sync-strategy.adoc[Prompt Server MVP Sync Strategy]
+* xref:project/architecture/runtime-surface-capability-matrix.adoc[Runtime Surface Capability Matrix]
