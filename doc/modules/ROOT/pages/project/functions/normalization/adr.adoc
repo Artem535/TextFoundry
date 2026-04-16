@@ -1,39 +1,277 @@
 = Normalization ADR
 
-== 1. Context
+== 1. Статус и назначение документа
 
-Нужно зафиксировать, почему semantic rewrite остаётся отдельным explicit слоем,
-а не частью базового renderer.
+Статус: принят и отражает текущую реализованную архитектуру.
 
-== 2. Alternatives Considered
+Назначение: зафиксировать, почему semantic normalization в `TextFoundry`
+существует как отдельный explicit AI-layer поверх deterministic core, а не как
+часть обычного render path.
 
-* automatic normalization during render
-* hidden rewrite inside style application
-* provider-specific normalization only in GUI
+== 2. Контекст
 
-== 3. Decision
+В продукте есть как минимум два сценария нормализации:
 
-Текущее решение:
+* нормализация уже собранного raw text snapshot на экране render-preview;
+* нормализация целой композиции с выпуском производной композиции и производных
+  блоков.
 
-* semantic rewrite вынесен в explicit workflow
-* `SemanticStyle` не означает automatic transformation
-* engine проверяет наличие configured normalizer перед вызовом
+Оба сценария используют AI, но оба должны сохранить базовые свойства системы:
 
-== 4. Chosen Architecture Slice
+* render остаётся детерминированным;
+* canonical артефакты можно воспроизвести;
+* placeholders не должны ломаться;
+* AI-переписывание не должно скрытно менять опубликованные исходники.
 
-* deterministic render path remains separate
-* normalizer accessed through engine contracts
-* UI initiates normalization explicitly
+Это означает, что normalization нельзя считать просто "ещё одним стилем
+рендеринга".
 
-== 5. Consequences
+== 3. Проблема, которую нужно было решить
 
-* базовый core remains reproducible
-* normalization can be disabled safely
-* users must manage explicit review of rewritten output
+Нужно было дать пользователю способ получить более гладкий, стилистически
+настроенный текст, не разрушив при этом архитектуру библиотеки блоков и
+композиций.
 
-== 6. Risks and Mitigations
+Главные противоречия:
 
-* risk: users expect automatic style application
-  mitigation: keep explicit naming and UI affordances
-* risk: semantic drift
-  mitigation: reviewable output and evaluation corpus
+* пользователю хочется "улучшенный" текст;
+* системе нужна воспроизводимость базового render;
+* производные AI-артефакты нельзя путать с canonical source assets;
+* block-level rewrites должны сохранять placeholders и структуру.
+
+== 4. Рассмотренные варианты
+
+=== Вариант A. Автоматически применять normalization во время render
+
+Идея:
+любой render сразу проходит через normalizer и пользователь видит только
+"улучшенный" итог.
+
+Плюсы:
+
+* меньше ручных действий;
+* итоговый текст может выглядеть более polished.
+
+Минусы:
+
+* теряется воспроизводимость deterministic render как базового контракта;
+* наличие AI начинает влиять на основной runtime output;
+* сложнее тестировать, объяснять и отлаживать render behavior;
+* сбои normalizer начинают ломать обычный render.
+
+Вердикт:
+
+* отклонено.
+
+=== Вариант B. Оставить normalization только в GUI как косметическую функцию
+
+Идея:
+не давать engine отдельного контракта, а делать переписывание текста только на
+стороне UI.
+
+Плюсы:
+
+* меньше изменений в core API;
+* проще начать с одного экрана.
+
+Минусы:
+
+* логика становится недоступной для других клиентов;
+* composition-level normalization не может быть единообразно реализована;
+* core теряет контроль над invariants, например по placeholders.
+
+Вердикт:
+
+* отклонено.
+
+=== Вариант C. Сохранить deterministic core и вынести normalization в explicit service layer
+
+Идея:
+render остаётся отдельным процессом, а semantic rewrite вызывается только по
+явному действию пользователя через `INormalizer` и `IBlockNormalizer`.
+
+Плюсы:
+
+* базовый контур остаётся воспроизводимым;
+* normalization можно включать и выключать независимо;
+* composition-level derivation можно реализовать с guardrails;
+* UI может явно показывать, где deterministic output, а где AI-derived result.
+
+Минусы:
+
+* больше состояний и терминов в UX;
+* пользователю нужно понимать разницу между исходным и нормализованным.
+
+Вердикт:
+
+* выбранный вариант.
+
+== 5. Принятое решение
+
+Принято следующее решение:
+
+* `Normalize(text, style)` остаётся отдельной, явной AI-операцией;
+* `NormalizeComposition(...)` создаёт производные артефакты, а не изменяет
+  исходную композицию на месте;
+* block-level normalization идёт через отдельный контракт `IBlockNormalizer`;
+* placeholders и param schema защищаются на стороне engine;
+* normalized assets должны быть отличимы от исходных по идентичности и тегам.
+
+== 6. Детализация принятого решения
+
+=== 6.1. Нормализация текста и нормализация блоков разделены на уровне интерфейсов
+
+Причина:
+переписать произвольный текст и переписать шаблон блока с placeholders - это
+разные по риску операции.
+
+Поэтому в engine есть:
+
+* `INormalizer` для текста;
+* `IBlockNormalizer` для block templates;
+* отдельные запросы и результаты для composition derivation.
+
+Это позволяет накладывать разные гарантии на разные типы артефактов.
+
+=== 6.2. Render output не равен normalized output
+
+Причина:
+deterministic render является каноническим runtime truth, а normalization -
+только производным представлением.
+
+Именно поэтому:
+
+* на `RenderViewModel` есть отдельный explicit action `Normalize`;
+* normalized text строится из текущего raw snapshot;
+* при изменении source snapshot normalized result помечается как устаревший;
+* normalizer не вызывается автоматически во время render.
+
+Это фундаментальная граница, которую нельзя размывать.
+
+=== 6.3. Composition normalization создаёт производные блоки и производную композицию
+
+Причина:
+если переписывать существующие блоки и композиции на месте, исходный asset
+теряет воспроизводимость, а AI-derived changes начинают подменять canonical
+source.
+
+Поэтому `NormalizeComposition(...)`:
+
+* загружает исходную композицию;
+* строит derived composition id;
+* для каждого block ref создаёт или переиспользует производный normalzed block;
+* публикует новую derived composition;
+* возвращает список переписанных блоков.
+
+Это оформляет normalization как derivation workflow, а не как inplace-mutation.
+
+=== 6.4. Reuse cached normalized blocks является сознательным решением
+
+Причина:
+одинаковая semantic style и один и тот же normalizer fingerprint должны давать
+возможность повторно использовать уже созданные производные артефакты.
+
+В коде это фиксируется через:
+
+* derived ids;
+* fingerprint normalizer;
+* normalization key;
+* специальные теги у производных блоков.
+
+Следствие:
+мы получаем кэшируемость и снижение стоимости повторной нормализации, не
+теряя трассируемость происхождения артефакта.
+
+=== 6.5. Placeholder preservation проверяется в engine, а не доверяется модели
+
+Причина:
+для block template структурная целостность важнее, чем stylistic polish.
+
+После block normalization engine сравнивает множества placeholders исходного и
+нормализованного шаблона. Если обязательные placeholders изменились, операция
+отклоняется.
+
+Это одно из ключевых решений ADR:
+semantic rewrite допустим только пока он не ломает executable contract блока.
+
+=== 6.6. Static text normalization в композиции сделана опциональной
+
+Причина:
+статический текст между блоками может быть полезно переписывать, но это не
+всегда желательно и не всегда безопасно делать по умолчанию.
+
+Поэтому в `CompositionNormalizationRequest` есть отдельный флаг
+`normalize_static_text`.
+
+Это удерживает поведение консервативным и объяснимым.
+
+== 7. Последствия решения
+
+Положительные:
+
+* deterministic core остаётся чистым;
+* normalizer можно безопасно отключить;
+* composition normalization не уничтожает исходные артефакты;
+* placeholders защищены от semantic drift;
+* derived assets можно кэшировать и переиспользовать.
+
+Компромиссы:
+
+* в системе появляется больше сущностей: source, normalized derivative, style;
+* UX требует явных объяснений про устаревание normalized preview;
+* engine-логика derivation и reuse заметно сложнее.
+
+Отрицательные:
+
+* качество результата зависит от внешнего AI;
+* возможны stylistic improvements, которые пользователь не захочет принимать;
+* storage пополняется производными артефактами, которыми тоже нужно управлять.
+
+== 8. Риски и меры снижения
+
+=== Риск: пользователь перепутает normalized output с canonical render result
+
+Снижение:
+
+* отдельные preview modes;
+* explicit normalize action;
+* stale-state markers;
+* документация о различии между `Rendered` и `Normalized`.
+
+=== Риск: model rewrite сломает placeholders
+
+Снижение:
+
+* placeholder set validation в engine;
+* отдельный `IBlockNormalizer` вместо общего text-only rewrite.
+
+=== Риск: normalization начнёт скрытно менять source assets
+
+Снижение:
+
+* composition normalization публикует derived assets;
+* source composition и source blocks не перезаписываются.
+
+=== Риск: повторная нормализация будет плодить дубликаты
+
+Снижение:
+
+* fingerprint;
+* normalization key tags;
+* reuse cached blocks/compositions.
+
+== 9. Что сознательно не покрывается
+
+Данный ADR не фиксирует:
+
+* автоматический merge normalized changes обратно в исходные блоки;
+* тонкую policy-логику выбора style presets;
+* server-side normalization runtime для внешних клиентов;
+* сложный quality ranking между несколькими вариантами normalization.
+
+== 10. Связанные документы
+
+* xref:project/functions/normalization/prd.adoc[PRD]
+* xref:project/functions/normalization/system-design.adoc[System Design]
+* xref:project/functions/normalization/service-spec.adoc[Service Spec]
+* xref:project/functions/render-preview/adr.adoc[Render Preview ADR]

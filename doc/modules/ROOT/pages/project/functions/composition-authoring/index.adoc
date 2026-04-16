@@ -1,0 +1,34 @@
+= Composition Authoring
+
+Функция отвечает за создание, просмотр, редактирование, версионирование и
+снятие с использования композиций в настольном интерфейсе `TextFoundry`.
+
+Текущее состояние:
+
+* реализована в `CompositionsViewModel`, `CompositionEditorViewModel`,
+  `CompositionsPage.qml`, `CompositionEditorWindow.qml` и `tf::Engine`
+* поддерживает список композиций, поиск, список версий и подробности выбранной
+  композиции
+* использует отдельный редактор композиции с боковой панелью и рабочей
+  областью фрагментов
+* позволяет собирать композицию из ссылок на блоки, статического текста и
+  разделителей
+* поддерживает перестановку фрагментов, вставку, вырезание, вставку из буфера и
+  очистку разделителей
+* сохраняет композицию как новую опубликованную версию, а не перезаписывает
+  старую
+* не выполняет автоматическое изменение опубликованной композиции без явного
+  действия пользователя
+
+Зависимости сверху:
+
+* xref:project/architecture/system/hld.adoc[High-Level Design]
+* xref:project/architecture/ui-ux.adoc[UI/UX]
+* xref:project/functions/block-authoring/index.adoc[Block Authoring]
+
+Зависимые документы:
+
+* xref:project/functions/composition-authoring/system-design.adoc[System Design]
+* xref:project/functions/composition-authoring/adr.adoc[ADR]
+* xref:project/functions/composition-authoring/service-spec.adoc[Service Spec]
+* xref:project/functions/composition-authoring/document-set.adoc[Document Set]

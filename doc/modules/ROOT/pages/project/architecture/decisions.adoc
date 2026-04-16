@@ -2,7 +2,11 @@
 
 Раздел предназначен под Architecture Decision Records.
 
-Основной кандидат на наполнение:
+Зафиксированные решения:
+
+* xref:project/architecture/adr-build-vs-dspy.adoc[Почему TextFoundry сделан как самостоятельный продукт, а не как решение на базе DSPy]
+
+Основной кандидат на дальнейшее наполнение:
 
 * результат skill `ml-llm-adr`
 

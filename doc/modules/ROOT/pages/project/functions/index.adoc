@@ -35,6 +35,7 @@
 * xref:project/functions/normalization/index.adoc[Normalization]
 * xref:project/functions/composition-rewrite/index.adoc[Composition Rewrite]
 * xref:project/functions/block-authoring/index.adoc[Block Authoring]
+* xref:project/functions/composition-authoring/index.adoc[Composition Authoring]
 * xref:project/functions/render-preview/index.adoc[Render Preview]
 * xref:project/functions/prompt-server/index.adoc[Prompt Server]
 
@@ -52,6 +53,7 @@
 * `Normalization` - реализована в engine и GUI
 * `Composition Rewrite` - реализована в engine и GUI
 * `Block Authoring` - реализована в engine и GUI
+* `Composition Authoring` - реализована в engine и GUI
 * `Render Preview` - реализована в engine и GUI
 * `Prompt Server` - только planned boundary, без runtime implementation
 

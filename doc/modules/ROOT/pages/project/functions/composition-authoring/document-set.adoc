@@ -1,0 +1,42 @@
+= Composition Authoring Document Set
+
+== 1. Сводка покрытия
+
+Набор документов покрывает:
+
+* продуктовую цель работы с композициями
+* архитектуру редактора структуры
+* ключевое решение о работе через фрагменты и новые версии
+* контракт данных и действий пользователя
+* операционные и защитные ограничения
+
+== 2. Сквозные пробелы
+
+Что ещё можно усилить:
+
+* расширенный набор контрольных сценариев на перестановку фрагментов
+* отдельные проверки на сложные композиции с большим числом ссылок
+* более плотную увязку с будущими документами по сопровождению композиций
+
+== 3. Следующие обновления
+
+* связать набор с будущим набором по `composition-maintenance`
+* уточнить словарь терминов по видам фрагментов
+* синхронизировать с документами нормализации и переписывания
+
+== 4. Зависимости сверху
+
+* xref:project/architecture/system/hld.adoc[High-Level Design]
+* xref:project/architecture/ui-ux.adoc[UI/UX]
+* xref:project/functions/block-authoring/index.adoc[Block Authoring]
+* xref:project/functions/composition-authoring/prd.adoc[PRD]
+
+== 5. Источники истины в коде
+
+* `src/text_foundry_gui/viewmodels/composition_editor_view_model.*`
+* `src/text_foundry_gui/viewmodels/compositions_view_model.*`
+* `src/text_foundry_gui/qml/components/CompositionEditorWindow.qml`
+* `src/text_foundry_gui/qml/components/CompositionEditorSidebar.qml`
+* `src/text_foundry_gui/qml/pages/CompositionsPage.qml`
+* `src/textfoundry_engine/tf/composition.h`
+* `src/textfoundry_engine/tf/engine.cc`
