@@ -11,6 +11,20 @@ npm run docs:build
 
 The generated site is written to `public/`.
 
+== GitLab Pages
+
+The repository already contains a `pages` job in `.gitlab-ci.yml`.
+
+On the default branch this job:
+
+* installs Node dependencies;
+* runs `npm run docs:build`;
+* publishes the generated `public/` directory to GitLab Pages.
+
+Standalone HTML assets placed under `doc/modules/ROOT/assets/attachments/`
+become part of the published site as static files and can be linked from Antora
+pages.
+
 == Structure
 
 * `doc/antora.yml` — Antora component descriptor
