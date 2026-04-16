@@ -1,32 +1,316 @@
 = Prompt Server ADR
 
-== 1. Context
+== 1. Статус и назначение документа
 
-Prompt Server остаётся planned capability, но его architectural boundary уже
-нужно фиксировать, чтобы он не смешался с authoring surfaces.
+Статус: planned capability, runtime implementation на April 16, 2026 отсутствует.
 
-== 2. Alternatives Considered
+Назначение: зафиксировать архитектурную границу будущего `Prompt Server`,
+чтобы по мере развития проекта не смешать delivery runtime с authoring system и
+не превратить сервер в удалённый редактор.
 
-* expose authoring engine directly to clients
-* allow server access to drafts
-* embed server behavior into GUI/runtime clients separately
+== 2. Контекст
 
-== 3. Decision
+В текущем состоянии `TextFoundry` уже умеет:
 
-Уже зафиксированные архитектурные решения:
+* хранить блоки и композиции с версиями;
+* публиковать их как canonical assets;
+* детерминированно рендерить композиции;
+* использовать GUI и TUI как authoring surfaces;
+* поверх authoring-ядра вызывать optional AI workflows.
 
-* server planned как отдельная граница, а не как часть GUI
-* доступ только к published сущностям
-* server не должен становиться authoring surface
+При этом у продукта есть естественная следующая потребность:
 
-== 4. Chosen Architecture Slice
+* дать внешним или внутренним клиентам runtime-доступ к опубликованным prompt
+  assets без подключения к полному authoring workflow.
 
-* runtime API over published assets
-* repository access restricted by published-only policy
-* deterministic render path in delivery runtime
+Именно здесь возникает `Prompt Server` как planned capability.
 
-== 5. Consequences
+Ключевая опасность на этом этапе:
+если не зафиксировать границу заранее, сервер может начать:
 
-* cleaner separation between authoring and delivery
-* additional operational surface to maintain
-* stronger need for authn/authz and compatibility policy
+* читать draft-состояние;
+* вызывать publish/update методы;
+* наследовать UI-специфичную semantics;
+* становиться удалённым обходным путём в authoring system.
+
+== 3. Проблема, которую нужно было решить
+
+Нужно было определить, каким должен быть серверный delivery boundary для
+`TextFoundry`, чтобы он:
+
+* отдавал только опубликованные артефакты;
+* сохранял deterministic render contract;
+* не получал полномочий редактора;
+* не ломал текущую модель разделения `Draft` / `Published`;
+* не тянул в runtime AI-authoring semantics из GUI.
+
+Иначе проект легко скатывается в смешанную систему, где один и тот же runtime
+одновременно:
+
+* редактирует assets;
+* рендерит assets;
+* читает незафиксированные изменения;
+* отдаёт их клиентам как будто это production truth.
+
+== 4. Рассмотренные варианты
+
+=== Вариант A. Дать клиентам прямой доступ к authoring engine
+
+Идея:
+не делать отдельный серверный boundary, а просто открыть текущий engine наружу.
+
+Плюсы:
+
+* быстро начать;
+* меньше нового кода на первом этапе;
+* можно переиспользовать существующие методы.
+
+Минусы:
+
+* наружу утекает authoring surface;
+* становится трудно гарантировать published-only access;
+* возрастает риск несанкционированных мутаций;
+* клиенты начинают зависеть от внутренних authoring API.
+
+Вердикт:
+
+* отклонено.
+
+=== Вариант B. Разрешить серверу видеть и draft, и published данные
+
+Идея:
+сервер может обслуживать "предпросмотр" и production из одного и того же
+runtime, выбирая нужный режим флагами.
+
+Плюсы:
+
+* гибкость;
+* один runtime для разных сценариев.
+
+Минусы:
+
+* размывается trust boundary;
+* draft accidentally becomes externally visible;
+* операционная модель усложняется сильнее, чем выигрывает;
+* аудит доступа и инцидентов становится хуже.
+
+Вердикт:
+
+* отклонено.
+
+=== Вариант C. Сделать `Prompt Server` отдельным published-only delivery runtime
+
+Идея:
+серверный слой читает только published assets, выполняет deterministic resolve
+и render, и не предоставляет authoring mutation endpoints.
+
+Плюсы:
+
+* чистая граница между authoring и delivery;
+* проще безопасность и access model;
+* runtime contract понятнее для клиентов;
+* меньше риск, что сервер станет "скрытым редактором".
+
+Минусы:
+
+* появляется отдельная эксплуатационная поверхность;
+* нужно продумать authn/authz, compatibility policy и release discipline;
+* часть удобных authoring-возможностей сознательно недоступна через сервер.
+
+Вердикт:
+
+* выбранный вариант.
+
+== 5. Принятое решение
+
+Принято решение рассматривать `Prompt Server` как отдельную delivery boundary
+со следующими базовыми правилами:
+
+* сервер работает только с `Published` сущностями;
+* сервер не читает и не отдает `Draft`-состояние;
+* сервер не предоставляет authoring operations;
+* основной контракт сервера - deterministic resolve/render published assets;
+* сервер не должен наследовать GUI-specific preview semantics.
+
+Важно:
+это решение зафиксировано архитектурно уже сейчас, хотя самого runtime пока нет.
+
+== 6. Детализация принятого решения
+
+=== 6.1. `Prompt Server` не является authoring surface
+
+Причина:
+в проекте уже есть явные authoring surfaces:
+
+* Qt GUI;
+* TUI;
+* локальный engine в составе workbench.
+
+Сервер нужен для доставки и исполнения опубликованных assets, а не для
+редактирования библиотеки.
+
+Следствие:
+
+* сервер не должен иметь `publish`, `update`, `delete`, `deprecate` endpoints;
+* draft editing и AI-assistance остаются вне server boundary.
+
+=== 6.2. Published-only access является основным trust boundary
+
+Причина:
+в `TextFoundry` опубликованные сущности и рабочие черновики имеют разный статус
+доверия.
+
+Published assets:
+
+* прошли authoring workflow;
+* имеют versioned identity;
+* являются canonical source для доставки.
+
+Draft data:
+
+* может быть неполным;
+* может содержать непроверенные изменения;
+* не должно утекать в delivery runtime.
+
+Поэтому серверный слой обязан работать только с published storage view.
+
+=== 6.3. Базовый server contract должен оставаться deterministic
+
+Причина:
+сервер нужен прежде всего как runtime-доставка артефактов, а не как
+AI-orchestration service.
+
+Это означает:
+
+* основой сервера должен быть существующий deterministic render path;
+* structural style и parameter validation допустимы;
+* implicit AI rewrite не должен быть частью базового delivery contract.
+
+Иначе клиент перестанет понимать, что именно является стабильным runtime output.
+
+=== 6.4. Server boundary не должен наследовать UI-preview semantics
+
+Причина:
+в GUI есть authoring-oriented представления вроде:
+
+* raw preview;
+* normalized preview;
+* stale-state markers;
+* form-specific editing context.
+
+Это полезно в workbench, но не должно автоматически переноситься в delivery API.
+
+Сервер не должен:
+
+* отдавать GUI-specific raw snapshot как production contract;
+* зависеть от логики review-mode;
+* повторять stateful authoring semantics клиента.
+
+=== 6.5. Runtime API должен быть уже и строже authoring engine API
+
+Причина:
+наружу следует выносить только тот контракт, который действительно нужен
+потребителям published prompt assets.
+
+Минимально разумный набор:
+
+* resolve published composition/block;
+* render composition с runtime params;
+* валидировать входные параметры;
+* возвращать deterministic result и понятные ошибки.
+
+Не следует по умолчанию выносить:
+
+* генерацию блоков;
+* normalization;
+* composition rewrite;
+* draft lifecycle operations.
+
+=== 6.6. Planned status тоже является архитектурным решением
+
+Причина:
+важно не документировать несуществующую реализацию как уже имеющуюся.
+
+Поэтому в документации прямо фиксируется:
+
+* capability входит в целевую архитектуру;
+* runtime implementation пока отсутствует;
+* ADR описывает boundary и ограничения, а не текущий работающий сервис.
+
+Это защищает документацию от ложных утверждений и преждевременных обещаний.
+
+== 7. Последствия решения
+
+Положительные:
+
+* разделение authoring и delivery остаётся чистым;
+* security model проще и яснее;
+* клиентам проще объяснить, что сервер работает только с canonical published
+  assets;
+* deterministic render contract можно перенести в runtime без UI-зависимостей.
+
+Компромиссы:
+
+* сервер не сможет удовлетворить все "удобные" authoring-сценарии;
+* часть пользователей может захотеть больше функций, чем разумно давать через
+  delivery API;
+* появится отдельный operational surface.
+
+Отрицательные:
+
+* нужна отдельная работа по authn/authz, compatibility и release policy;
+* planned capability придётся удерживать в документации синхронно с кодом,
+  пока реализация не появилась.
+
+== 8. Риски и меры снижения
+
+=== Риск: сервер превратится в обходной путь вокруг authoring UI
+
+Снижение:
+
+* published-only model;
+* отсутствие mutation endpoints;
+* отдельный ADR на server boundary.
+
+=== Риск: delivery runtime начнёт зависеть от draft data
+
+Снижение:
+
+* repository access только через published policy;
+* fail closed при недоступности published storage;
+* запрет на fallback к draft.
+
+=== Риск: в сервер перенесут AI-authoring semantics "для удобства"
+
+Снижение:
+
+* считать generate/normalize/rewrite вне базового server contract;
+* документировать server как deterministic delivery layer.
+
+=== Риск: документация создаст ложное впечатление, что сервер уже реализован
+
+Снижение:
+
+* явная пометка `planned, not implemented`;
+* отсутствие формулировок о runtime implementation в настоящем времени.
+
+== 9. Что сознательно не покрывается
+
+Данный ADR не фиксирует:
+
+* конкретный HTTP API shape;
+* модель деплоя и масштабирования;
+* multi-tenant policy в деталях;
+* кэширование и rate limiting;
+* способы аутентификации и авторизации;
+* схему remote observability.
+
+Эти вопросы должны быть оформлены позже, когда начнётся реальная реализация
+сервера.
+
+== 10. Связанные документы
+
+* xref:project/functions/prompt-server/prd.adoc[PRD]
+* xref:project/functions/prompt-server/system-design.adoc[System Design]
+* xref:project/functions/prompt-server/service-spec.adoc[Service Spec]
+* xref:project/architecture/system/hld.adoc[High-Level Design]
