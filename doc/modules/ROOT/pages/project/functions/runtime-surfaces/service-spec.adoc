@@ -1,0 +1,221 @@
+= Runtime Surfaces Service Spec
+
+Статус: contract-level draft для planned capability.
+
+== 1. Назначение спецификации
+
+Этот документ описывает не один transport API, а целевой контракт для четырёх
+runtime surface families:
+
+* `C++ local`
+* `Python local`
+* `C++ remote`
+* `Python remote`
+
+Задача документа:
+
+* явно перечислить capability groups;
+* зафиксировать границы `local` и `remote`;
+* описать parity rules;
+* сделать различия между языками и boundary проверяемыми.
+
+== 2. Surface families
+
+=== 2.1. `C++ local`
+
+Назначение:
+
+* прямой доступ к engine semantics из `C++`.
+
+Ожидаемое состояние:
+
+* базовая функциональность уже существует во внутренних engine interfaces;
+* отдельный stable public surface пока не оформлен.
+
+=== 2.2. `Python local`
+
+Назначение:
+
+* доступ к тем же local semantics из `Python`.
+
+Ожидаемое состояние:
+
+* planned;
+* должен быть capability-equivalent `C++ local` для поддерживаемого набора
+  операций.
+
+=== 2.3. `C++ remote`
+
+Назначение:
+
+* типизированный client к `Prompt Server`.
+
+Ожидаемое состояние:
+
+* planned;
+* должен следовать published-only server contract.
+
+=== 2.4. `Python remote`
+
+Назначение:
+
+* idiomatic Python client к тому же `Prompt Server`.
+
+Ожидаемое состояние:
+
+* planned;
+* должен быть semantically equivalent `C++ remote`.
+
+== 3. Capability groups
+
+=== 3.1. Общие published-runtime capability
+
+Эти возможности должны существовать во всех четырёх surfaces:
+
+* загрузка опубликованного блока;
+* загрузка опубликованной композиции;
+* перечисление опубликованных версий;
+* deterministic render опубликованной композиции;
+* resolve без окончательного render;
+* чтение metadata о версиях, вошедших в результат.
+
+Parity rule:
+
+* strict capability parity.
+
+=== 3.2. Local-only capability
+
+Эти возможности относятся к local boundary:
+
+* работа с `Draft`;
+* publish lifecycle;
+* update/deprecate/delete lifecycle;
+* local authoring-adjacent operations, если они явно входят в public local
+  contract.
+
+Parity rule:
+
+* strict capability parity между `C++ local` и `Python local`;
+* intentional divergence относительно remote surfaces.
+
+=== 3.3. Remote-only capability
+
+Эти возможности относятся к remote boundary:
+
+* transport-level authentication;
+* request/response contracts к `Prompt Server`;
+* remote compatibility/version negotiation;
+* retry/failure handling на client side.
+
+Parity rule:
+
+* strict capability parity между `C++ remote` и `Python remote`.
+
+== 4. Семантические правила
+
+Все surfaces должны использовать одинаковый смысл для:
+
+* `Draft` vs `Published`;
+* `version`;
+* `latest published`;
+* deterministic render;
+* version conflict;
+* missing asset;
+* validation error.
+
+Допустимы различия в форме:
+
+* методы vs функции;
+* exceptions vs result objects;
+* sync vs async wrappers;
+* naming and grouping.
+
+== 5. Ожидаемые logical operations
+
+=== 5.1. Local logical operations
+
+Для local boundary ожидаются capability groups:
+
+* `get_block(id, version_or_state)`
+* `get_composition(id, version_or_state)`
+* `list_versions(id)`
+* `render(composition_id, version, params)`
+* `resolve(composition_id, version, params)`
+* `create_draft(...)`
+* `update_draft(...)`
+* `publish(...)`
+* `deprecate(...)`
+* `delete(...)` при соблюдении ограничений
+
+Важно:
+
+* названия выше являются логическими операциями;
+* это не требование к буквальному имени метода в `C++` или `Python`.
+
+=== 5.2. Remote logical operations
+
+Для remote boundary ожидаются capability groups:
+
+* `get_published_block(id, version)`
+* `get_published_composition(id, version)`
+* `list_published_versions(id)`
+* `resolve_published(composition_id, version, params)`
+* `render_published(composition_id, version, params)`
+
+По текущей ставке не ожидаются:
+
+* draft access;
+* publish/update/delete operations;
+* hidden authoring mutations.
+
+== 6. Error semantics
+
+Минимальные общие error categories:
+
+* `not_found`
+* `invalid_version`
+* `validation_error`
+* `conflict`
+* `unsupported_operation`
+* `transport_error` для remote clients
+* `internal_error`
+
+Требование:
+
+* языки могут представлять ошибки по-разному;
+* категория и recoverability должны совпадать по смыслу.
+
+== 7. Compatibility rules
+
+=== 7.1. Local compatibility
+
+Для `C++ local` и `Python local` должно быть ясно:
+
+* какие операции входят в public supported set;
+* что считается breaking change;
+* какие lifecycle semantics считаются стабильными.
+
+=== 7.2. Remote compatibility
+
+Для `C++ remote` и `Python remote` должно быть ясно:
+
+* какой server contract version они поддерживают;
+* как обрабатывается несовместимость;
+* как documentируется расширение response fields и error categories.
+
+== 8. Что не считается обязательным
+
+Не требуется:
+
+* method-by-method parity;
+* identical object graphs;
+* одинаковая реализация итераторов и коллекций;
+* одинаковый async model;
+* automatic support любой внутренней engine helper-функции.
+
+== 9. Связанные документы
+
+* xref:project/functions/runtime-surfaces/adr.adoc[ADR]
+* xref:project/functions/runtime-surfaces/system-design.adoc[System Design]
+* xref:project/architecture/runtime-surface-capability-matrix.adoc[Матрица возможностей runtime surfaces]
+* xref:project/functions/prompt-server/service-spec.adoc[Prompt Server Service Spec]

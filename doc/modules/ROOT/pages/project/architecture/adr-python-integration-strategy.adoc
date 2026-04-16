@@ -1,262 +1,83 @@
-= ADR: Python и C++ должны быть first-class runtime surfaces поверх общей engine model
+= ADR: Python и C++ как first-class runtime surfaces
 
-== 1. Статус и назначение документа
+== 1. Статус и назначение
 
-Статус: принят как архитектурное направление для language surface strategy.
+Статус: принято.
 
-Назначение: зафиксировать, как в проекте должны соотноситься:
+Этот ADR теперь фиксирует только верхнеуровневое архитектурное решение.
+Подробное описание capability вынесено в function-level набор:
 
-* `C++ Engine`;
-* `C++ local API`;
-* `Python local API`;
-* `Prompt Server`;
-* `C++ remote client`;
-* `Python remote client`.
+* xref:project/functions/runtime-surfaces/index.adoc[Runtime Surfaces]
 
-Документ нужен, чтобы не скатиться ни в одну из двух крайностей:
-
-* не сделать Python вторичным "тонким клиентом";
-* и не позволить Python bindings разрушить продуктовую и server boundary.
+Такой split сделан намеренно, потому что тема `C++ / Python local / remote`
+затрагивает не только архитектурный выбор, но и product scope, service
+contracts, release order и parity review.
 
 == 2. Контекст
 
-У проекта уже есть canonical implementation на C++:
+В проекте уже существует canonical implementation на `C++`:
 
-* доменная модель;
-* versioning;
-* render contracts;
+* domain model;
 * lifecycle `Draft` / `Published`;
-* deterministic engine behavior.
+* deterministic render.
 
-Изначальная идея проекта при этом была такой:
+При этом целевая product model предполагает:
 
-* Python не должен быть merely helper layer;
-* Python должен быть равносилен C++ по возможностям работы с engine;
-* работа с server должна быть доступна и из C++, и из Python.
+* first-class local access из `C++`;
+* first-class local access из `Python`;
+* отдельную remote boundary через `Prompt Server`;
+* future remote clients как для `C++`, так и для `Python`.
 
-Это означает, что у проекта фактически должны быть четыре внешние поверхности:
+== 3. Принятое решение
 
-* `C++ local runtime`
-* `Python local runtime`
-* `C++ remote runtime`
-* `Python remote runtime`
+Принято следующее:
 
-При этом у них должен быть общий source of truth:
+* `C++ engine` остаётся canonical implementation;
+* source of truth живёт в engine/domain semantics, а не в language wrapper;
+* `C++ local` и `Python local` рассматриваются как first-class local surfaces;
+* `C++ remote` и `Python remote` рассматриваются как first-class remote
+  surfaces;
+* parity оценивается по capability и semantics внутри boundary;
+* различия между `local` и `remote` допускаются как intentional boundary
+  difference.
 
-* не конкретный язык API;
-* а общая engine semantics и общая domain model.
+== 4. Почему это лучше альтернатив
 
-== 3. Проблема, которую нужно было решить
+Этот подход лучше, чем:
 
-Нужно было определить, как правильно описать Python в архитектуре, чтобы:
-
-* Python был first-class surface;
-* C++ оставался canonical implementation;
-* server не подменял local bindings и наоборот;
-* локальные и удалённые API не путались между собой;
-* parity понималась как parity of capabilities, а не как полная синтаксическая
-  идентичность.
-
-Если этого не сделать, возникает несколько рисков:
-
-* Python ошибочно документируется как secondary client к server;
-* local bindings и remote SDK начинают смешиваться;
-* server contract деформируется под FFI convenience;
-* разные языковые поверхности начинают расходиться по смыслу.
-
-== 4. Рассмотренные варианты
-
-=== Вариант A. Считать C++ единственным настоящим API, а Python только remote client
-
-Идея:
-оставить C++ как единственную полноценную runtime surface, а Python описывать
-в основном как SDK к `Prompt Server`.
-
-Плюсы:
-
-* проще продуктовая история на первом этапе;
-* меньше surface area;
-* легче удерживать server-centric delivery model.
-
-Минусы:
-
-* противоречит исходной идее проекта;
-* Python перестаёт быть first-class local runtime;
-* часть локальных Python use cases оказывается искусственно вторичной;
-* язык становится не альтернативной surface, а только downstream transport.
-
-Вердикт:
-
-* отклонено.
-
-=== Вариант B. Считать Python bindings главным внешним API, а остальное подстраивать под них
-
-Идея:
-сделать Python основным удобным API, а C++ и server трактовать как internal
-implementation details.
-
-Плюсы:
-
-* сильная история для Python ecosystem;
-* удобно для notebooks, scripts и research-side tooling.
-
-Минусы:
-
-* теряется canonical роль C++ engine;
-* product model начинает определяться не доменной моделью, а удобством binding;
-* server boundary рискует стать вторичной;
-* сложно удержать аккуратную parity между local и remote surfaces.
-
-Вердикт:
-
-* отклонено.
-
-=== Вариант C. Считать canonical implementation C++ engine, а Python и C++ описывать как равноправные language surfaces поверх общей модели
-
-Идея:
-зафиксировать следующее:
-
-* canonical implementation lives in C++;
-* canonical semantics lives in engine/domain model;
-* Python и C++ являются first-class local surfaces;
-* `Prompt Server` является отдельной remote boundary;
-* и C++, и Python должны иметь remote clients к server.
-
-Плюсы:
-
-* сохраняется общий source of truth;
-* Python не становится вторичным;
-* server не подменяет local engine API;
-* появляется симметричная и понятная language model;
-* проще обсуждать parity правильно: по capability и semantics.
-
-Минусы:
-
-* больше поверхностей для документирования и поддержки;
-* нужно явнее различать local API и remote API;
-* потребуется discipline вокруг parity и compatibility.
-
-Вердикт:
-
-* выбранный вариант.
-
-== 5. Принятое решение
-
-Принято решение использовать следующую архитектурную модель:
-
-* `C++ Engine` остаётся canonical implementation;
-* `engine semantics` и `domain model` являются источником правды;
-* `C++ local API` и `Python local API` являются first-class language surfaces;
-* `Prompt Server` является отдельной remote runtime boundary;
-* `C++ remote client` и `Python remote client` являются first-class remote
-  surfaces для server.
-
-Это означает, что у проекта должно быть две разные оси:
-
-* `local vs remote`
-* `C++ vs Python`
-
-А не одна ось, где Python просто находится "ниже" C++.
-
-== 6. Детализация принятого решения
-
-=== 6.1. Parity должна пониматься как parity of capabilities
-
-Правильный смысл parity:
-
-* Python и C++ должны уметь работать с одними и теми же сущностями;
-* должны поддерживать тот же lifecycle;
-* должны поддерживать те же ключевые операции;
-* должны возвращать согласованную семантику ошибок и state transitions.
-
-Parity не означает:
-
-* идентичные method names;
-* идентичные return types;
-* идентичный style API;
-* побуквенное копирование C++ API в Python.
-
-То есть допустима idiomatic разница формы, но не смысла.
-
-=== 6.2. Local API и remote API нельзя смешивать
-
-Local surfaces:
-
-* `C++ local API`
-* `Python local API`
-
-должны работать с engine semantics напрямую.
-
-Remote surfaces:
-
-* `C++ Prompt Server client`
-* `Python Prompt Server client`
-
-должны работать через server boundary.
-
-Это два разных класса API, и их нельзя документировать как один слой.
-
-=== 6.3. Prompt Server не отменяет необходимость local Python surface
-
-Даже если server становится важной частью продукта, это не означает, что
-Python обязан использовать только remote contract.
+* делать `Python` только thin client к server;
+* делать `Python` главным источником API-истины;
+* держать всю тему только в одном архитектурном `ADR`.
 
 Причина:
 
-* у Python есть legitimate local use cases;
-* часть tooling and scripting workflows естественно живёт рядом с engine;
-* локальный runtime может быть нужен без server deployment.
+* сохраняется canonical роль `C++`;
+* `Python` не становится вторичным;
+* `Prompt Server` не деформируется под FFI convenience;
+* detailed contracts живут в function-level pipeline, где им и место.
 
-Следствие:
-
-* Python local bindings не являются anti-pattern;
-* anti-pattern возникает только если они начинают подменять engine semantics или
-  конфликтовать с server model.
-
-=== 6.4. Remote parity тоже должна быть explicit
-
-Если server существует, то и `C++`, и `Python` должны иметь понятные клиенты к
-нему.
-
-Правильная целевая модель:
-
-* local C++ and local Python share engine semantics;
-* remote C++ and remote Python share server contract;
-* local and remote APIs intentionally differ by boundary, not by language
-  favoritism.
-
-=== 6.5. Source of truth lives in domain model, not in language-specific wrappers
-
-Причина:
-как только source of truth переезжает в один из language wrappers:
-
-* parity ломается;
-* docs начинают расходиться;
-* compatibility policy становится неясной.
-
-Поэтому canonical место определения semantics:
-
-* domain entities;
-* lifecycle rules;
-* engine behavior;
-* server contracts.
-
-Language wrappers должны адаптировать форму, а не переопределять смысл.
-
-== 7. Последствия решения
+== 5. Последствия
 
 Положительные:
 
-* Python сохраняет first-class product role;
-* C++ сохраняет canonical implementation role;
-* серверная и локальная модели становятся чище;
-* проще документировать продукт через общие contracts.
+* архитектурный уровень стал короче и чище;
+* capability описана детальнее в отдельном наборе документов;
+* легче проводить release review и parity review.
 
 Компромиссы:
 
-* больше surfaces для поддержки;
-* нужно явно различать four API families;
-* parity testing и compatibility governance становятся важнее.
+* нужно поддерживать согласованность между архитектурным уровнем и function
+  docs;
+* planned status должен оставаться честным до появления реализации.
+
+== 6. Связанные документы
+
+* xref:project/functions/runtime-surfaces/prd.adoc[Runtime Surfaces PRD]
+* xref:project/functions/runtime-surfaces/system-design.adoc[Runtime Surfaces System Design]
+* xref:project/functions/runtime-surfaces/adr.adoc[Runtime Surfaces ADR]
+* xref:project/functions/runtime-surfaces/service-spec.adoc[Runtime Surfaces Service Spec]
+* xref:project/architecture/runtime-surface-capability-matrix.adoc[Матрица возможностей runtime surfaces]
+* xref:project/functions/prompt-server/index.adoc[Prompt Server]
 
 Отрицательные:
 

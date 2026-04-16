@@ -1,0 +1,100 @@
+= Runtime Surfaces Delivery Plan
+
+Статус: staged rollout plan для planned capability.
+
+== 1. Цель поставки
+
+Поставка этой функции должна происходить не одной "магической интеграцией", а
+поэтапно, чтобы не смешать:
+
+* выделение public local surfaces;
+* bindings rollout;
+* server rollout;
+* remote client rollout.
+
+== 2. Рекомендуемые этапы
+
+=== Этап 0. Документальная фиксация
+
+Нужно:
+
+* зафиксировать capability в `functions`;
+* синхронизировать архитектурный `ADR`, матрицу и `Prompt Server`;
+* явно отметить текущее отсутствие Python/runtime implementation.
+
+Критерий готовности:
+
+* docs согласованы и не обещают лишнего.
+
+=== Этап 1. Public `C++ local` surface
+
+Нужно:
+
+* определить supported public local contract поверх engine;
+* отделить public operations от внутренних GUI-oriented helpers;
+* зафиксировать compatibility expectations.
+
+Критерий готовности:
+
+* есть понятный и ограниченный `C++ local` contract.
+
+=== Этап 2. `Python local` MVP
+
+Нужно:
+
+* выбрать binding mechanism;
+* отразить public `C++ local` capability set в `Python`;
+* собрать parity fixtures.
+
+Критерий готовности:
+
+* `Python local` покрывает agreed supported local subset.
+
+=== Этап 3. `Prompt Server` MVP
+
+Нужно:
+
+* реализовать published-only remote boundary;
+* закрепить remote contract;
+* не смешивать rollout server и rollout Python bindings.
+
+Критерий готовности:
+
+* remote boundary существует и соответствует `Prompt Server` docs.
+
+=== Этап 4. `C++ remote` и `Python remote`
+
+Нужно:
+
+* реализовать оба client layer поверх одного server contract;
+* проверить remote parity;
+* зафиксировать supported compatibility matrix.
+
+Критерий готовности:
+
+* language parity внутри remote boundary подтверждена.
+
+== 3. Зависимости
+
+Критические зависимости:
+
+* решение по public local API boundary;
+* решение по binding technology;
+* решение по server transport;
+* решение по published-store strategy для `Prompt Server`;
+* compatibility policy.
+
+== 4. Основные риски
+
+* слишком рано смешать local и remote layers;
+* дать Python больше или меньше возможностей, чем согласовано;
+* начать проектировать server "под bindings", а не под delivery boundary;
+* ошибочно обещать полную parity до фиксации supported subset.
+
+== 5. Рекомендуемая ownership model
+
+* engine owners отвечают за canonical semantics;
+* API owners отвечают за public `C++ local` contract;
+* Python owners отвечают за idiomatic surface без semantic drift;
+* server owners отвечают за remote contract;
+* QA/release owners отвечают за parity gates.

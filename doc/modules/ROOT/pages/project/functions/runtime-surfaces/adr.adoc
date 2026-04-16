@@ -1,0 +1,270 @@
+= Runtime Surfaces ADR
+
+== 1. Статус и назначение
+
+Статус: принят как архитектурно-продуктовое направление.
+
+Назначение:
+
+* зафиксировать, что тема `C++ / Python` больше не рассматривается как один
+  изолированный `ADR` в архитектурном разделе;
+* оформить её как отдельную capability с полным pipeline-набором документов;
+* выбрать модель, в которой `C++` и `Python` являются first-class runtime
+  surfaces поверх общей engine model.
+
+== 2. Контекст
+
+В проекте уже есть canonical implementation на `C++`:
+
+* доменная модель;
+* lifecycle `Draft` / `Published`;
+* deterministic render;
+* engine-oriented storage semantics;
+* desktop frontends, работающие поверх local engine.
+
+Одновременно в продуктовой траектории давно есть две идеи:
+
+* `Python` должен быть полноценным способом работы с engine;
+* `Prompt Server` должен стать remote runtime boundary для published assets.
+
+Проблема прежнего состояния документации была в том, что всё это обсуждалось
+в основном через один архитектурный `ADR`. В результате:
+
+* было неочевидно, что это уже отдельная capability;
+* не хватало `PRD`, `System Design` и `Service Spec`;
+* было легко спутать product scope с одной точечной архитектурной ставкой;
+* parity policy оставалась недостаточно operational.
+
+== 3. Проблема, которую нужно решить
+
+Нужно было определить:
+
+* как описывать `Python`, не превращая его ни во вторичный client, ни в
+  единственный "настоящий" API;
+* как связать local surfaces и будущий `Prompt Server`;
+* как отделить language parity от boundary parity;
+* где должен жить подробный материал: в архитектурном `ADR` или в function
+  pipeline;
+* как не документировать несуществующую реализацию как уже готовый runtime.
+
+== 4. Рассмотренные варианты
+
+=== Вариант A. Оставить тему только как архитектурный ADR
+
+Идея:
+
+* не создавать function-level набор;
+* хранить решение только в `project/architecture/adr-python-integration-strategy.adoc`.
+
+Плюсы:
+
+* меньше файлов;
+* проще поддерживать один документ.
+
+Минусы:
+
+* тема слишком велика для одиночного `ADR`;
+* product scope, service contracts и release logic оказываются неописанными;
+* сложнее связать решение с `Prompt Server`;
+* непонятно, как проверять реализацию и parity.
+
+Вердикт:
+
+* отклонено.
+
+=== Вариант B. Считать Python только remote client к Prompt Server
+
+Идея:
+
+* `C++` остаётся единственным полноценным local runtime;
+* `Python` описывается в основном как SDK к remote server.
+
+Плюсы:
+
+* проще серверная история;
+* меньше публичных поверхностей.
+
+Минусы:
+
+* противоречит исходной продуктовой идее;
+* Python перестаёт быть first-class local surface;
+* часть legitimate local use cases оказывается искусственно вторичной.
+
+Вердикт:
+
+* отклонено.
+
+=== Вариант C. Считать Python главным продуктовым API, а остальное подстраивать под него
+
+Идея:
+
+* Python bindings становятся главным способом работы с продуктом;
+* `C++` и server трактуются как implementation details.
+
+Плюсы:
+
+* сильная история для Python ecosystem;
+* удобно для scripting и notebook-like workflows.
+
+Минусы:
+
+* теряется canonical роль `C++ engine`;
+* source of truth смещается из domain model в wrapper convenience;
+* server boundary начинает зависеть от локального binding-слоя.
+
+Вердикт:
+
+* отклонено.
+
+=== Вариант D. Оформить `Runtime Surfaces` как отдельную функцию и выбрать модель four surfaces
+
+Идея:
+
+* признать `C++ / Python local / remote` отдельной capability;
+* `C++ engine` оставить canonical implementation;
+* `Python` описать как first-class local и future remote surface;
+* `Prompt Server` описать как отдельную remote boundary;
+* parity измерять по возможностям и semantics, а не по буквальному синтаксису.
+
+Плюсы:
+
+* появляется полноценная product/architecture/contract story;
+* становится ясно, что `local` и `remote` - разные boundary;
+* проще документировать порядок реализации;
+* проще проводить release review и parity review;
+* архитектурный `ADR` можно сделать короче и чище.
+
+Минусы:
+
+* больше документов;
+* больше surface area для поддержки;
+* нужен более дисциплинированный контроль статуса "реализовано / planned".
+
+Вердикт:
+
+* выбранный вариант.
+
+== 5. Принятое решение
+
+Принято решение:
+
+* оформить `Runtime Surfaces` как отдельный function-level pipeline-набор;
+* считать `C++ engine` canonical implementation;
+* считать `C++ local` и `Python local` first-class local surfaces;
+* считать `Prompt Server` отдельной published-only remote boundary;
+* считать `C++ remote` и `Python remote` first-class remote surfaces;
+* измерять parity внутри boundary, а не между всеми четырьмя поверхностями
+  сразу;
+* считать различия между `local` и `remote` ожидаемыми, если они явно
+  документированы как boundary difference.
+
+== 6. Детализация решения
+
+=== 6.1. Почему это именно function, а не только ADR
+
+Потому что тема затрагивает:
+
+* product positioning;
+* future API surface;
+* server relation;
+* compatibility expectations;
+* release order;
+* test strategy.
+
+Это уже больше, чем одно локальное архитектурное решение.
+
+=== 6.2. Где живёт source of truth
+
+Источник правды:
+
+* domain model;
+* lifecycle rules;
+* engine semantics;
+* published-only server contract.
+
+Не источник правды:
+
+* форма одного конкретного wrapper API;
+* удобство binding technology;
+* текущие внутренние helper-классы GUI.
+
+=== 6.3. Как понимать parity
+
+Parity означает:
+
+* одинаковые поддерживаемые capabilities внутри boundary;
+* одинаковую семантику lifecycle;
+* одинаковый смысл version selection;
+* одинаковые категории ошибок.
+
+Parity не означает:
+
+* идентичные имена методов;
+* идентичные типы;
+* одинаковый async model;
+* дословное копирование `C++` API в `Python`.
+
+=== 6.4. Почему local и remote intentionally differ
+
+`Local` boundary работает рядом с engine semantics.
+
+`Remote` boundary работает через `Prompt Server` и published-only contract.
+
+Поэтому допустимы различия:
+
+* draft access в local;
+* published-only access в remote;
+* lifecycle operations в local;
+* отсутствие authoring mutations в remote по текущей ставке.
+
+Это не defect, а consequence of boundary choice.
+
+=== 6.5. Почему Python не должен диктовать форму server boundary
+
+`Python` важен как first-class surface, но server contract должен
+проектироваться из prompt-delivery модели, а не из удобства FFI.
+
+Иначе возникает риск:
+
+* сместить server design в сторону local convenience;
+* сделать transport contract слишком внутренним и хрупким;
+* смешать authoring и delivery semantics.
+
+=== 6.6. Почему C++ остаётся canonical implementation
+
+Потому что именно в `C++` сейчас реально живут:
+
+* domain entities;
+* versioning behavior;
+* deterministic render;
+* publish semantics.
+
+`Python` должен быть first-class surface, но не новым источником
+канонического смысла.
+
+== 7. Последствия решения
+
+Положительные:
+
+* документация становится последовательнее;
+* тема `C++ / Python` перестаёт висеть отдельно от product contract;
+* проще проверять parity и совместимость;
+* `Prompt Server` и bindings story увязаны без смешения ролей.
+
+Компромиссы:
+
+* появляется ещё один function-level набор;
+* нужно поддерживать честный статус planned capability;
+* future implementation потребует отдельного выбора binding и packaging
+  технологий.
+
+== 8. Что должно обновляться downstream
+
+После этого решения должны поддерживаться согласованными:
+
+* xref:project/functions/runtime-surfaces/prd.adoc[Runtime Surfaces PRD]
+* xref:project/functions/runtime-surfaces/system-design.adoc[Runtime Surfaces System Design]
+* xref:project/functions/runtime-surfaces/service-spec.adoc[Runtime Surfaces Service Spec]
+* xref:project/functions/runtime-surfaces/evaluation-plan.adoc[Runtime Surfaces Evaluation Plan]
+* xref:project/functions/runtime-surfaces/delivery-plan.adoc[Runtime Surfaces Delivery Plan]
+* xref:project/functions/prompt-server/index.adoc[Prompt Server]

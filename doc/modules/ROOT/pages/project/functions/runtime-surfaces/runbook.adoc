@@ -1,0 +1,95 @@
+= Runtime Surfaces Runbook
+
+Статус: operational guide для planned capability и будущего rollout.
+
+== 1. Назначение
+
+Runbook нужен, чтобы при появлении нескольких runtime surfaces команда могла
+быстро понять:
+
+* где искать источник semantic drift;
+* как отличить expected boundary difference от реальной поломки;
+* как реагировать на несовпадение `C++` и `Python`;
+* как реагировать на draft leakage в remote boundary.
+
+== 2. Владение
+
+Основные владельцы:
+
+* engine maintainers;
+* owners public local API;
+* future Python API maintainers;
+* future `Prompt Server` / remote client maintainers.
+
+== 3. Типовые сбои
+
+=== 3.1. `C++ local` и `Python local` дают разный результат render
+
+Первичные проверки:
+
+* один и тот же ли composition/version использован;
+* одинаковый ли набор runtime params;
+* одинаковая ли версия engine semantics под капотом;
+* есть ли drift в wrapper-side preprocessing.
+
+Ожидаемое действие:
+
+* считать это дефектом local parity, если операция входит в supported local set.
+
+=== 3.2. `C++ remote` и `Python remote` дают разную semantic обработку
+
+Первичные проверки:
+
+* один и тот же server contract version;
+* одинаковые request payload semantics;
+* не скрыт ли языкоспецифичный default.
+
+Ожидаемое действие:
+
+* считать это дефектом remote parity, если операция входит в supported remote
+  set.
+
+=== 3.3. Remote boundary получила draft-like semantics
+
+Первичные проверки:
+
+* не был ли использован неправильный storage source;
+* не появился ли undocumented endpoint;
+* не подмешаны ли authoring-only helper paths.
+
+Ожидаемое действие:
+
+* рассматривать как критический дефект boundary.
+
+== 4. Диагностика
+
+Минимальный набор шагов:
+
+1. определить, к какой boundary относится операция;
+2. определить, входит ли операция в supported set;
+3. воспроизвести кейс на golden fixture;
+4. сравнить semantics, а не только форму ошибки;
+5. проверить docs на предмет intentional divergence.
+
+== 5. Временные меры
+
+До исправления допустимо:
+
+* временно маркировать capability как unsupported в одной из surfaces;
+* сузить public supported subset;
+* отключить проблемный remote endpoint или client helper.
+
+Недопустимо:
+
+* silently менять lifecycle semantics;
+* выдавать draft data через remote;
+* маскировать parity bug как "idiomatic difference".
+
+== 6. Проверки после исправления
+
+После исправления нужно проверить:
+
+* golden render fixtures;
+* version handling fixtures;
+* error-category parity;
+* docs и matrix alignment.

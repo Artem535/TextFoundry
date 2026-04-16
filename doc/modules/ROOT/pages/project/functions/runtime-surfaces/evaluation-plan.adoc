@@ -1,0 +1,90 @@
+= Runtime Surfaces Evaluation Plan
+
+Статус: план проверки для planned capability.
+
+== 1. Цель проверки
+
+Проверка нужна не для "красоты API", а для доказательства трёх вещей:
+
+* supported local operations совпадают по смыслу между `C++` и `Python`;
+* supported remote operations совпадают по смыслу между `C++` и `Python`;
+* различия между `local` и `remote` действительно intentional, а не
+  accidental gaps.
+
+== 2. Что именно оценивается
+
+Оцениваются следующие измерения:
+
+* deterministic parity;
+* lifecycle parity;
+* version-selection parity;
+* error-category parity;
+* draft/published boundary correctness;
+* documentation-to-implementation consistency.
+
+== 3. Источники тестовых сценариев
+
+Потребуются:
+
+* golden fixtures для опубликованных блоков и композиций;
+* fixtures для `Draft` lifecycle;
+* наборы runtime params для успешных и неуспешных вызовов;
+* cases на version mismatch;
+* cases на unsupported operation;
+* cases на draft leakage в remote.
+
+== 4. Матрица проверки
+
+[cols="1,1,1,1"]
+|===
+|Dimension |Local parity |Remote parity |Gate
+
+|Deterministic render
+|`C++ local` vs `Python local`
+|`C++ remote` vs `Python remote`
+|Must match for supported cases
+
+|Version handling
+|Must match
+|Must match
+|No semantic drift
+
+|Lifecycle semantics
+|Must match
+|Not applicable by default
+|No undocumented gap
+
+|Error categories
+|Must match semantically
+|Must match semantically
+|No hidden remapping
+
+|Draft leakage
+|Allowed only in local where intended
+|Must not occur
+|Zero tolerance
+|===
+
+== 5. Критерии выпуска
+
+Документальный релиз capability считается готовым, если:
+
+* все supported surfaces перечислены честно;
+* planned surfaces не описаны как реализованные;
+* parity expectations явно сформулированы.
+
+Будущий implementation release считается готовым, если:
+
+* golden render cases совпадают в каждой boundary;
+* unsupported operations явно и одинаково документированы;
+* remote clients не имеют доступа к draft-only semantics;
+* regression suite покрывает ключевые lifecycle и render cases.
+
+== 6. Post-release review
+
+После появления первых реализаций нужно будет отдельно проверять:
+
+* drift между `C++ local` и `Python local`;
+* drift между `C++ remote` и `Python remote`;
+* drift между docs и реально поддерживаемым набором операций;
+* появление undocumented convenience methods, ломающих parity policy.

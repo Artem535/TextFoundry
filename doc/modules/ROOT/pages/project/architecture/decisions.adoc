@@ -7,6 +7,11 @@
 * xref:project/architecture/adr-build-vs-dspy.adoc[Почему TextFoundry сделан как самостоятельный продукт, а не как решение на базе DSPy]
 * xref:project/architecture/adr-python-integration-strategy.adoc[Python и C++ должны быть first-class runtime surfaces поверх общей engine model]
 
+Связанные function-level наборы:
+
+* xref:project/functions/runtime-surfaces/index.adoc[Runtime Surfaces]
+* xref:project/functions/prompt-server/index.adoc[Prompt Server]
+
 Основной кандидат на дальнейшее наполнение:
 
 * результат skill `ml-llm-adr`

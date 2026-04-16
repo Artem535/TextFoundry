@@ -1,0 +1,234 @@
+= Runtime Surfaces System Design
+
+Статус: planned design поверх частично существующего `C++ engine`.
+
+== 1. Архитектурная идея
+
+Функция `Runtime Surfaces` вводит не новый движок, а способ организованно
+экспортировать уже существующую доменную модель `TextFoundry` в четыре разные
+surface family:
+
+* `C++ local`
+* `Python local`
+* `C++ remote`
+* `Python remote`
+
+Главный принцип:
+
+* source of truth живёт в `engine semantics` и `domain model`;
+* language wrappers адаптируют форму;
+* remote clients адаптируют тот же смысл к server boundary;
+* local и remote deliberately differ by boundary, а не по случайности.
+
+== 2. Текущее и целевое состояние
+
+Текущее состояние:
+
+* есть canonical implementation в `src/textfoundry_engine`;
+* GUI/TUI работают поверх local engine;
+* public local SDK boundary ещё не выделен;
+* `Python local` отсутствует;
+* `Prompt Server` отсутствует;
+* remote SDK/clients отсутствуют.
+
+Целевое состояние:
+
+* local engine semantics экспонируется как public `C++ local API`;
+* тот же смысл экспонируется как `Python local API`;
+* published-only remote contract обслуживается `Prompt Server`;
+* поверх него существуют `C++ remote client` и `Python remote client`;
+* parity измеряется внутри `local` boundary и внутри `remote` boundary.
+
+== 3. Компоненты
+
+Основные компоненты:
+
+* `C++ Engine`
+  canonical implementation доменной модели, versioning и render logic
+
+* `C++ local surface`
+  thin public contract поверх engine semantics
+
+* `Python local surface`
+  bindings/wrapper поверх тех же local semantics
+
+* `Prompt Server`
+  published-only remote boundary
+
+* `C++ remote client`
+  typed client к server contract
+
+* `Python remote client`
+  idiomatic Python client к тому же server contract
+
+* `Parity governance layer`
+  tests, fixtures, compatibility policy и release rules
+
+== 4. Logical component diagram
+
+[mermaid]
+....
+flowchart LR
+    Engine["C++ Engine\ncanonical implementation"]
+    CppLocal["C++ local surface"]
+    PyLocal["Python local surface"]
+    Server["Prompt Server\npublished-only boundary"]
+    CppRemote["C++ remote client"]
+    PyRemote["Python remote client"]
+
+    Engine --> CppLocal
+    Engine --> PyLocal
+    Engine --> Server
+    Server --> CppRemote
+    Server --> PyRemote
+....
+
+== 5. Две ортогональные оси
+
+Архитектурная путаница возникает, если смешать две разные оси:
+
+* `local vs remote`
+* `C++ vs Python`
+
+Правильная интерпретация:
+
+* сначала выбирается boundary;
+* потом внутри неё обеспечивается parity между языками.
+
+Следствие:
+
+* `C++ local` и `Python local` должны быть близки по capability;
+* `C++ remote` и `Python remote` должны быть близки по capability;
+* `local` и `remote` не обязаны быть одинаковыми.
+
+== 6. Поведение local boundary
+
+`Local` boundary должна опираться на engine semantics напрямую.
+
+Ожидаемые способности local boundary:
+
+* загрузка `Draft` и `Published` сущностей;
+* lifecycle operations;
+* deterministic render;
+* version-aware access;
+* explicit AI workflows там, где они реально являются частью engine/workbench
+  model.
+
+Важно:
+
+* наличие GUI/TUI не делает их частью local API;
+* local surface не должна наследовать UI-specific semantics;
+* public local API должен быть уже, чем полный внутренний код GUI.
+
+== 7. Поведение remote boundary
+
+`Remote` boundary должна опираться на `Prompt Server` и published-only model.
+
+Ожидаемые способности remote boundary:
+
+* registry lookup published assets;
+* resolve published composition;
+* render with params;
+* version selection and metadata;
+* error semantics для not-found, validation и version mismatch.
+
+По умолчанию вне remote boundary:
+
+* draft lifecycle;
+* authoring mutations;
+* GUI/TUI-specific semantics;
+* hidden AI rewrite behavior.
+
+== 8. Sequence flows
+
+=== 8.1. Local render
+
+[mermaid]
+....
+sequenceDiagram
+    participant App as Local App
+    participant Surface as C++/Python local surface
+    participant Engine as C++ Engine
+
+    App->>Surface: render(composition_id, version, params)
+    Surface->>Engine: resolve + render
+    Engine-->>Surface: rendered_text + metadata
+    Surface-->>App: idiomatic local result
+....
+
+=== 8.2. Remote render
+
+[mermaid]
+....
+sequenceDiagram
+    participant Client as C++/Python remote client
+    participant Server as Prompt Server
+    participant Engine as C++ Engine
+
+    Client->>Server: POST /render
+    Server->>Engine: resolve published + render
+    Engine-->>Server: rendered_text + metadata
+    Server-->>Client: language-neutral remote response
+....
+
+== 9. Parity policy
+
+Требуются два разных набора parity:
+
+* `local parity`
+  между `C++ local` и `Python local`
+
+* `remote parity`
+  между `C++ remote` и `Python remote`
+
+При этом допускаются:
+
+* naming differences;
+* `Result<T>` vs exceptions;
+* sync/async wrapper differences;
+* typed-model differences.
+
+Не допускаются:
+
+* разные lifecycle semantics;
+* разные version-selection rules;
+* разные render results при одинаковом supported contract;
+* разные error categories без явной документированной причины.
+
+== 10. Источники истины
+
+Canonical source of truth:
+
+* domain entities;
+* lifecycle rules;
+* deterministic render behavior;
+* server-side published-only contract.
+
+Не являются источником истины:
+
+* случайная форма одного из wrappers;
+* удобство конкретного binding tool;
+* текущая реализация GUI view-model.
+
+== 11. Нефункциональные требования
+
+Система должна обеспечивать:
+
+* deterministic behavior для одинакового входа;
+* testable parity;
+* explicit version compatibility;
+* отсутствие draft leakage в remote;
+* прозрачность supported/unsupported operations;
+* возможность поэтапного rollout без обещания лишнего.
+
+== 12. Открытые решения
+
+Пока не выбраны окончательно:
+
+* concrete binding technology для `Python local`;
+* packaging strategy для local SDK;
+* transport technology для remote clients;
+* compatibility/versioning scheme для public API и SDK.
+
+Эти решения должны приниматься уже внутри boundaries, а не менять саму модель
+four runtime surfaces.

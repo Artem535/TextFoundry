@@ -1,0 +1,57 @@
+= Runtime Surfaces Document Set
+
+== 1. Сводка покрытия
+
+Набор документов покрывает:
+
+* продуктовую роль `C++ / Python local / remote` surfaces;
+* distinction между local и remote boundary;
+* parity policy;
+* relation к `Prompt Server`;
+* rollout order;
+* security и release implications.
+
+== 2. Что уже зафиксировано хорошо
+
+Сильные стороны текущего набора:
+
+* capability теперь описана не только как архитектурный `ADR`;
+* честно разделены `реализовано сейчас` и `planned`;
+* `Python` закреплён как first-class surface, но не как новый source of truth;
+* `Prompt Server` увязан с multi-language story без смешения ролей.
+
+== 3. Сквозные пробелы
+
+Пока остаются открытыми:
+
+* конкретная binding technology для `Python local`;
+* packaging strategy для local SDK;
+* transport/serialization strategy для remote clients;
+* точная compatibility policy по версиям API и SDK;
+* реализация automated parity suite.
+
+== 4. Следующие обновления
+
+После выбора implementation path нужно будет обновить:
+
+* `System Design`
+* `Service Spec`
+* `Evaluation Plan`
+* `Runbook`
+
+и отдельно синхронизировать:
+
+* xref:project/functions/prompt-server/index.adoc[Prompt Server]
+* xref:project/architecture/runtime-surface-capability-matrix.adoc[Матрица возможностей runtime surfaces]
+
+== 5. Источники истины в коде и документации
+
+Код:
+
+* `src/textfoundry_engine`
+
+Документы:
+
+* xref:project/architecture/adr-python-integration-strategy.adoc[Architecture ADR]
+* xref:project/functions/runtime-surfaces/adr.adoc[Runtime Surfaces ADR]
+* xref:project/functions/prompt-server/index.adoc[Prompt Server]

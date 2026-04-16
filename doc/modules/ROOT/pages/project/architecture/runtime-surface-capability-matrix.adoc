@@ -299,6 +299,8 @@ surface.
 == 13. Связанные документы
 
 * xref:project/architecture/adr-python-integration-strategy.adoc[Python и C++ как first-class runtime surfaces]
+* xref:project/functions/runtime-surfaces/index.adoc[Runtime Surfaces]
+* xref:project/functions/runtime-surfaces/service-spec.adoc[Runtime Surfaces Service Spec]
 * xref:project/functions/prompt-server/prd.adoc[Prompt Server PRD]
 * xref:project/functions/prompt-server/system-design.adoc[Prompt Server System Design]
 * xref:project/functions/prompt-server/service-spec.adoc[Prompt Server Service Spec]

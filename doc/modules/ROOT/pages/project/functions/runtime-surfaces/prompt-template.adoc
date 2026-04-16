@@ -1,0 +1,42 @@
+= Runtime Surfaces Prompt Template
+
+== 1. Статус
+
+У этой функции нет собственного production prompt.
+
+Причина:
+
+* `Runtime Surfaces` описывает language/runtime boundary и public contracts;
+* capability не вводит отдельный LLM prompt layer;
+* local и remote clients используют deterministic engine/server semantics, а не
+  самостоятельный prompt orchestration.
+
+== 2. Что здесь считается входом вместо prompt
+
+Для этой функции важны не prompts, а контракты:
+
+* local method families;
+* remote request/response contracts;
+* error semantics;
+* compatibility rules.
+
+== 3. Связанные prompt-документы
+
+Реальные prompt policy и prompt contracts находятся в других function-наборах:
+
+* xref:project/functions/block-generation/prompt-template.adoc[Block Generation Prompt Template]
+* xref:project/functions/prompt-slicing/prompt-template.adoc[Prompt Slicing Prompt Template]
+* xref:project/functions/normalization/prompt-template.adoc[Normalization Prompt Template]
+* xref:project/functions/composition-rewrite/prompt-template.adoc[Composition Rewrite Prompt Template]
+* xref:project/functions/prompt-server/prompt-template.adoc[Prompt Server Prompt Template]
+
+== 4. Следствие для реализации
+
+Если позже появятся:
+
+* codegen helpers;
+* AI-assisted API documentation;
+* LLM-driven migration assistants;
+
+то для них нужно будет создавать отдельный prompt-oriented document, а не
+расширять этот файл задним числом.

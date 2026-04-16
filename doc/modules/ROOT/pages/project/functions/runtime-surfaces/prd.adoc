@@ -1,0 +1,160 @@
+= Runtime Surfaces PRD
+
+Статус: planned capability с частично существующей базой в виде `C++ engine`.
+
+== 1. Цель и продуктовый контекст
+
+`TextFoundry` уже существует как desktop workbench и canonical implementation на
+`C++`. Следующий слой продукта должен сделать его пригодным как runtime-платформу
+с несколькими внешними поверхностями доступа, а не только как внутренний код GUI.
+
+Зачем это нужно:
+
+* использовать deterministic engine не только из текущего GUI/TUI;
+* дать `Python` статус полноценного способа работы с тем же движком;
+* подготовить удалённую consumption boundary через `Prompt Server`;
+* обеспечить симметрию для downstream integrators на `C++` и `Python`;
+* не смешивать authoring, local runtime и remote runtime в один неясный слой.
+
+Проблема продукта сейчас:
+
+* в репозитории реально существует только `C++ local engine`;
+* `Python` пока описан архитектурно, но не оформлен как capability с полным
+  набором документов;
+* remote story размывается между идеями bindings и `Prompt Server`;
+* без явного продуктового описания parity легко спутать с требованием буквальной
+  API-идентичности;
+* без отдельного function-набора язык интеграции обсуждается как чистый `ADR`,
+  хотя это уже влияет на product scope, implementation order и release criteria.
+
+== 2. Пользователи и сценарии
+
+Основные пользователи:
+
+* core developers, выделяющие public engine surface;
+* platform integrators на `C++`;
+* platform integrators на `Python`;
+* backend и tooling authors;
+* owners будущего `Prompt Server`;
+* QA/release owners, которым нужно проверять parity и совместимость.
+
+Ключевые сценарии:
+
+* локально загрузить опубликованный блок или композицию;
+* локально работать с `Draft` и `Published` lifecycle;
+* локально выполнить deterministic render;
+* удалённо запросить published registry entity;
+* удалённо вызвать `resolve` или `render`;
+* одинаково объяснить downstream-потребителям, что доступно в `C++` и в
+  `Python`, а что доступно только через `Prompt Server`.
+
+== 3. Область охвата и не-цели
+
+=== В области охвата
+
+* language/runtime strategy для `C++` и `Python`;
+* distinction между `local` и `remote` boundary;
+* capability parity policy;
+* local bindings strategy на уровне product contract;
+* remote client strategy для `Prompt Server`;
+* compatibility expectations и release criteria;
+* документирование gaps между текущим кодом и целевой моделью.
+
+=== Вне области охвата
+
+* реализация самих bindings;
+* выбор конкретной binding technology как окончательного решения;
+* подробный transport design `Prompt Server`;
+* GUI/TUI authoring UX;
+* LLM prompt design;
+* generic plugin framework для любых языков.
+
+== 4. Критерии успеха
+
+Функция считается успешно оформленной и готовой к downstream-реализации, если:
+
+* становится ясно, какие surfaces существуют сейчас, а какие planned;
+* `Python` больше не выглядит вторичным special case;
+* зафиксировано, что canonical semantics живёт в engine/domain model, а не в
+  конкретной языковой обёртке;
+* формализовано различие между `local` и `remote`;
+* сформулированы критерии parity для `C++ local` vs `Python local`;
+* сформулированы критерии parity для `C++ remote` vs `Python remote`;
+* зафиксирован поэтапный rollout, не смешивающий bindings rollout и server
+  rollout в одну непрозрачную задачу.
+
+== 5. Функциональные требования
+
+Функция должна зафиксировать:
+
+* состав поддерживаемых runtime surfaces;
+* expected capabilities каждой поверхности;
+* parity policy;
+* allowed divergences;
+* relation между language surfaces и `Prompt Server`;
+* minimal compatibility expectations для local и remote modes;
+* criteria, по которым расхождение считается bug, а не допустимой разницей.
+
+== 6. Нефункциональные требования
+
+Документы и будущая реализация должны:
+
+* сохранять корректность domain semantics;
+* не искажать lifecycle `Draft` / `Published`;
+* не допускать неявного draft leakage в remote boundary;
+* быть language-neutral на уровне смысла;
+* быть пригодными для testable parity review;
+* не обещать реализацию, которой в коде пока нет.
+
+== 7. Ограничения и допущения
+
+Ограничения:
+
+* `Python local` отсутствует;
+* `Prompt Server` отсутствует;
+* `C++ remote client` и `Python remote client` отсутствуют;
+* текущий `C++ local` слой не оформлен как отдельный public SDK;
+* storage и server deployment strategy для remote boundary ещё не окончательны.
+
+Допущения:
+
+* canonical implementation остаётся в `C++ engine`;
+* domain model и render semantics остаются единым source of truth;
+* `Prompt Server` будет опираться на published-only model;
+* `Python` должен получить first-class роль и для local, и для remote
+  consumption;
+* literal method-by-method identity между `C++` и `Python` не требуется.
+
+== 8. Зависимости и заинтересованные стороны
+
+Зависимости:
+
+* `src/textfoundry_engine`
+* решение по public local API boundary
+* xref:project/functions/prompt-server/index.adoc[Prompt Server]
+* compatibility/versioning policy
+* release process для multi-language surfaces
+
+Заинтересованные стороны:
+
+* platform owner
+* core engine maintainers
+* future Python API maintainers
+* future `Prompt Server` maintainers
+* backend/runtime integrators
+
+== 9. Критерии приёмки
+
+Документальный этап будет считаться завершённым, если:
+
+* у capability есть полный pipeline-набор;
+* cross-links между архитектурой, `Prompt Server` и runtime surfaces
+  согласованы;
+* status везде честно отражает, что реализовано, а что planned.
+
+Будущий implementation milestone для `v1` должен считаться успешным, если:
+
+* поддерживаемые операции local boundary согласованы между `C++` и `Python`;
+* поддерживаемые операции remote boundary согласованы между `C++` и `Python`;
+* draft-only операции не просачиваются в published-only remote contract;
+* паритет проверяется автоматизированными тестами и golden fixtures.

@@ -1,0 +1,58 @@
+= Runtime Surfaces Security Note
+
+Статус: security guidance для planned capability.
+
+== 1. Основная цель
+
+Security-модель этой функции должна защитить две вещи:
+
+* корректность domain semantics;
+* границу между local authoring-capable access и remote published-only access.
+
+== 2. Риски local surfaces
+
+Для local surfaces важны:
+
+* безопасная передача владения объектами через binding layer;
+* отсутствие скрытых mutable shortcuts, обходящих lifecycle checks;
+* корректное управление ошибками и исключениями на границе языка;
+* supply-chain контроль для packaging и distribution.
+
+Особое замечание для `Python local`:
+
+* binding layer не должен открывать внутренние helper-paths, которые не входят в
+  supported public contract;
+* FFI convenience не должна обходить ограничения `Draft` / `Published`.
+
+== 3. Риски remote surfaces
+
+Для remote surfaces важны:
+
+* authn/authz;
+* защита от доступа к draft data;
+* минимально необходимый published-only contract;
+* transport security;
+* контроль over-fetching metadata.
+
+Критичный риск:
+
+* утечка draft semantics или unpublished content через remote boundary.
+
+== 4. Требуемые меры
+
+Нужно обеспечить:
+
+* явное разделение local и remote contracts;
+* deny-by-default для draft operations в remote;
+* version-aware authz policy, если появится multi-tenant server model;
+* sanitization ошибок, чтобы responses не раскрывали лишние внутренние детали;
+* release review для новых public capabilities.
+
+== 5. Что не должно происходить
+
+Не должно быть:
+
+* неявного elevation из remote в authoring semantics;
+* "временных" debug endpoints, попадающих в production contract;
+* document drift, при котором security note обещает одно, а client layer делает
+  другое.
