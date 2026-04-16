@@ -1,44 +1,85 @@
 = Block Generation Delivery Plan
 
-== 1. Delivery Scope
+== 1. Область поставки
 
-Scope этой функции включает engine integration, GUI authoring workflow, prompt
-policy и минимальный quality loop.
+В поставку функции входят:
 
-== 2. Current Status
+* engine integration для explicit single-block generation;
+* GUI authoring workflow в редакторе блоков;
+* prompt policy и provider behavior;
+* review-before-save модель;
+* минимальный quality loop для create и revise сценариев.
 
-Текущий delivery status:
+== 2. Текущий статус
 
-* базовый workflow уже реализован в GUI и engine
-* нужен отдельный formal quality loop для оценки результата
+Текущее состояние:
 
-== 3. Workstreams and Owners
+* базовый workflow уже реализован в engine и GUI;
+* create и revise сценарии уже существуют;
+* архитектурные границы описаны;
+* не хватает более формального quality corpus и устойчивой prompt governance.
 
-* engine owner: contract and orchestration
-* AI owner: prompt policy and provider behavior
-* GUI owner: review and edit workflow
+== 3. Рабочие потоки и владельцы
 
-== 4. Dependency Map
+Основные workstreams:
 
-* provider configuration
-* generator adapter
-* block editor workflow
+* engine owner
+  Контракт, orchestration, validation, compatibility with block lifecycle.
 
-== 5. Rollout Steps
+* AI owner
+  Prompt policy, provider behavior, response parsing quality.
 
-Следующие шаги:
+* GUI owner
+  Review UX, edit workflow, статусы и user-visible failures.
 
-* формализовать acceptance наборы
-* завести prompt versions
-* описать fallback policy при ошибках генерации
+== 4. Карта зависимостей
 
-== 6. Blockers and Risks
+Ключевые зависимости:
 
-* отсутствие formal benchmark set
-* качество зависит от provider behavior
+* provider configuration;
+* generator adapter;
+* `BlockEditorViewModel`;
+* session-level engine rebuild;
+* representative prompt corpus.
 
-== 7. Readiness Checklist
+== 5. Этапы rollout
 
-* representative prompts collected
-* review workflow remains stable
-* failures are understandable to user
+Следующие практические шаги:
+
+1. Формализовать acceptance наборы для create mode.
+2. Добавить representative revise cases.
+3. Зафиксировать prompt versions и change discipline.
+4. Уточнить fallback policy при transport/auth/parsing failures.
+5. Проверить regressions после изменения provider config или prompt policy.
+
+== 6. Блокеры и риски
+
+Основные блокеры:
+
+* отсутствие formal benchmark set;
+* отсутствие prompt version governance как отдельной дисциплины;
+* зависимость от внешнего provider behavior.
+
+Основные риски rollout:
+
+* ухудшение качества drafts после prompt policy change;
+* неверный type selection;
+* revision mode с недостаточным сохранением identity.
+
+== 7. Критерии готовности
+
+Функция считается готовой к устойчивому использованию, если:
+
+* representative prompts собраны;
+* review workflow стабилен;
+* failures понятны пользователю;
+* create mode и revise mode покрыты eval cases;
+* manual fallback остаётся простым и рабочим.
+
+== 8. Следующий шаг после текущей итерации
+
+После текущего документирования разумно:
+
+* собрать curated prompt corpus;
+* привязать реальные rejected examples к evaluation process;
+* отдельно отслеживать quality drift между версиями prompt policy.

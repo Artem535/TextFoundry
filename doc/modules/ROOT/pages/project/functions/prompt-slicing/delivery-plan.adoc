@@ -1,36 +1,84 @@
 = Prompt Slicing Delivery Plan
 
-== 1. Delivery Scope
+== 1. Область поставки
 
-Scope включает long-prompt decomposition, update mode and review workflow in GUI.
+В поставку входят:
 
-== 2. Current Status
+* long-prompt decomposition workflow;
+* update mode с preservation hints;
+* deterministic tagged-section fast path;
+* review and publish-all workflow in GUI;
+* batch validation semantics.
 
-Текущий статус:
+== 2. Текущий статус
 
-* основной workflow уже есть в GUI
-* нужны формальные acceptance criteria и curated examples
+Текущее состояние:
 
-== 3. Workstreams and Owners
+* основной workflow уже реализован в GUI;
+* create mode и update mode уже существуют;
+* нужен более формальный acceptance corpus и quality discipline.
 
-* AI owner: slicing prompt policy
-* engine owner: batch generation contract
-* GUI owner: validation and review UX
+== 3. Рабочие потоки и владельцы
 
-== 4. Rollout Steps
+Основные workstreams:
+
+* AI owner
+  Slicing prompt policy, preservation behavior, update heuristics.
+
+* engine owner
+  Batch generation contract and validation.
+
+* GUI owner
+  Validation, preview UX, publish-all workflow.
+
+== 4. Карта зависимостей
+
+Ключевые зависимости:
+
+* source prompt quality;
+* generator adapter;
+* `BlockSliceViewModel`;
+* reusable ids/summaries for update mode;
+* representative legacy prompt set.
+
+== 5. Этапы rollout
 
 Следующие шаги:
 
-* собрать набор реальных prompt examples
-* описать quality gates для generate/update режимов
+1. Собрать набор реальных prompt examples.
+2. Разделить acceptance corpus на create mode, update mode и tagged fast path.
+3. Зафиксировать quality gates для preservation behavior.
+4. Уточнить collision-handling expectations.
+5. Проверить publish-all behavior на representative cases.
 
-== 5. Blockers and Risks
+== 6. Блокеры и риски
 
-* слабая representative dataset coverage
-* зависимость от source prompt quality
+Основные блокеры:
 
-== 6. Readiness Checklist
+* слабая representative dataset coverage;
+* зависимость от source prompt quality;
+* пока нет formal benchmark set для update-mode preservation.
 
-* curated prompt set prepared
-* duplicate-id validation tested
-* update-mode preservation criteria agreed
+Риски rollout:
+
+* модель будет слишком агрессивно перестраивать структуру;
+* invalid ids будут снижать полезность результата;
+* review cost окажется слишком близок к ручной миграции.
+
+== 7. Критерии готовности
+
+Функция считается достаточно готовой, если:
+
+* curated prompt set prepared;
+* duplicate-id validation tested;
+* update-mode preservation criteria agreed;
+* tagged inputs часто обрабатываются без AI regressions;
+* publish-all workflow стабилен и понятен пользователю.
+
+== 8. Следующий шаг после текущей итерации
+
+Практически следующая полезная работа:
+
+* связать evaluation corpus с реальными legacy prompts;
+* отдельно отслеживать rejected update-mode outputs;
+* усилить quality review по structure preservation.

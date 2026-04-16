@@ -1,36 +1,86 @@
 = Composition Rewrite Delivery Plan
 
-== 1. Delivery Scope
+== 1. Область поставки
 
-Scope includes preview generation, explicit apply and review UX for composition
-rewrite.
+В поставку входят:
 
-== 2. Current Status
+* preview generation;
+* explicit apply;
+* review UX for patch-oriented composition rewrite;
+* placeholder-safe apply behavior;
+* versioned publication of changed blocks and composition.
 
-Текущий статус:
+== 2. Текущий статус
 
-* preview/apply workflow уже реализован
+Текущее состояние:
 
-== 3. Workstreams and Owners
+* preview/apply workflow уже реализован;
+* architecture and service contract описаны;
+* не хватает более формального preservation benchmark и quality discipline для
+  preview readability.
 
-* engine owner: preview/apply contract
-* AI owner: rewriter policy
-* GUI owner: patch review UX
+== 3. Рабочие потоки и владельцы
 
-== 4. Rollout Steps
+Основные workstreams:
+
+* engine owner
+  Preview/apply contract, placeholder validation, versioning behavior.
+
+* AI owner
+  Rewriter policy, preservation behavior, prompt quality.
+
+* GUI owner
+  Patch review UX и user-visible preview clarity.
+
+== 4. Карта зависимостей
+
+Ключевые зависимости:
+
+* `ICompositionBlockRewriter`;
+* representative compositions;
+* clear preview UX;
+* stable apply semantics;
+* placeholder-safe block lifecycle.
+
+== 5. Этапы rollout
 
 Следующие шаги:
 
-* formalize preservation thresholds
-* собрать golden compositions для regression checks
+1. Formalize preservation thresholds.
+2. Собрать golden compositions.
+3. Проверить preview/apply consistency на representative set.
+4. Добавить оценку patch readability в quality loop.
+5. Отдельно анализировать behavior на safety/constraint-heavy compositions.
 
-== 5. Blockers and Risks
+== 6. Блокеры и риски
 
-* no formal preservation benchmark yet
-* preview usability may vary by composition complexity
+Основные блокеры:
 
-== 6. Readiness Checklist
+* no formal preservation benchmark yet;
+* preview usability may vary by composition complexity;
+* нет явной дисциплины оценки rejected previews.
 
-* preview/apply consistency tested
-* representative compositions collected
-* preservation rules agreed
+Риски rollout:
+
+* destructive patches;
+* poor preview clarity;
+* mismatch between preview and apply;
+* placeholder failures on complex blocks.
+
+== 7. Критерии готовности
+
+Функция считается достаточно готовой, если:
+
+* preview/apply consistency tested;
+* representative compositions collected;
+* preservation rules agreed;
+* placeholder-preservation path covered;
+* manual fallback остаётся простым.
+
+== 8. Следующий шаг после текущей итерации
+
+Практически дальше полезно:
+
+* связать preview UX с evaluation criteria;
+* собрать corpus rejected previews;
+* выделить golden set для regression testing.

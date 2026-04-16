@@ -1,19 +1,58 @@
 = Normalization Prompt Template
 
-== 1. Prompt Purpose
+== 1. Назначение prompt contract
 
-Prompt contract должен менять semantic style without unnecessary drift from the
-source meaning.
+Prompt contract должен:
 
-== 2. Required Prompt Elements
+* менять semantic style without unnecessary drift;
+* сохранять meaning as much as possible;
+* для block normalization сохранять placeholders и structural constraints;
+* возвращать rewritten text, а не explanation.
 
-Prompt contract должен фиксировать:
+== 2. Обязательные элементы prompt policy
 
-* target semantic changes
-* правила сохранения смысла
-* запрет на избыточные изменения вне requested style shift
+В prompt contract должны быть зафиксированы:
 
-== 3. Output Contract
+* target semantic changes;
+* правила сохранения смысла;
+* запрет на лишние изменения вне requested style shift;
+* explicit instruction возвращать только normalized text;
+* для block normalization - сохранение placeholders exactly.
 
-* output must be a rewritten text, not explanation
-* composition normalization must remain reviewable
+== 3. Специфика text normalization
+
+Text normalization contract должен:
+
+* работать поверх raw text snapshot;
+* не добавлять комментарии и metadata;
+* применять только requested semantic style changes.
+
+== 4. Специфика block/composition normalization
+
+Block/composition normalization contract должен:
+
+* выполнять более консервативный rewrite;
+* сохранять block structure closely;
+* не менять placeholders;
+* не разрушать section layout без достаточного основания.
+
+== 5. Контракт вывода
+
+Output должен:
+
+* быть plain rewritten text;
+* не включать explanations;
+* быть пригодным для derived composition/block workflows;
+* не предполагать hidden persistence.
+
+== 6. Управление и source of truth
+
+Документационный source of truth:
+
+* xref:project/functions/normalization/service-spec.adoc[Service Spec]
+* xref:project/functions/normalization/adr.adoc[ADR]
+
+Кодовый source of truth:
+
+* `src/textfoundry_ai/prompt_constants.h`
+* `src/textfoundry_ai/openai_compatible_normalizer.*`

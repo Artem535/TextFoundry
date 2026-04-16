@@ -1,36 +1,86 @@
 = Normalization Delivery Plan
 
-== 1. Delivery Scope
+== 1. Область поставки
 
-Scope covers text normalization, composition normalization and explicit style
-rewrite workflows.
+В поставку входят:
 
-== 2. Current Status
+* text normalization;
+* composition normalization;
+* explicit style rewrite workflows;
+* derived composition/block behavior;
+* stale-state UX for render normalization.
 
-Текущий статус:
+== 2. Текущий статус
 
-* базовый text and composition normalization уже реализован
+Текущее состояние:
 
-== 3. Workstreams and Owners
+* базовый text normalization реализован;
+* composition normalization реализован;
+* есть explicit UI workflows;
+* нужны более формальные style acceptance наборы и regression corpus.
 
-* engine owner: normalization contracts
-* AI owner: prompt policy and provider behavior
-* GUI owner: render/composition UX
+== 3. Рабочие потоки и владельцы
 
-== 4. Rollout Steps
+Основные workstreams:
+
+* engine owner
+  Contracts, derivation logic, placeholder preservation.
+
+* AI owner
+  Prompt policy, provider behavior, style adherence.
+
+* GUI owner
+  Render/composition UX, stale-state semantics, user-visible review flow.
+
+== 4. Карта зависимостей
+
+Ключевые зависимости:
+
+* `SemanticStyle`;
+* `INormalizer` / `IBlockNormalizer`;
+* representative style corpus;
+* render workflow;
+* composition workflow.
+
+== 5. Этапы rollout
 
 Следующие шаги:
 
-* формализовать style acceptance наборы
-* добавить regression corpus по tone / tense / language cases
+1. Формализовать style acceptance наборы.
+2. Добавить regression corpus по tone/tense/language cases.
+3. Зафиксировать expectations по cache/reuse normalized blocks.
+4. Уточнить safety review для composition-level derivation.
+5. Проверить provider regressions после prompt policy changes.
 
-== 5. Blockers and Risks
+== 6. Блокеры и риски
 
-* отсутствие formal semantic benchmark set
-* sensitivity to ambiguous style requests
+Основные блокеры:
 
-== 6. Readiness Checklist
+* отсутствие formal semantic benchmark set;
+* неоднозначность некоторых style requests;
+* отсутствие дисциплины explicit prompt versioning.
 
-* representative style cases prepared
-* UI clearly indicates explicit action
-* provider failures degrade to raw output cleanly
+Риски rollout:
+
+* semantic drift;
+* over-aggressive rewrite;
+* placeholder violations;
+* путаница между canonical render и normalized result.
+
+== 7. Критерии готовности
+
+Функция считается достаточно готовой, если:
+
+* representative style cases prepared;
+* UI clearly indicates explicit action and stale-state;
+* provider failures degrade to raw output cleanly;
+* composition normalization проходит representative checks;
+* placeholder preservation стабильно работает.
+
+== 8. Следующий шаг после текущей итерации
+
+Полезно сделать дальше:
+
+* связать реальные style examples с evaluation corpus;
+* формализовать prompt governance;
+* отдельно отслеживать regressions text path vs composition path.

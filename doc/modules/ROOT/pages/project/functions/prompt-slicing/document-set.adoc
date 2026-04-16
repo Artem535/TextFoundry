@@ -1,30 +1,56 @@
 = Prompt Slicing Document Set
 
-== 1. Coverage Summary
+== 1. Покрытие набора документов
 
-Минимальный комплект для функции уже создан и привязан к GUI-first workflow.
+Для `Prompt Slicing` сейчас покрыты:
 
-== 2. Cross-Document Gaps
+* `PRD`
+* `ADR`
+* `System Design`
+* `Service Spec`
+* `Evaluation Plan`
+* `Delivery Plan`
+* `Runbook`
+* `Security Note`
+* `Prompt Template`
 
-Следующие документы требуют усиления:
+== 2. Что уже согласовано между документами
 
-* benchmark examples для slicing quality
-* explicit prompt schema и negative cases
-* publish semantics для update-mode reuse и collision handling
+Согласованы:
 
-== 3. Next Updates
+* batch nature функции;
+* distinction between create mode and update mode;
+* deterministic tagged-section fast path;
+* review-before-publish workflow;
+* preservation-aware update semantics.
 
-* связать representative prompts с evaluation corpus
-* выделить update-mode specific acceptance rules
+== 3. Оставшиеся пробелы
 
-== 4. Upstream Dependencies
+Что в будущем можно усиливать:
+
+* benchmark examples для slicing quality;
+* negative cases catalog;
+* более явные примеры publish semantics для update-mode reuse;
+* curated rejected-batch corpus.
+
+== 4. Следующие обновления
+
+Полезные следующие обновления:
+
+* связать representative prompts с evaluation corpus;
+* поддерживать в синхроне create/update/fast-path quality rules;
+* при необходимости выделить отдельный update-mode appendix.
+
+== 5. Входящие зависимости
 
 * xref:project/architecture/system/hld.adoc[High-Level Design]
 * xref:project/architecture/ui-ux.adoc[UI/UX]
 * xref:project/functions/prompt-slicing/prd.adoc[PRD]
 
-== 5. Source of Truth in Code
+== 6. Source of truth в коде
 
 * `src/textfoundry_engine/tf/block_generation.h`
+* `src/textfoundry_engine/tf/engine.h`
+* `src/textfoundry_engine/tf/engine.cc`
 * `src/textfoundry_ai/openai_compatible_block_generator.*`
 * `src/text_foundry_gui/viewmodels/block_slice_view_model.*`

@@ -1,30 +1,55 @@
 = Composition Rewrite Document Set
 
-== 1. Coverage Summary
+== 1. Покрытие набора документов
 
-Минимальный pipeline для функции создан и соответствует preview/apply модели.
+Для `Composition Rewrite` сейчас покрыты:
 
-== 2. Cross-Document Gaps
+* `PRD`
+* `ADR`
+* `System Design`
+* `Service Spec`
+* `Evaluation Plan`
+* `Delivery Plan`
+* `Runbook`
+* `Security Note`
+* `Prompt Template`
 
-Дальше нужно усилить:
+== 2. Что уже согласовано между документами
 
-* preservation benchmarks
-* ясные quality gates для preview acceptance
-* правила оценки patch readability в UI
+Согласованы:
 
-== 3. Next Updates
+* preview/apply model;
+* patch-oriented rewrite semantics;
+* block-preserving behavior;
+* placeholder-safe apply;
+* distinction between suggestion and mutation.
 
-* align preview UX with evaluation criteria
-* add golden composition set for regression testing
+== 3. Оставшиеся пробелы
 
-== 4. Upstream Dependencies
+Что ещё можно усиливать:
+
+* preservation benchmarks;
+* richer preview-readability criteria;
+* rejected-preview corpus;
+* separate appendix for safety-sensitive compositions.
+
+== 4. Следующие обновления
+
+Следующими полезно поддерживать:
+
+* preview UX vs evaluation alignment;
+* golden composition set;
+* links between prompt template and actual rewriter policy.
+
+== 5. Входящие зависимости
 
 * xref:project/architecture/system/hld.adoc[High-Level Design]
 * xref:project/architecture/ui-ux.adoc[UI/UX]
 * xref:project/functions/composition-rewrite/prd.adoc[PRD]
 
-== 5. Source of Truth in Code
+== 6. Source of truth в коде
 
 * `src/textfoundry_engine/tf/engine.h`
+* `src/textfoundry_engine/tf/engine.cc`
 * `src/textfoundry_ai/openai_compatible_composition_block_rewriter.*`
 * `src/text_foundry_gui/viewmodels/composition_block_rewrite_view_model.*`

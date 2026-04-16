@@ -1,37 +1,87 @@
 = Prompt Server Delivery Plan
 
-== 1. Delivery Scope
+Статус: planned capability.
 
-Scope covers runtime API, repository boundary, deployment and access control.
+== 1. Область поставки
 
-== 2. Current Status
+В будущую поставку должны входить:
 
-Статус:
+* runtime API;
+* published-only repository boundary;
+* deployment/runtime topology;
+* authn/authz;
+* deterministic resolve/render behavior.
 
-* capability запланирована
-* в кодовой базе пока не реализована
+== 2. Текущий статус
 
-== 3. Workstreams and Owners
+Текущее состояние:
 
-* platform owner: service runtime
-* core owner: published repository access
-* security owner: access control
+* capability запланирована;
+* в кодовой базе пока не реализована;
+* документы описывают будущую boundary, а не текущий executable runtime.
 
-== 4. Rollout Steps
+== 3. Рабочие потоки и владельцы
 
-Предварительные этапы:
+Основные workstreams:
 
-* выделить API contract
-* formalize repository access model
-* определить deployment topology
+* platform owner
+  Service runtime and deployment.
 
-== 5. Blockers and Risks
+* core owner
+  Published repository access and deterministic render integration.
 
-* нет реализованного server runtime
-* не сформирована final API compatibility policy
+* security owner
+  Access control, published-only enforcement, audit.
 
-== 6. Readiness Checklist
+== 4. Карта зависимостей
 
-* published-only model proven in tests
-* deployment topology agreed
-* security review passed
+Ключевые зависимости:
+
+* final API contract;
+* published-only repository access model;
+* deployment topology;
+* authn/authz policy;
+* compatibility policy.
+
+== 5. Предварительные этапы rollout
+
+Рациональная последовательность:
+
+1. Выделить API contract.
+2. Formalize repository access model.
+3. Определить deployment topology.
+4. Зафиксировать compatibility policy.
+5. Провести architecture and security review.
+6. Реализовать representative deterministic runtime path.
+
+== 6. Блокеры и риски
+
+Основные блокеры:
+
+* нет реализованного server runtime;
+* не сформирована final API compatibility policy;
+* не детализированы authn/authz и deployment decisions.
+
+Основные риски:
+
+* server accidentally becomes authoring surface;
+* server sees draft data;
+* runtime contract окажется слишком широким и нестабильным.
+
+== 7. Критерии готовности
+
+Capability можно считать готовой к запуску только если:
+
+* published-only model proven in tests;
+* deployment topology agreed;
+* security review passed;
+* deterministic render replay stable;
+* no draft access paths remain.
+
+== 8. Следующий шаг после текущей итерации
+
+Следующая полезная работа:
+
+* не писать дальше “общее описание сервера”, а ждать начала реализации;
+* при старте реализации конвертировать planned документы в concrete contracts;
+* отдельно оформить authn/authz и deployment ADR, если это потребуется.

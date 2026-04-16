@@ -1,28 +1,58 @@
 = Prompt Server Document Set
 
-== 1. Coverage Summary
+Статус: planned capability.
 
-Функция пока находится в planned-state.
+== 1. Покрытие набора документов
 
-== 2. Cross-Document Gaps
+Для `Prompt Server` сейчас есть placeholder-документы по тем же разделам, что и
+для реализованных функций:
 
-Минимальный набор placeholder-документов уже создан, чтобы future work не
-размазывался по общей документации.
+* `PRD`
+* `ADR`
+* `System Design`
+* `Service Spec`
+* `Evaluation Plan`
+* `Delivery Plan`
+* `Runbook`
+* `Security Note`
+* `Prompt Template`
 
-== 3. Next Updates
+== 2. Что уже согласовано между документами
 
-* convert placeholders to final contracts when implementation starts
-* align service spec with deployment and security decisions
+Уже согласованы:
 
-== 4. Upstream Dependencies
+* published-only delivery boundary;
+* отсутствие authoring surface;
+* deterministic base contract;
+* planned status без ложных заявлений о runtime implementation.
+
+== 3. Текущие пробелы
+
+Пробелы пока сознательные:
+
+* нет final API shape;
+* нет deployment details;
+* нет authn/authz specifics;
+* нет executable runtime.
+
+== 4. Следующие обновления
+
+При начале реализации нужно:
+
+* convert placeholders to final contracts;
+* align service spec with deployment and security decisions;
+* обновить runbook и evaluation plan на реальные runtime properties;
+* при необходимости выделить отдельные ADR по authn/authz и compatibility.
+
+== 5. Входящие зависимости
 
 * xref:project/architecture/system/hld.adoc[High-Level Design]
 * xref:project/architecture/integrations.adoc[Integrations]
 * xref:project/functions/prompt-server/prd.adoc[PRD]
 
-== 5. Current Gap to Code
+== 6. Текущий gap к коду
 
 На сегодня source of truth таков:
 
-* docs describe future boundary only
-* codebase does not contain prompt-server executable or API handlers
+* docs describe future boundary only;
+* codebase does not contain prompt-server executable or API handlers.

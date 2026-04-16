@@ -1,41 +1,58 @@
 = Block Generation Document Set
 
-== 1. Coverage Summary
+== 1. Покрытие набора документов
 
-Покрытие функции сейчас разложено так:
+Для `Block Generation` сейчас покрыты:
 
 * продуктовый intent — `PRD`
-* архитектура — `System Design`
-* контракт — `Service Spec`
+* архитектурное решение — `ADR`
+* системный срез — `System Design`
+* интеграционный контракт — `Service Spec`
+* оценка качества — `Evaluation Plan`
+* rollout discipline — `Delivery Plan`
 * эксплуатация — `Runbook`
+* security boundary — `Security Note`
 * prompt governance — `Prompt Template`
 
-== 2. Cross-Document Gaps
+== 2. Что уже согласовано между документами
 
-Что ещё требуется усилить:
+В текущем наборе согласованы:
 
-* формальный benchmark set
-* versioned prompt governance
-* quality thresholds для release readiness
-* примеры `revise()` сценариев поверх существующих блоков
+* explicit authoring nature функции;
+* separation between generation and publish;
+* `IBlockGenerator` as adapter boundary;
+* review-before-save workflow;
+* distinction between create mode and revise mode.
 
-== 3. Next Updates
+== 3. Оставшиеся пробелы
 
-* синхронизировать prompt governance с provider implementation
-* собрать representative review corpus
+Что ещё можно усиливать в будущем:
 
-== 4. Upstream Dependencies
+* формальный benchmark set;
+* versioned prompt governance;
+* curated revise corpus;
+* явные примеры representative failures.
 
-Документы, на которые опирается этот набор:
+== 4. Следующие обновления
+
+Следующими полезно поддерживать в актуальном состоянии:
+
+* evaluation corpus;
+* prompt policy references;
+* links between ADR, prompt template and real provider implementation.
+
+== 5. Входящие зависимости
 
 * xref:project/architecture/system/hld.adoc[High-Level Design]
 * xref:project/architecture/ui-ux.adoc[UI/UX]
 * xref:project/functions/block-generation/prd.adoc[PRD]
 
-== 5. Source of Truth in Code
+== 6. Source of truth в коде
 
 Основные code artifacts:
 
 * `src/textfoundry_engine/tf/engine.h`
+* `src/textfoundry_engine/tf/engine.cc`
+* `src/textfoundry_ai/prompt_constants.h`
 * `src/textfoundry_ai/openai_compatible_block_generator.*`
 * `src/text_foundry_gui/viewmodels/block_editor_view_model.*`

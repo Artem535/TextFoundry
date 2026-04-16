@@ -1,17 +1,39 @@
 = Prompt Server Prompt Template
 
-Для server capability prompt-template как отдельный runtime prompt может и не
-понадобиться. Пока страница сохранена для единообразия pipeline.
+Статус: placeholder для planned capability.
 
-== 1. Prompt Purpose
+Для server capability отдельный runtime prompt-template может вообще не
+понадобиться. Страница сохранена ради единообразия document pipeline и чтобы
+заранее зафиксировать ограничения.
 
-If this capability later introduces runtime wrappers, they must stay within the
-deterministic published-asset contract.
+== 1. Назначение возможного prompt layer
 
-== 2. Constraints
+Если в будущем capability введёт runtime wrappers или server-side prompt
+envelopes, они должны:
 
-Если server будет поддерживать built-in prompt wrappers, они должны быть:
+* оставаться в deterministic published-asset contract;
+* не становиться скрытым authoring layer;
+* не подтягивать draft semantics.
 
-* deterministic
-* versioned
-* published-only
+== 2. Ограничения
+
+Если server когда-либо будет поддерживать built-in wrappers, они должны быть:
+
+* deterministic;
+* versioned;
+* published-only;
+* contract-stable;
+* совместимыми с базовым render contract.
+
+== 3. Чего здесь сознательно нет
+
+Пока в документе сознательно нет:
+
+* runtime prompt schema;
+* примеров server-side prompt assembly;
+* format-specific instructions.
+
+Причина:
+
+* capability пока не реализована, и выдумывать prompt contract раньше времени
+  было бы ложной детализацией.

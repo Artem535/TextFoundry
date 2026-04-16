@@ -1,34 +1,56 @@
 = Normalization Document Set
 
-== 1. Coverage Summary
+== 1. Покрытие набора документов
 
-Минимальный pipeline для функции создан и покрывает оба режима:
+Для `Normalization` сейчас покрыты:
 
-* raw text normalization
-* derived composition normalization
+* `PRD`
+* `ADR`
+* `System Design`
+* `Service Spec`
+* `Evaluation Plan`
+* `Delivery Plan`
+* `Runbook`
+* `Security Note`
+* `Prompt Template`
 
-== 2. Cross-Document Gaps
+== 2. Что уже согласовано между документами
 
-Нужны дополнительные артефакты:
+Согласованы:
 
-* curated semantic regression set
-* explicit prompt versioning
-* зафиксированные expectations для cache/reuse normalized blocks
+* explicit nature of normalization;
+* distinction between `Rendered` and `Normalized`;
+* derived composition/block behavior;
+* placeholder preservation;
+* optional nature of the feature.
 
-== 3. Next Updates
+== 3. Оставшиеся пробелы
 
-* sync evaluation corpus with real tone/language examples
-* formalize prompt governance
+Что ещё можно усилять позже:
 
-== 4. Upstream Dependencies
+* curated semantic regression set;
+* prompt versioning discipline;
+* more explicit cache/reuse expectations;
+* richer representative style examples.
+
+== 4. Следующие обновления
+
+Следующими полезно поддерживать:
+
+* style corpus;
+* text vs composition split in evaluation;
+* links between prompt template and actual provider implementation.
+
+== 5. Входящие зависимости
 
 * xref:project/architecture/system/hld.adoc[High-Level Design]
 * xref:project/architecture/ui-ux.adoc[UI/UX]
 * xref:project/functions/normalization/prd.adoc[PRD]
 
-== 5. Source of Truth in Code
+== 6. Source of truth в коде
 
 * `src/textfoundry_engine/tf/engine.h`
+* `src/textfoundry_engine/tf/engine.cc`
 * `src/textfoundry_ai/openai_compatible_normalizer.*`
 * `src/text_foundry_gui/viewmodels/render_view_model.*`
 * `src/text_foundry_gui/viewmodels/compositions_view_model.*`

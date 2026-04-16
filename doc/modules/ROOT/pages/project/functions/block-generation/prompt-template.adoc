@@ -1,26 +1,63 @@
 = Block Generation Prompt Template
 
-== 1. Prompt Purpose
+== 1. Назначение prompt contract
 
-Prompt contract должен превращать instruction в reviewable block draft, а не в
-final published artifact.
+Prompt contract должен:
 
-== 2. Required Prompt Elements
+* превращать пользовательскую instruction в reviewable block draft;
+* генерировать структурированный payload, а не свободный prose output;
+* поддерживать create и revise сценарии;
+* не создавать illusion of auto-publish.
 
-В prompt contract должны фиксироваться:
+== 2. Обязательные элементы prompt policy
 
-* назначение блока
-* желаемый `BlockType`
-* ограничения на output structure
-* требования к placeholders и defaults
-* expected review model: suggestion, not auto-commit
+В prompt contract должны быть зафиксированы:
 
-== 3. Output Contract
+* роль модели как генератора reusable TextFoundry block;
+* требование вернуть только structured payload;
+* допустимые значения `BlockType`;
+* правило использовать `templ` как имя поля шаблона;
+* требования к `id`;
+* правило сохранять язык source content, если перевод явно не запрошен;
+* explicit review model: suggestion, not commit.
 
-* provider response должен быть пригоден к сборке `GeneratedBlockData`
-* output не должен предполагать auto-save
+== 3. Специфика create mode
 
-== 4. Governance
+Для create mode prompt contract должен:
 
-Текущий runtime использует provider-specific prompt assembly в модуле
-`textfoundry_ai`.
+* интерпретировать свободную инструкцию;
+* учитывать optional preferred id/type/language;
+* возвращать содержательно полезный, а не минимально формальный template;
+* не заполнять результат placeholder-like бессодержательным текстом.
+
+== 4. Специфика revise mode
+
+Для revise mode prompt contract должен дополнительно фиксировать:
+
+* не менять identity блока;
+* сохранять роль блока в общей prompt structure;
+* не схлопывать детализированный блок в короткую generic summary;
+* по возможности сохранять tags, defaults, examples, headings, placeholders.
+
+== 5. Контракт вывода
+
+Provider response должен:
+
+* быть парсируемым как `GeneratedBlockData`;
+* не включать лишние объяснения;
+* быть пригодным к engine validation;
+* не предполагать auto-save или auto-publish.
+
+== 6. Управление и source of truth
+
+Текущий runtime использует provider-specific prompt assembly в `textfoundry_ai`.
+
+Документационный source of truth:
+
+* xref:project/functions/block-generation/service-spec.adoc[Service Spec]
+* xref:project/functions/block-generation/adr.adoc[ADR]
+
+Кодовый source of truth:
+
+* `src/textfoundry_ai/prompt_constants.h`
+* `src/textfoundry_ai/openai_compatible_block_generator.*`

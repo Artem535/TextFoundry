@@ -1,19 +1,53 @@
 = Composition Rewrite Prompt Template
 
-== 1. Prompt Purpose
+== 1. Назначение prompt contract
 
-Prompt contract должен produce preservation-aware patch suggestions over an
-existing composition.
+Prompt contract должен:
 
-== 2. Required Prompt Elements
+* produce preservation-aware patch suggestions;
+* работать поверх existing composition context;
+* не превращаться в blind rewrite всей структуры;
+* возвращать patch-oriented output, пригодный для preview/apply model.
 
-Prompt contract должен фиксировать:
+== 2. Обязательные элементы prompt policy
 
-* допустимую силу rewrite
-* правила preservation existing blocks
-* expected patch-oriented output format
+В contract должны быть зафиксированы:
 
-== 3. Output Contract
+* допустимая сила rewrite;
+* preservation existing blocks;
+* сохранение block ids;
+* сохранение block order;
+* сохранение placeholders;
+* patch-oriented output format;
+* запрет на structural redesign.
 
-* output should map to preview/patch model
-* output must not imply blind overwrite
+== 3. Контекст, который должен попасть в prompt
+
+Нужно явно учитывать:
+
+* user instruction;
+* source composition identity/version;
+* список relevant blocks;
+* block metadata;
+* composition-level constraints.
+
+== 4. Контракт вывода
+
+Output должен:
+
+* map to preview/patch model;
+* содержать только изменения для реально затронутых blocks;
+* не предполагать blind overwrite;
+* не возвращать новый composition design целиком.
+
+== 5. Управление и source of truth
+
+Документационный source of truth:
+
+* xref:project/functions/composition-rewrite/service-spec.adoc[Service Spec]
+* xref:project/functions/composition-rewrite/adr.adoc[ADR]
+
+Кодовый source of truth:
+
+* `src/textfoundry_ai/prompt_constants.h`
+* `src/textfoundry_ai/openai_compatible_composition_block_rewriter.*`

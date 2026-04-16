@@ -1,19 +1,63 @@
 = Prompt Slicing Prompt Template
 
-== 1. Prompt Purpose
+== 1. Назначение prompt contract
 
-Prompt contract должен декомпозировать source prompt в coherent block set.
+Prompt contract должен:
 
-== 2. Required Prompt Elements
+* декомпозировать source prompt в coherent reusable block set;
+* по возможности сохранять смысловую структуру;
+* поддерживать update mode без разрушения existing composition boundaries;
+* возвращать parseable batch payload, а не narrative explanation.
 
-Prompt contract должен фиксировать:
+== 2. Обязательные элементы prompt policy
 
-* требуемый формат batch output
-* правила именования ids
-* ожидания по сохранению intent
-* политику preservation для update mode
+В prompt contract должны быть зафиксированы:
 
-== 3. Output Contract
+* batch output format;
+* допустимые block types;
+* правила именования ids;
+* ожидания по coverage source intent;
+* preservation policy для update mode;
+* запрет на схлопывание большого числа логически разных секций в один общий
+  блок без достаточного основания.
 
-* output должен быть парсируемым как `GeneratedBlockBatch`
-* update mode должен содержать preservation-aware guidance
+== 3. Специфика create mode
+
+Для create mode prompt contract должен:
+
+* разбивать длинный source на небольшой, но осмысленный block set;
+* сохранять полезную структуру и форматирование;
+* предпочитать reusable boundaries, а не thin summaries.
+
+== 4. Специфика update mode
+
+Для update mode contract должен дополнительно учитывать:
+
+* reusable existing ids;
+* reusable block summaries;
+* preservation strength;
+* preserve order guidance;
+* недопустимость ненужного redesign всей структуры.
+
+== 5. Контракт вывода
+
+Output должен:
+
+* быть парсируемым как `GeneratedBlockBatch`;
+* содержать уникальные ids;
+* быть пригодным к workflow validation;
+* не предполагать auto-publish.
+
+== 6. Управление и source of truth
+
+Prompt policy реализована в provider-specific generator layer.
+
+Документационный source of truth:
+
+* xref:project/functions/prompt-slicing/service-spec.adoc[Service Spec]
+* xref:project/functions/prompt-slicing/adr.adoc[ADR]
+
+Кодовый source of truth:
+
+* `src/textfoundry_ai/prompt_constants.h`
+* `src/textfoundry_ai/openai_compatible_block_generator.*`
