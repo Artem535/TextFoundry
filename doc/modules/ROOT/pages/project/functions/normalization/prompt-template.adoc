@@ -19,7 +19,53 @@ Prompt contract должен:
 * explicit instruction возвращать только normalized text;
 * для block normalization - сохранение placeholders exactly.
 
-== 3. Специфика text normalization
+== 3. Текущая runtime-структура prompt
+
+В runtime есть два разных prompt contracts:
+
+* text normalization
+* block normalization
+
+Текущий `system prompt` для text normalization требует:
+
+* normalize rendered TextFoundry output;
+* preserve meaning;
+* apply only requested semantic style changes;
+* respect rewrite strength and preservation constraints;
+* do not add explanations, metadata, markdown fences or commentary;
+* return only normalized text.
+
+Текущий `system prompt` для block normalization требует:
+
+* cosmetically normalize a TextFoundry block template;
+* делать только light editorial changes;
+* closely preserve block structure;
+* preserve every placeholder exactly;
+* do not add or remove placeholders;
+* do not collapse sections;
+* return only normalized template text.
+
+Текущий `user prompt` для text normalization собирается так:
+
+* `Normalize the following raw text snapshot.`
+* `Requested semantic style:`
+* style directives from `SemanticStyle`
+* `Text:`
+* source text
+
+Текущий `user prompt` для block normalization собирается так:
+
+* `Normalize the following block template conservatively.`
+* `Block id`
+* `Block type`
+* `Preserve these placeholders exactly:`
+* список placeholders
+* `Requested semantic style:`
+* style directives
+* `Template:`
+* source template
+
+== 4. Специфика text normalization
 
 Text normalization contract должен:
 
@@ -27,7 +73,7 @@ Text normalization contract должен:
 * не добавлять комментарии и metadata;
 * применять только requested semantic style changes.
 
-== 4. Специфика block/composition normalization
+== 5. Специфика block/composition normalization
 
 Block/composition normalization contract должен:
 
@@ -36,7 +82,7 @@ Block/composition normalization contract должен:
 * не менять placeholders;
 * не разрушать section layout без достаточного основания.
 
-== 5. Контракт вывода
+== 6. Контракт вывода
 
 Output должен:
 
@@ -45,7 +91,12 @@ Output должен:
 * быть пригодным для derived composition/block workflows;
 * не предполагать hidden persistence.
 
-== 6. Управление и source of truth
+Фактический runtime output contract:
+
+* plain normalized text for text normalization
+* plain normalized template text for block normalization
+
+== 7. Управление и source of truth
 
 Документационный source of truth:
 

@@ -21,7 +21,41 @@ Prompt contract должен:
 * правило сохранять язык source content, если перевод явно не запрошен;
 * explicit review model: suggestion, not commit.
 
-== 3. Специфика create mode
+== 3. Текущая runtime-структура prompt
+
+В текущем runtime prompt собирается из двух частей:
+
+* `system prompt`
+* `user prompt`
+
+Текущий `system prompt` фиксирует:
+
+* модель генерирует reusable TextFoundry blocks;
+* нужно вернуть только structured payload по JSON schema;
+* block должен быть explicit, reusable и safe to publish as draft;
+* нужно предпочитать rich, fully usable content over compressed summaries;
+* нужно сохранять язык source content;
+* `id` должен быть stable dot-separated;
+* поле шаблона называется `templ`;
+* допустимые типы: `role`, `system`, `mission`, `safety`, `constraint`,
+  `style`, `domain`, `meta`.
+
+Текущий `user prompt` для create mode собирается в таком порядке:
+
+* `Generate one reusable TextFoundry block.`
+* `User request:`
+* исходная пользовательская инструкция
+* optional `Preferred id`
+* optional `Preferred type`
+* optional `Preferred block language metadata`
+* optional список `Existing block ids to avoid`
+* финальные требования:
+  `defaults` как string-to-string object,
+  `tags` как flat array,
+  только допустимые `type`,
+  язык сохранять, если перевод явно не запрошен.
+
+== 4. Специфика create mode
 
 Для create mode prompt contract должен:
 
@@ -30,7 +64,7 @@ Prompt contract должен:
 * возвращать содержательно полезный, а не минимально формальный template;
 * не заполнять результат placeholder-like бессодержательным текстом.
 
-== 4. Специфика revise mode
+== 5. Специфика revise mode
 
 Для revise mode prompt contract должен дополнительно фиксировать:
 
@@ -39,7 +73,17 @@ Prompt contract должен:
 * не схлопывать детализированный блок в короткую generic summary;
 * по возможности сохранять tags, defaults, examples, headings, placeholders.
 
-== 5. Контракт вывода
+Текущий revise prompt собирается поверх create contract и добавляет:
+
+* `Revise the existing TextFoundry block...`
+* `Do not change the block id, type, or language intent.`
+* guidance на сохранение role, structure, examples, headings, placeholders;
+* `User instruction:`
+* `Current block:`
+  с полями `Id`, `Type`, `Language`, `Description`, `Tags`, `Defaults`,
+  `Template`.
+
+== 6. Контракт вывода
 
 Provider response должен:
 
@@ -48,7 +92,13 @@ Provider response должен:
 * быть пригодным к engine validation;
 * не предполагать auto-save или auto-publish.
 
-== 6. Управление и source of truth
+Фактический runtime output contract:
+
+* JSON payload, парсируемый как `GeneratedBlockData`
+* поля:
+  `id`, `type`, `language`, `description`, `templ`, `defaults`, `tags`
+
+== 7. Управление и source of truth
 
 Текущий runtime использует provider-specific prompt assembly в `textfoundry_ai`.
 

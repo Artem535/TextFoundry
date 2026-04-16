@@ -21,7 +21,38 @@ Prompt contract должен:
 * patch-oriented output format;
 * запрет на structural redesign.
 
-== 3. Контекст, который должен попасть в prompt
+== 3. Текущая runtime-структура prompt
+
+В runtime contract состоит из:
+
+* `system prompt`
+* `user prompt`
+
+Текущий `system prompt` требует:
+
+* rewrite existing TextFoundry blocks without changing composition structure;
+* return only structured patch payload matching JSON schema;
+* not add blocks;
+* not remove blocks;
+* not change block ids;
+* not change block types;
+* not redesign composition;
+* preserve language unless translation explicitly requested;
+* preserve placeholders exactly;
+* preserve useful internal structure;
+* return patches only for blocks that truly need changes.
+
+Текущий `user prompt` собирается так:
+
+* `Rewrite the following composition by patching existing blocks only.`
+* `User instruction:`
+* пользовательская инструкция
+* `Composition:`
+* full ordered block context
+* `Constraints:`
+  preserve structure, ids, order, placeholders, language, return patches only
+
+== 4. Контекст, который должен попасть в prompt
 
 Нужно явно учитывать:
 
@@ -31,7 +62,17 @@ Prompt contract должен:
 * block metadata;
 * composition-level constraints.
 
-== 4. Контракт вывода
+Реальный runtime context для каждого блока содержит:
+
+* `block_id`
+* `type`
+* `language`
+* `description`
+* `defaults`
+* `tags`
+* `templ`
+
+== 5. Контракт вывода
 
 Output должен:
 
@@ -40,7 +81,14 @@ Output должен:
 * не предполагать blind overwrite;
 * не возвращать новый composition design целиком.
 
-== 5. Управление и source of truth
+Фактический runtime output contract:
+
+* JSON payload, парсируемый как `CompositionBlockRewritePreview`
+* patch fields:
+  `block_id`, optional `description`, optional `templ`, optional `defaults`,
+  optional `tags`, `rationale`
+
+== 6. Управление и source of truth
 
 Документационный source of truth:
 

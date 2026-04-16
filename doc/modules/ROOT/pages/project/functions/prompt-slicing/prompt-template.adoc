@@ -21,7 +21,42 @@ Prompt contract должен:
 * запрет на схлопывание большого числа логически разных секций в один общий
   блок без достаточного основания.
 
-== 3. Специфика create mode
+== 3. Текущая runtime-структура prompt
+
+В runtime prompt состоит из:
+
+* `system prompt`
+* `user prompt`
+
+Текущий `system prompt` требует:
+
+* decomposing prompt text into reusable TextFoundry blocks;
+* вернуть только structured payload по JSON schema;
+* разбивать source на небольшой осмысленный набор blocks;
+* prefer 3-8 blocks unless source genuinely simpler or more complex;
+* сохранять richness of source;
+* сохранять sections, headings, tags, examples, response flow;
+* сохранять язык каждой части, если перевод явно не запрошен;
+* использовать stable dot-separated ids;
+* использовать `templ` как имя template field;
+* ограничиваться допустимыми типами блока.
+
+Текущий `user prompt` для batch slicing собирается в таком порядке:
+
+* `Decompose the following prompt text into reusable TextFoundry blocks.`
+* `Source text:`
+* полный `source_text`
+* optional `namespace prefix`
+* optional preferred language metadata
+* optional `existing block ids to avoid`
+* optional `reusable block ids`
+* optional preservation guidance:
+  reuse exact ids, preserve current structure, preserve count/level of detail,
+  preserve language, preserve order
+* optional current structure summaries
+* финальные ограничения на output format и id policy
+
+== 4. Специфика create mode
 
 Для create mode prompt contract должен:
 
@@ -29,7 +64,7 @@ Prompt contract должен:
 * сохранять полезную структуру и форматирование;
 * предпочитать reusable boundaries, а не thin summaries.
 
-== 4. Специфика update mode
+== 5. Специфика update mode
 
 Для update mode contract должен дополнительно учитывать:
 
@@ -39,7 +74,14 @@ Prompt contract должен:
 * preserve order guidance;
 * недопустимость ненужного redesign всей структуры.
 
-== 5. Контракт вывода
+В реальном runtime update mode дополнительно усиливается:
+
+* reusable ids guidance;
+* `Target preservation strength: keep about N%...`;
+* current structure summaries;
+* preserve current order unless clearly necessary.
+
+== 6. Контракт вывода
 
 Output должен:
 
@@ -48,7 +90,13 @@ Output должен:
 * быть пригодным к workflow validation;
 * не предполагать auto-publish.
 
-== 6. Управление и source of truth
+Фактический runtime output contract:
+
+* JSON payload, парсируемый как `GeneratedBlockBatch`
+* каждый block должен содержать:
+  `id`, `type`, `language`, `description`, `templ`, `defaults`, `tags`
+
+== 7. Управление и source of truth
 
 Prompt policy реализована в provider-specific generator layer.
 

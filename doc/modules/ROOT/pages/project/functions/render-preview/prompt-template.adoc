@@ -18,13 +18,28 @@
   rewrite target
 * prompt не должен трактовать rewrite как publish or approval step
 
-== 3. Контракт вывода
+== 3. Текущая runtime-структура
+
+Normalized preview не имеет отдельного собственного prompt layer. Он использует
+тот же normalization contract, что и функция `Normalization`.
+
+Фактический runtime prompt structure:
+
+* `system prompt` и `user prompt` берутся из normalizer implementation;
+* source для user prompt - текущий `rawOutputText`;
+* semantic instructions derive-ятся из текущего `SemanticStyle`.
+
+Подробный runtime contract зафиксирован в:
+
+* xref:project/functions/normalization/prompt-template.adoc[Normalization Prompt Template]
+
+== 4. Контракт вывода
 
 * output must be rewritten text only
 * output must not contain explanations, metadata or review prose
 * output is preview-only and does not imply storage mutation
 
-== 4. Управление и source of truth
+== 5. Управление и source of truth
 
 * deterministic render path не зависит от prompt-template
 * provider-specific prompt assembly lives in normalizer implementation
