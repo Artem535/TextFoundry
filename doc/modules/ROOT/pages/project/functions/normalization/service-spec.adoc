@@ -1,29 +1,61 @@
 = Normalization Service Spec
 
-== 1. Purpose and Service Boundary
+== 1. Назначение и граница сервиса
 
-* Service responsibility: apply semantic rewrite to text or composition
-* Consumers: render UI, composition UI, future authoring clients
-* Non-goals: implicit render-time rewrite, direct mutation of published state
+Назначение функции:
 
-== 2. Consumers and Dependencies
+* применять semantic rewrite к тексту или композиции по явному запросу;
+* возвращать AI-derived result, не подменяя canonical render;
+* при composition normalization создавать производные артефакты, а не
+  переписывать source state.
 
-* Consumers: render workflow, composition workflow
-* Dependencies: `INormalizer`, `IBlockNormalizer`, provider API
+Потребители:
 
-== 3. API / Tool Methods
+* render UI;
+* composition UI;
+* потенциальные будущие authoring clients.
 
-* `Engine.Normalize(...)`
-* `Engine.NormalizeComposition(...)`
+Не-цели:
 
-== 4. Input Schema
+* implicit render-time rewrite;
+* direct mutation of source published state;
+* скрытая подмена deterministic output.
 
-Text normalization input:
+== 2. Потребители и зависимости
+
+Потребители:
+
+* render workflow
+* composition workflow
+
+Зависимости:
+
+* `INormalizer`
+* `IBlockNormalizer`
+* `SemanticStyle`
+* provider API
+
+== 3. Методы и точки вызова
+
+Основные методы:
+
+* `Engine.Normalize(const std::string&, const SemanticStyle&)`
+* `Engine.NormalizeComposition(const CompositionNormalizationRequest&)`
+
+== 4. Входной контракт
+
+=== Text normalization
+
+Вход:
 
 * source text
 * `SemanticStyle`
 
-Composition normalization input:
+=== Composition normalization
+
+Вход: `CompositionNormalizationRequest`
+
+Поля:
 
 * `source_composition_id`
 * optional `source_version`
@@ -32,44 +64,104 @@ Composition normalization input:
 * `normalize_static_text`
 * `reuse_cached_blocks`
 
-== 5. Output Schema
+Семантика:
+
+* `SemanticStyle`
+  Явно задаёт желаемое semantic transformation policy.
+
+* `normalize_static_text`
+  Разрешает переписывать static text fragments.
+
+* `reuse_cached_blocks`
+  Разрешает повторно использовать уже созданные normalized derivatives.
+
+== 5. Выходной контракт
+
+Основные выходы:
 
 * normalized string
 * `NormalizedCompositionResult`
 
-== 6. Data Contract Rules
+Содержимое `NormalizedCompositionResult`:
 
-* caller must provide explicit style request
-* absence of configured normalizer is an error
-* derived result is review output, not implicit persistence
-* composition normalization preserves composition structure and rewrites block refs
+* `composition_id`
+* `composition_version`
+* `rewritten_blocks`
 
-== 7. Prompting and Source Hierarchy
+Смысл выходов:
 
-* style policy derives from `SemanticStyle`
-* prompt assembly is provider-side implementation detail in `textfoundry_ai`
+* normalized string
+  Это AI-derived preview/result для текста.
 
-== 8. Error Handling and Retries
+* normalized composition result
+  Это идентичность производной композиции и трассировка переписанных блоков.
 
-* transport and parsing failures are surfaced
-* no hidden retry on persistence because persistence is outside the service boundary
+== 6. Правила доменного контракта
 
-== 9. Confidence / Routing Rules
+Функция обязана соблюдать:
 
-* current implementation uses configured normalizer path only
-* no separate confidence score is exposed to caller
+* explicit style request обязателен;
+* отсутствие configured normalizer является ошибкой;
+* normalized text не является hidden canonical persistence;
+* composition normalization сохраняет composition structure;
+* placeholders в block templates должны сохраняться;
+* source composition и source blocks не перезаписываются напрямую.
 
-== 10. Edge Cases and Fallback Behavior
+== 7. Иерархия источников и prompt policy
 
-* no normalizer configured -> explicit error
-* unclear style request -> provider result still requires review
-* provider unavailable -> fallback to raw deterministic output
+Приоритеты:
 
-== Upstream / Downstream
+* source text/source composition - первичный контекст;
+* `SemanticStyle` определяет desired rewrite policy;
+* prompt assembly и provider-specific formatting живут в `textfoundry_ai`;
+* engine добавляет domain constraints и validation.
+
+== 8. Ошибки и retry policy
+
+Ошибки, которые должны явно возвращаться:
+
+* no normalizer configured;
+* empty style request;
+* provider/transport errors;
+* parsing errors;
+* placeholder preservation violations;
+* source composition not found.
+
+Retry policy:
+
+* transport/provider retry может существовать вне доменного контракта;
+* persistence retry не должен скрывать доменные ошибки derivation workflow.
+
+== 9. Routing и confidence policy
+
+Текущая реализация:
+
+* использует configured normalizer path;
+* не публикует отдельный confidence score;
+* composition-level guardrails достигаются через validation и derivation policy.
+
+== 10. Edge cases и fallback behavior
+
+Основные edge cases:
+
+* no normalizer configured
+  Explicit error, user stays on deterministic output.
+
+* unclear style request
+  Провайдер может вернуть слабый результат, поэтому review остаётся обязательным.
+
+* provider unavailable
+  Fallback - raw deterministic output и отказ от normalization.
+
+* placeholder mismatch
+  Engine отклоняет normalized block и не публикует derived result.
+
+== 11. Связанные документы
 
 Upstream:
 
 * xref:project/functions/normalization/system-design.adoc[System Design]
+* xref:project/functions/normalization/adr.adoc[ADR]
 
 Downstream:
 

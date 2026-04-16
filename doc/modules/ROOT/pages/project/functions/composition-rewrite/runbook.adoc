@@ -1,45 +1,92 @@
 = Composition Rewrite Runbook
 
-== 1. Operational Overview
+== 1. Операционный обзор
 
-* Service owner: composition AI workflow owner
-* Criticality: medium
+Функция:
 
-== 2. Ownership and Support Model
+* даёт AI-assisted rewrite через preview/apply;
+* не должна ломать source composition при сбоях;
+* при недоступности должна уступать место ручному composition editing.
 
-* Primary owner: rewriter / AI adapter owner
-* Secondary owner: composition editor owner
+Критичность:
 
-== 3. Key Signals and Alerts
+* средняя
 
-* repeated preview failures
-* provider errors
-* high rate of rejected previews
+== 2. Владение и модель поддержки
 
-== 4. Common Failure Modes
+Основной владелец:
 
-* stale composition snapshot
+* владелец rewriter / AI adapter layer
+
+Смежные владельцы:
+
+* владелец composition editor workflow
+* владелец engine preview/apply integration
+
+== 3. Ключевые сигналы и наблюдаемость
+
+На что смотреть:
+
+* repeated preview failures;
+* provider errors;
+* high rate of rejected previews;
+* placeholder validation failures at apply stage;
+* inconsistencies between preview and apply behavior.
+
+== 4. Типовые сбои
+
+Типовые failure modes:
+
+* stale or invalid composition selection
+  Preview cannot start.
+
 * no configured rewriter
+  Rewrite workflow unavailable.
+
 * overly aggressive patch set
+  Preview exists, but user cannot safely apply it.
 
-== 5. Incident Response
+* placeholder breakage
+  Apply blocked by engine validation.
 
-* verify rewrite configuration
-* verify source composition snapshot
-* inspect preview output before any apply
-* switch to manual editing if needed
+== 5. Реакция на инцидент
 
-== 6. Degradation Modes
+Порядок действий:
 
-* disable rewrite workflow
-* continue manual composition editing
+1. Проверить rewrite configuration.
+2. Проверить выбранную composition и version.
+3. Сравнить preview output с expected representative case.
+4. Если apply ломается, проверить placeholder validation path.
+5. При необходимости перевести пользователя на manual composition editing.
 
-== 7. Recovery and Validation
+== 6. Режимы деградации
 
-* rerun preview on a known representative composition
-* confirm preview/apply pair remains consistent
+Допустимые режимы деградации:
 
-== 8. Escalation Contacts
+* отключить rewrite workflow;
+* оставить preview disabled;
+* продолжать ручное composition editing.
 
-* Team Lead: composition workflow owner
-* AI owner: rewriter owner
+== 7. Восстановление и проверка
+
+После исправления:
+
+1. Повторно получить preview на representative composition.
+2. Убедиться, что preview inspectable и не пустой там, где ожидаются изменения.
+3. Проверить apply на безопасном representative case.
+4. Убедиться, что published new versions соответствуют preview intent.
+
+== 8. Когда эскалировать
+
+Эскалировать нужно, если:
+
+* preview системно неполезен на нормальных композициях;
+* apply расходится с тем, что было показано пользователю;
+* placeholder validation ломается слишком часто;
+* пользователи массово отказываются от функции в пользу ручного режима.
+
+== 9. Контакты эскалации
+
+* Team Lead: владелец composition workflow
+* AI owner: владелец rewriter/prompt policy
+* Core owner: владелец engine apply logic

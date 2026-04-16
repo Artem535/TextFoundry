@@ -1,84 +1,184 @@
 = Block Generation Service Spec
 
-== 1. Purpose and Service Boundary
+== 1. Назначение и граница сервиса
 
-* Service responsibility: превратить instruction в block draft suggestion
-* Consumers: GUI block editor и потенциальные authoring clients
-* Non-goals: publish, persist, auto-approve
+Назначение функции:
 
-== 2. Consumers and Dependencies
+* превратить пользовательскую инструкцию в структурированный draft suggestion
+  для одного блока;
+* не выполнять публикацию и не менять storage напрямую;
+* вернуть результат в форме, пригодной для review и ручного сохранения.
 
-* Consumers: `BlockEditorViewModel`
-* Dependencies: `IBlockGenerator`, provider API, `QtHttpTransport`
+Потребители:
 
-== 3. API / Tool Methods
+* `BlockEditorViewModel`;
+* потенциальные будущие authoring-клиенты, использующие тот же engine contract.
 
-* `Engine.GenerateBlockData(...)`
-* `Engine.GenerateBlockDraft(...)`
+Не-цели:
 
-== 4. Input Schema
+* publish/persist;
+* auto-approve;
+* batch decomposition;
+* скрытая генерация из render path.
 
-`BlockGenerationRequest`:
+== 2. Потребители и зависимости
 
-* required: `prompt`
-* optional: `preferred_id`
-* optional: `preferred_type`
-* optional: `preferred_language`
-* optional: `existing_block_ids`
-* optional: `allow_id_collision`
+Потребители:
 
-== 5. Output Schema
+* `BlockEditorViewModel`
 
-Primary outputs:
+Зависимости:
+
+* `tf::Engine`
+* `IBlockGenerator`
+* provider API
+* `QtHttpTransport`
+* session-level AI configuration
+
+== 3. Методы и точки вызова
+
+Основные методы:
+
+* `Engine.GenerateBlockData(const BlockGenerationRequest&)`
+* `Engine.GenerateBlockDraft(const BlockGenerationRequest&)`
+
+Практически основной GUI workflow использует `GenerateBlockData(...)`, после
+чего сам заполняет форму редактора.
+
+== 4. Входной контракт
+
+Основная структура входа: `BlockGenerationRequest`
+
+Обязательные поля:
+
+* `prompt`
+
+Необязательные поля:
+
+* `preferred_id`
+* `preferred_type`
+* `preferred_language`
+* `existing_block_ids`
+* `allow_id_collision`
+
+Семантика полей:
+
+* `prompt`
+  Свободная пользовательская инструкция.
+
+* `preferred_id`
+  Подсказка для генератора, какой `block_id` желательно использовать.
+
+* `preferred_type`
+  Подсказка о типе блока.
+
+* `preferred_language`
+  Подсказка о language metadata блока.
+
+* `existing_block_ids`
+  Список id, который используется engine для post-validation коллизий.
+
+* `allow_id_collision`
+  Разрешает контролируемую коллизию только в revision-сценарии того же блока.
+
+== 5. Выходной контракт
+
+Основные выходные структуры:
 
 * `GeneratedBlockData`
 * `BlockDraft`
 
-Returned block payload must contain:
+Обязательные элементы generated payload:
 
-* stable block id
-* block type
-* language
-* description
-* template
-* defaults
-* tags
+* стабильный `block_id`
+* `block_type`
+* `language`
+* `description`
+* `template` в поле `templ`
+* `defaults`
+* `tags`
 
-== 6. Data Contract Rules
+Назначение выходов:
 
-* generator result должен быть конвертируем в block draft
-* missing generator configuration must surface as explicit error
-* output version не считается published version
-* generated block id валидируется в engine before editor receives it
+* `GeneratedBlockData`
+  Используется, когда GUI хочет отдельно загрузить поля в форму.
 
-== 7. Prompting and Source Hierarchy
+* `BlockDraft`
+  Представляет draft-форму результата, но всё ещё не является published asset.
 
-* system prompt lives in `textfoundry_ai`
-* task prompt derives from user instruction and optional hints
-* no hidden prompt chaining outside configured generator
+== 6. Правила доменного контракта
 
-== 8. Error Handling and Retries
+Функция обязана соблюдать следующие правила:
 
-* transport, auth, parsing and provider errors bubble up to caller
-* retry policy определяется provider/transport configuration
-* no implicit persistence retry
+* generator result должен быть конвертируем в доменно корректный draft;
+* отсутствие настроенного generator является explicit error;
+* generated output не считается published version;
+* `block_id` валидируется в engine до передачи результата вызывающему слою;
+* пустой template недопустим;
+* коллизии с существующими id запрещены, кроме явно разрешённого revision mode.
 
-== 9. Confidence / Routing Rules
+== 7. Иерархия источников и prompt policy
 
-* текущая реализация не вводит отдельный confidence score
-* routing фиксирован на configured generator implementation
+Источники данных и логика приоритета:
 
-== 10. Edge Cases and Fallback Behavior
+* пользовательская инструкция является первичным источником смысла;
+* optional hints уточняют ожидаемый `id`, `type` и `language`;
+* prompt policy и provider-specific formatting живут в `textfoundry_ai`;
+* engine не хранит provider-specific prompt assembly как публичный контракт.
 
-* no generator configured -> explicit error
-* malformed provider response -> error + stay in manual editing
-* low-quality suggestion -> user edits or discards draft
+== 8. Ошибки и retry policy
 
-== Upstream / Downstream
+Ошибки, которые должны доходить до вызывающего слоя:
+
+* transport errors;
+* auth errors;
+* provider errors;
+* parsing errors;
+* invalid generated payload;
+* duplicate id errors;
+* missing configuration errors.
+
+Политика retry:
+
+* retry определяется transport/provider configuration;
+* сервисный контракт сам не делает implicit persistence retry;
+* при ошибке storage не меняется.
+
+== 9. Routing и confidence policy
+
+Текущая реализация:
+
+* использует один configured generator path;
+* не публикует отдельный confidence score;
+* не выполняет multi-provider routing.
+
+Практическим quality gate остаётся:
+
+* engine validation;
+* human review в редакторе блока.
+
+== 10. Edge cases и fallback behavior
+
+Ключевые edge cases:
+
+* generator не настроен
+  Возвращается explicit error, пользователь продолжает ручной authoring.
+
+* provider вернул malformed response
+  Ошибка доходит до UI, форма не публикуется автоматически.
+
+* suggestion низкого качества
+  Пользователь вручную редактирует или отбрасывает draft.
+
+* `preferred_id` конфликтует с existing ids
+  Engine отклоняет результат, если не включён допустимый revision mode.
+
+== 11. Связанные документы
 
 Upstream:
 
 * xref:project/functions/block-generation/system-design.adoc[System Design]
+* xref:project/functions/block-generation/adr.adoc[ADR]
 
 Downstream:
 

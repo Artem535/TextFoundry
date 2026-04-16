@@ -1,24 +1,49 @@
 = Composition Rewrite Service Spec
 
-== 1. Purpose and Service Boundary
+== 1. Назначение и граница сервиса
 
-* Service responsibility: rewrite composition through previewable patch set
-* Consumers: GUI rewrite workflow
-* Non-goals: blind overwrite, hidden persistence side effects outside apply
+Назначение функции:
 
-== 2. Consumers and Dependencies
+* переписать composition через previewable patch set;
+* не выполнять blind overwrite;
+* отделить AI suggestion от фактического apply.
 
-* Consumers: composition rewrite dialog and authoring flow
-* Dependencies: `ICompositionBlockRewriter`, provider API, engine apply logic
+Потребители:
 
-== 3. API / Tool Methods
+* GUI rewrite workflow;
+* composition authoring flow.
 
-* `Engine.PreviewCompositionBlockRewrite(...)`
-* `Engine.ApplyCompositionBlockRewrite(...)`
+Не-цели:
 
-== 4. Input Schema
+* structural redesign composition;
+* hidden persistence side effects вне explicit apply;
+* automatic approval.
 
-Preview input uses `CompositionBlockRewriteRequest`:
+== 2. Потребители и зависимости
+
+Потребители:
+
+* `CompositionBlockRewriteViewModel`
+* composition rewrite dialog
+
+Зависимости:
+
+* `ICompositionBlockRewriter`
+* provider API
+* engine preview/apply logic
+
+== 3. Методы и точки вызова
+
+Основные методы:
+
+* `Engine.PreviewCompositionBlockRewrite(const CompositionBlockRewriteRequest&)`
+* `Engine.ApplyCompositionBlockRewrite(const CompositionBlockRewritePreview&)`
+
+== 4. Входной контракт
+
+Preview input использует `CompositionBlockRewriteRequest`
+
+Поля:
 
 * `source_composition_id`
 * optional `source_version`
@@ -26,54 +51,112 @@ Preview input uses `CompositionBlockRewriteRequest`:
 * `preserve_language`
 * `preserve_placeholders`
 
-Preview context assembled by engine also includes ordered block metadata:
+Preview context, который engine собирает дополнительно, включает:
 
-* block id
-* type
-* language
-* description
-* defaults
-* tags
-* template
+* `block_id`
+* `type`
+* `language`
+* `description`
+* `defaults`
+* `tags`
+* `templ`
 
-== 5. Output Schema
+Важно:
+
+* context строится только по blocks, реально присутствующим в выбранной
+  композиции;
+* повторные ссылки на один и тот же блок не должны порождать дубликаты в
+  context.
+
+== 5. Выходной контракт
+
+Основные выходы:
 
 * `CompositionBlockRewritePreview`
 * `AppliedCompositionBlockRewriteResult`
 
-== 6. Data Contract Rules
+Содержимое preview:
 
-* preview must remain inspectable by caller
-* apply depends on approved preview
-* storage mutation occurs only in explicit apply path
-* patches may modify only existing blocks from the selected composition context
+* исходная composition identity;
+* исходная version;
+* список `BlockRewritePatch`.
 
-== 7. Prompting and Source Hierarchy
+Содержимое apply result:
 
-* source composition and rewrite policy form the prompt context
-* preservation rules are part of prompt policy
+* новая composition identity/version;
+* список реально переписанных блоков.
 
-== 8. Error Handling and Retries
+== 6. Правила доменного контракта
 
-* provider/transport errors surface to caller
-* preview validation failures block apply
+Функция обязана соблюдать:
 
-== 9. Confidence / Routing Rules
+* preview должен оставаться inspectable для caller;
+* apply зависит только от approved preview;
+* storage mutation происходит только в explicit apply path;
+* patches могут модифицировать только существующие blocks из selected composition;
+* duplicate patches по `block_id` недопустимы;
+* placeholder-preservation обязателен до публикации rewritten blocks.
 
-* current implementation uses one configured rewriter path
-* preview quality and preservation ratio act as practical routing gate
+== 7. Иерархия источников и prompt policy
 
-== 10. Edge Cases and Fallback Behavior
+Приоритеты:
 
-* no rewriter configured -> explicit error
-* too aggressive rewrite -> do not apply, user reviews preview
-* ambiguous patch set -> fall back to manual composition editing
+* source composition и её blocks - первичный контекст;
+* user instruction задаёт desired rewrite;
+* preservation rules являются частью prompt policy;
+* engine добавляет domain-level validation before apply.
 
-== Upstream / Downstream
+== 8. Ошибки и retry policy
+
+Ошибки, которые должны явно возвращаться:
+
+* no rewriter configured;
+* invalid composition version;
+* source composition not found;
+* provider/transport errors;
+* duplicate patch ids;
+* patch references block not present in source composition;
+* placeholder violations.
+
+Retry policy:
+
+* provider retries - outside core service contract;
+* apply retry не должен скрывать доменные ошибки preview/patch validation.
+
+== 9. Routing и quality policy
+
+Текущая реализация:
+
+* использует один configured rewriter path;
+* не публикует confidence score;
+* preview quality and preservation behavior acting as practical routing gate.
+
+Главный safety gate:
+
+* human review before apply.
+
+== 10. Edge cases и fallback behavior
+
+Основные edge cases:
+
+* no rewriter configured
+  Explicit error.
+
+* too aggressive rewrite
+  Пользователь не применяет preview и переходит к manual editing.
+
+* ambiguous patch set
+  Fallback to manual composition editing.
+
+* empty patch set
+  Apply не должен выполнять unnecessary mutation.
+
+== 11. Связанные документы
 
 Upstream:
 
 * xref:project/functions/composition-rewrite/system-design.adoc[System Design]
+* xref:project/functions/composition-rewrite/adr.adoc[ADR]
 
 Downstream:
 

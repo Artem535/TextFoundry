@@ -1,44 +1,92 @@
 = Prompt Slicing Runbook
 
-== 1. Operational Overview
+== 1. Операционный обзор
 
-* Service owner: AI migration workflow owner
-* Criticality: medium
+Функция:
 
-== 2. Ownership and Support Model
+* помогает переносить большие prompts в block model;
+* не является обязательной для базового авторинга;
+* при сбоях должна деградировать к ручной работе без потери данных.
 
-* Primary owner: AI authoring/generator owner
-* Secondary owner: GUI composition workflow owner
+Критичность:
 
-== 3. Key Signals and Alerts
+* средняя
 
-* provider errors
-* validation failures for duplicate ids
-* repeated user rejection of generated batches
+== 2. Владение и модель поддержки
 
-== 4. Common Failure Modes
+Основной владелец:
 
-* empty or noisy input -> poor decomposition
-* id collisions -> apply blocked
-* over-aggressive update -> preservation warnings
+* владелец AI authoring / generator layer
 
-== 5. Incident Response
+Смежные владельцы:
 
-* verify generator config
-* inspect validation output
-* rerun on reduced prompt or switch to manual editing
+* владелец `BlockSliceViewModel`
+* владелец composition workflow
 
-== 6. Degradation Modes
+== 3. Ключевые сигналы и наблюдаемость
 
-* disable AI slicing
-* keep manual block creation and composition editing
+На что смотреть:
 
-== 7. Recovery and Validation
+* provider errors;
+* validation failures по duplicate ids;
+* частые user rejections generated batches;
+* нестабильность update mode;
+* массовые случаи неожиданного разрушения структуры.
 
-* rerun on a known representative prompt
-* confirm generated batch passes validation
+== 4. Типовые сбои
 
-== 8. Escalation Contacts
+Типовые failure modes:
 
-* Team Lead: AI workflow owner
-* GUI owner: slicing dialog owner
+* noisy или пустой input
+  Модель даёт плохую декомпозицию или workflow останавливается на validation.
+
+* id collisions
+  Publish blocked.
+
+* over-aggressive update
+  Generated batch сохраняет слишком мало существующей структуры.
+
+* provider outage
+  AI path недоступен, остаётся только deterministic parse и manual fallback.
+
+== 5. Реакция на инцидент
+
+Порядок действий:
+
+1. Проверить generator config.
+2. Проверить, срабатывает ли deterministic tagged-section parse.
+3. Проверить validation output.
+4. Проверить representative prompt в create mode и update mode отдельно.
+5. При необходимости рекомендовать manual block creation and composition editing.
+
+== 6. Режимы деградации
+
+Допустимые режимы деградации:
+
+* полностью отключить AI slicing;
+* использовать только deterministic parse там, где он применим;
+* оставить ручное создание блоков и ручное редактирование композиции.
+
+== 7. Восстановление и проверка
+
+После исправления:
+
+1. Прогнать known representative prompt.
+2. Убедиться, что batch проходит validation.
+3. Проверить update mode на композиции с reusable ids.
+4. Убедиться, что publish-all снова работает штатно.
+
+== 8. Когда эскалировать
+
+Эскалировать нужно, если:
+
+* ухудшилось качество decomposition на representative prompts;
+* update mode системно разрушает structure preservation;
+* deterministic fast path внезапно перестал срабатывать на tagged inputs;
+* пользователи не могут завершить publish cycle.
+
+== 9. Контакты эскалации
+
+* Team Lead: владелец AI workflow
+* GUI owner: владелец slicing dialog
+* Composition owner: владелец composition authoring workflow

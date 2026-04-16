@@ -1,45 +1,95 @@
 = Normalization Runbook
 
-== 1. Operational Overview
+== 1. Операционный обзор
 
-* Service owner: normalization workflow owner
-* Criticality: medium
+Функция:
 
-== 2. Ownership and Support Model
+* даёт optional semantic rewrite;
+* не должна влиять на базовый deterministic render;
+* при сбоях должна безопасно деградировать к исходному deterministic output.
 
-* Primary owner: AI adapter/normalizer owner
-* Secondary owner: render/composition workflow owners
+Критичность:
 
-== 3. Key Signals and Alerts
+* средняя
 
-* repeated provider failures
-* parsing errors from normalization responses
-* user-visible mismatch between raw snapshot and normalized output freshness
+== 2. Владение и модель поддержки
 
-== 4. Common Failure Modes
+Основной владелец:
+
+* владелец AI adapter / normalizer layer
+
+Смежные владельцы:
+
+* владелец render workflow
+* владелец composition workflow
+* владелец engine integration
+
+== 3. Ключевые сигналы и наблюдаемость
+
+На что смотреть:
+
+* repeated provider failures;
+* parsing errors из normalization responses;
+* placeholder mismatch errors;
+* user-visible mismatch between source snapshot and normalized freshness status;
+* неожиданный рост derived normalization failures.
+
+== 4. Типовые сбои
+
+Типовые failure modes:
 
 * missing configuration
+  Функция normalization недоступна.
+
 * stale source snapshot
+  Пользователь смотрит на outdated normalized result.
+
 * low-quality semantic rewrite
+  Результат stylistically или semanticly непригоден.
 
-== 5. Incident Response
+* placeholder breakage
+  Block normalization отклоняется engine validation.
 
-* verify AI settings
-* verify source snapshot
-* inspect provider failure returned by engine
-* switch to raw output when needed
+== 5. Реакция на инцидент
 
-== 6. Degradation Modes
+Порядок действий:
 
-* disable normalization
-* continue with deterministic render only
+1. Проверить AI settings.
+2. Проверить representative normalization sample.
+3. Для composition path отдельно проверить placeholder preservation failure.
+4. Убедиться, что render path сам по себе работает штатно.
+5. При необходимости рекомендовать пользователю вернуться к raw/rendered output.
 
-== 7. Recovery and Validation
+== 6. Режимы деградации
 
-* rerun normalization on representative sample
-* verify status indicates normalized result is current
+Допустимые режимы деградации:
 
-== 8. Escalation Contacts
+* отключить normalization;
+* продолжать работу только с deterministic render;
+* отключить composition normalization, сохранив text normalization, если ломается
+  именно block-preserving path.
 
-* Team Lead: AI workflow owner
-* Core owner: engine integration owner
+== 7. Восстановление и проверка
+
+После исправления:
+
+1. Повторно выполнить normalization на representative sample.
+2. Проверить, что status сообщает об актуальном normalized result.
+3. Для composition path убедиться, что derived blocks публикуются без placeholder
+   violations.
+4. Проверить reuse cached derivatives.
+
+== 8. Когда эскалировать
+
+Эскалировать нужно, если:
+
+* provider failures стали системными;
+* normalized outputs массово ухудшились после изменения prompt policy;
+* placeholder-preservation check часто ломается на нормальных блоках;
+* GUI stale-state стал вводить пользователей в заблуждение.
+
+== 9. Контакты эскалации
+
+* Team Lead: владелец AI workflow
+* Core owner: владелец engine integration
+* UI owner: владелец render/composition workflows

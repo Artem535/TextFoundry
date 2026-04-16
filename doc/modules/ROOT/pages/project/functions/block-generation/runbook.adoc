@@ -1,48 +1,104 @@
 = Block Generation Runbook
 
-== 1. Operational Overview
+== 1. Операционный обзор
 
-* Service owner: AI authoring workflow owner
-* Criticality: medium
-* Support model: business-hours engineering support
+Сервисная функция:
 
-== 2. Ownership and Support Model
+* помогает автору получить AI-generated draft блока;
+* не является критичным runtime path;
+* не должна ломать обычный ручной authoring при сбоях.
 
-* Primary owner: команда, поддерживающая `textfoundry_ai`
-* Secondary owner: GUI / engine owner for authoring workflow
+Критичность:
 
-== 3. Key Signals and Alerts
+* средняя
 
-* provider auth errors
-* transport failures
-* parsing failures from provider responses
+Режим поддержки:
 
-== 4. Common Failure Modes
+* инженерная поддержка в рабочее время
 
-* bad provider config -> request cannot start
-* invalid response format -> draft cannot be built
-* low-quality output -> manual review rejects suggestion
+== 2. Владение и модель поддержки
 
-== 5. Incident Response
+Основной владелец:
 
-* verify settings
-* verify endpoint reachability
-* inspect provider error returned to UI
-* switch user to manual block creation if needed
+* команда, поддерживающая `textfoundry_ai`
 
-== 6. Degradation Modes
+Смежные владельцы:
 
-* disable AI generation
-* continue manual authoring
+* владелец `BlockEditorViewModel`
+* владелец engine integration для authoring workflow
 
-== 7. Recovery and Validation
+== 3. Ключевые сигналы и наблюдаемость
 
-* recover provider configuration
-* rerun generation on test prompt
-* confirm editor receives a draft suggestion
+На что смотреть:
 
-== 8. Escalation Contacts
+* auth errors провайдера;
+* transport failures;
+* parsing failures provider responses;
+* рост числа user-visible generation errors;
+* массовые случаи невалидных generated ids.
 
-* Team Lead: authoring flow owner
-* ML owner: prompt/generator owner
-* GUI owner: block editor owner
+Признаки деградации:
+
+* пользователи массово видят `Configure AI settings first`;
+* drafts не загружаются в форму;
+* генерация стала резко хуже по качеству на representative prompts.
+
+== 4. Типовые сбои
+
+Типовые failure modes:
+
+* неправильная конфигурация провайдера
+  Запрос не стартует или получает auth/endpoint error.
+
+* invalid response format
+  Draft нельзя построить или провалена post-validation.
+
+* id collision
+  Генерация формально завершилась, но результат отклонён engine.
+
+* low-quality output
+  Пользователь видит suggestion, но не может использовать его без большой
+  ручной переработки.
+
+== 5. Реакция на инцидент
+
+Порядок действий:
+
+1. Проверить AI settings: `base_url`, `model`, `api_key`, timeout.
+2. Проверить доступность endpoint.
+3. Проверить, воспроизводится ли ошибка на representative prompt.
+4. Посмотреть, это transport/auth/parsing/validation failure или просто
+   quality issue.
+5. Если функция недоступна, перевести пользователя на manual block authoring.
+
+== 6. Режимы деградации
+
+Допустимые режимы деградации:
+
+* полностью отключить AI generation;
+* продолжать ручное создание и редактирование блоков;
+* не скрывать деградацию под видом "успешной генерации".
+
+== 7. Восстановление и проверка
+
+После исправления:
+
+1. Повторно выполнить генерацию на known-good test prompt.
+2. Убедиться, что draft приходит в форму редактора.
+3. Убедиться, что id проходит validation.
+4. Проверить revision workflow на существующем блоке.
+
+== 8. Когда эскалировать
+
+Эскалировать нужно, если:
+
+* provider errors повторяются системно;
+* parsing/validation массово ломаются после изменения prompt policy;
+* GUI показывает успешную генерацию, но форма заполняется некорректно;
+* revision mode неожиданно меняет identity block.
+
+== 9. Контакты эскалации
+
+* Team Lead: владелец authoring flow
+* AI owner: владелец generator/prompt policy
+* GUI owner: владелец block editor workflow

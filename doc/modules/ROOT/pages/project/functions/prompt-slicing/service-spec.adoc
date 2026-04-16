@@ -1,76 +1,185 @@
 = Prompt Slicing Service Spec
 
-== 1. Purpose and Service Boundary
+== 1. Назначение и граница сервиса
 
-* Service responsibility: разложить source prompt на набор block suggestions
-* Consumers: GUI slicing workflow
-* Non-goals: direct persistence, deterministic parser for every source format
+Назначение функции:
 
-== 2. Consumers and Dependencies
+* разложить source prompt на набор block suggestions;
+* поддержать update mode с preservation hints;
+* не публиковать результат автоматически;
+* вернуть batch, пригодный для review и publish-all workflow.
 
-* Consumers: `BlockSliceViewModel`, composition update workflow
-* Dependencies: `IBlockGenerator`, provider API, client-side validation
+Потребители:
 
-== 3. API / Tool Methods
+* GUI slicing workflow;
+* composition update workflow.
 
-* `Engine.GenerateBlockBatchData(...)`
-* `Engine.GenerateBlockDrafts(...)`
+Не-цели:
 
-== 4. Input Schema
+* direct persistence без review;
+* deterministic parser для любого произвольного формата;
+* implicit migration без участия пользователя.
 
-`PromptSlicingRequest`:
+== 2. Потребители и зависимости
 
-* required: `source_text`
-* optional: `preferred_language`
-* optional: `namespace_prefix`
-* optional: `existing_block_ids`
-* optional: `reusable_block_ids`
-* optional: `reusable_block_summaries`
-* optional: `preserve_reuse_percent`
-* optional: `preserve_order`
-* optional: `allow_id_collision`
+Потребители:
 
-== 5. Output Schema
+* `BlockSliceViewModel`
+* composition update workflow
+
+Зависимости:
+
+* `IBlockGenerator`
+* provider API
+* engine batch generation
+* workflow-level validation
+
+== 3. Методы и точки вызова
+
+Основные методы:
+
+* `Engine.GenerateBlockBatchData(const PromptSlicingRequest&)`
+* `Engine.GenerateBlockDrafts(const PromptSlicingRequest&)`
+
+Связанный локальный fast path:
+
+* deterministic parse tagged sections в `BlockSliceViewModel`
+
+Он не является отдельным engine API, но является важной частью фактического
+поведения функции.
+
+== 4. Входной контракт
+
+Основная структура входа: `PromptSlicingRequest`
+
+Обязательные поля:
+
+* `source_text`
+
+Необязательные поля:
+
+* `preferred_language`
+* `namespace_prefix`
+* `existing_block_ids`
+* `reusable_block_ids`
+* `reusable_block_summaries`
+* `preserve_reuse_percent`
+* `preserve_order`
+* `allow_id_collision`
+
+Семантика ключевых полей:
+
+* `source_text`
+  Исходный prompt, который нужно декомпозировать.
+
+* `namespace_prefix`
+  Подсказка для формируемых block ids.
+
+* `existing_block_ids`
+  Список id, которых нужно избегать.
+
+* `reusable_block_ids`
+  Список id, которые можно переиспользовать в update mode.
+
+* `reusable_block_summaries`
+  Краткий контекст существующей структуры для стабилизации update mode.
+
+* `preserve_reuse_percent`
+  Желаемая сила сохранения существующей структуры.
+
+* `preserve_order`
+  Подсказка не перестраивать порядок блоков без необходимости.
+
+== 5. Выходной контракт
+
+Основные выходы:
 
 * `GeneratedBlockBatch`
 * `std::vector<BlockDraft>`
-* GUI-local composition preview text derived from generated batch
+* GUI-local preview text derived from generated batch
 
-== 6. Data Contract Rules
+Семантика:
 
-* generated ids должны быть уникальны
-* output должен быть пригоден к review before apply
-* collisions with existing ids must be surfaced
-* update mode may reuse existing block ids only when workflow explicitly allows it
+* `GeneratedBlockBatch`
+  Основной batch suggestion для review и возможной публикации.
 
-== 7. Prompting and Source Hierarchy
+* `std::vector<BlockDraft>`
+  Draft-представление того же результата.
 
-* source prompt is the primary input
-* update mode may include context from existing composition
-* provider-specific prompt policy lives in generator implementation
+* preview text
+  Локальный вспомогательный UI-артефакт, не являющийся persisted contract.
 
-== 8. Error Handling and Retries
+== 6. Правила доменного контракта
 
-* provider/transport errors surface to caller
-* validation errors stop apply flow
-* retries are transport/provider-level, not persistence-level
+Функция обязана соблюдать следующие правила:
 
-== 9. Confidence / Routing Rules
+* generated ids должны быть уникальны;
+* batch должен быть пригоден к review before publish;
+* collisions with existing ids должны быть явными ошибками;
+* reuse existing ids допускается только в явно разрешённом update mode;
+* empty batch считается ошибкой;
+* отсутствие AI не отменяет deterministic fast path для tagged sections.
 
-* current implementation uses one configured generator path
-* preservation heuristics act as a practical quality gate
+== 7. Иерархия источников и prompt policy
 
-== 10. Edge Cases and Fallback Behavior
+Приоритеты источников:
 
-* empty source prompt -> validation failure
-* duplicate ids -> reject generated batch
-* too-aggressive update -> user reviews and falls back to manual editing
+* source prompt - первичный артефакт;
+* в update mode добавляется контекст текущей composition structure;
+* provider-specific prompt policy живёт в generator implementation;
+* workflow-level preservation heuristics применяются после AI response.
 
-== Upstream / Downstream
+== 8. Ошибки и retry policy
+
+Ошибки, которые должны доходить до вызывающего слоя:
+
+* provider errors;
+* transport errors;
+* parsing errors;
+* duplicate id errors;
+* validation failures;
+* empty source prompt;
+* empty generated batch.
+
+Политика retry:
+
+* retry - на уровне transport/provider;
+* persistence retry отсутствует, потому что publish выполняется отдельно.
+
+== 9. Routing и quality gates
+
+Текущая реализация:
+
+* использует один configured generator path;
+* не публикует отдельный confidence score;
+* использует preservation heuristics как practical quality gate.
+
+Дополнительный gate:
+
+* workflow-level validation before publish.
+
+== 10. Edge cases и fallback behavior
+
+Основные edge cases:
+
+* empty source prompt
+  Немедленная validation failure.
+
+* duplicate ids
+  Batch отклоняется до publish.
+
+* tagged source
+  Используется deterministic fast path без AI rewriting.
+
+* слишком агрессивный update result
+  Пользователь review-ит и при необходимости возвращается к manual editing.
+
+== 11. Связанные документы
 
 Upstream:
 
 * xref:project/functions/prompt-slicing/system-design.adoc[System Design]
+* xref:project/functions/prompt-slicing/adr.adoc[ADR]
 
 Downstream:
 

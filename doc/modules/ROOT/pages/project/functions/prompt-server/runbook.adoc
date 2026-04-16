@@ -2,45 +2,90 @@
 
 Статус: placeholder для planned capability.
 
-== 1. Operational Overview
+== 1. Операционный обзор
 
-* Service owner: future platform/runtime owner
-* Criticality: high for downstream consumers using published prompts
+Будущий сервис:
 
-== 2. Ownership and Support Model
+* будет обслуживать downstream consumers published prompts;
+* должен иметь высокую значимость для delivery-side клиентов;
+* не должен зависеть от draft authoring state.
 
-* Primary owner: platform/service owner
-* Secondary owner: prompt library owner
+Критичность:
 
-== 3. Key Signals and Alerts
+* высокая для downstream consumers
 
-* repository access failures
-* authn/authz failures
-* render error spikes
+== 2. Владение и модель поддержки
 
-== 4. Common Failure Modes
+Основной владелец:
 
-* published store unavailable
-* invalid runtime parameter requests
-* misconfigured access control
+* будущий platform/runtime owner
 
-== 5. Incident Response
+Смежные владельцы:
 
-* verify repository connectivity
-* verify published-only access rules
-* validate deterministic render path
+* владелец prompt library
+* security owner
 
-== 6. Degradation Modes
+== 3. Ключевые сигналы и наблюдаемость
 
-* read-only degraded mode
-* disable optional introspection endpoints if needed
+Нужно будет смотреть:
 
-== 7. Recovery and Validation
+* repository access failures;
+* authn/authz failures;
+* render error spikes;
+* нарушения published-only policy;
+* latency and availability of deterministic resolve/render.
 
-* restore published repository access
-* replay deterministic render test cases
+== 4. Типовые сбои
 
-== 8. Escalation Contacts
+Ожидаемые failure modes:
+
+* published store unavailable;
+* invalid runtime parameter requests;
+* misconfigured access control;
+* accidental attempt to access draft data;
+* compatibility mismatch between clients and runtime contract.
+
+== 5. Реакция на инцидент
+
+Ожидаемый порядок действий:
+
+1. Проверить published repository connectivity.
+2. Проверить authn/authz rules.
+3. Проверить published-only access enforcement.
+4. Проверить deterministic render path on representative published assets.
+5. Убедиться, что нет fallback to draft data.
+
+== 6. Режимы деградации
+
+Потенциально допустимые режимы деградации:
+
+* read-only degraded mode;
+* отключение optional introspection endpoints;
+* fail closed при недоступности published store.
+
+Недопустимая деградация:
+
+* переход на draft data как "временный обход".
+
+== 7. Восстановление и проверка
+
+После восстановления необходимо:
+
+1. Восстановить доступ к published repository.
+2. Повторить deterministic render test cases.
+3. Проверить, что draft data не видны через runtime API.
+4. Проверить representative client flows.
+
+== 8. Когда эскалировать
+
+Эскалировать нужно, если:
+
+* нарушена published-only policy;
+* есть признаки утечки draft data;
+* downstream clients не могут воспроизвести published render behavior;
+* access control сломан или двусмысленен.
+
+== 9. Контакты эскалации
 
 * Platform owner
 * Prompt library owner
