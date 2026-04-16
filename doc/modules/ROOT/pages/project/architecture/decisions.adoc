@@ -5,7 +5,7 @@
 Зафиксированные решения:
 
 * xref:project/architecture/adr-build-vs-dspy.adoc[Почему TextFoundry сделан как самостоятельный продукт, а не как решение на базе DSPy]
-* xref:project/architecture/adr-python-integration-strategy.adoc[Python integration должна идти поверх продуктовой server boundary, а не определять её]
+* xref:project/architecture/adr-python-integration-strategy.adoc[Python и C++ должны быть first-class runtime surfaces поверх общей engine model]
 
 Основной кандидат на дальнейшее наполнение:
 

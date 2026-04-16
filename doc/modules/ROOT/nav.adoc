@@ -19,7 +19,7 @@
 **** xref:project/architecture/system/coding-standards.adoc[8. Стандарты качества кода]
 *** xref:project/architecture/decisions.adoc[3.2. Архитектурные решения]
 **** xref:project/architecture/adr-build-vs-dspy.adoc[Почему TextFoundry сделан как самостоятельный продукт, а не как решение на базе DSPy]
-**** xref:project/architecture/adr-python-integration-strategy.adoc[Python integration должна идти поверх продуктовой server boundary]
+**** xref:project/architecture/adr-python-integration-strategy.adoc[Python и C++ как first-class runtime surfaces]
 *** xref:project/architecture/ui-ux.adoc[3.3. Дизайн UI/UX]
 *** xref:project/architecture/integrations.adoc[3.4. Интеграции]
 *** xref:project/architecture/prompt-server-sync-explainer.adoc[3.5. Как работает Prompt Server и синхронизация]

@@ -1,128 +1,140 @@
-= ADR: Python integration должна идти поверх продуктовой server boundary, а не определять её
+= ADR: Python и C++ должны быть first-class runtime surfaces поверх общей engine model
 
 == 1. Статус и назначение документа
 
-Статус: принят как архитектурное направление для будущей Python integration
-strategy.
+Статус: принят как архитектурное направление для language surface strategy.
 
-Назначение: зафиксировать, как в проекте следует развивать Python-интеграцию:
+Назначение: зафиксировать, как в проекте должны соотноситься:
 
-* не как скрытый альтернативный центр продукта;
-* не как причина размывания desktop/server boundaries;
-* а как downstream integration surface поверх уже определённой модели
-  `Workbench + Engine + Prompt Server`.
+* `C++ Engine`;
+* `C++ local API`;
+* `Python local API`;
+* `Prompt Server`;
+* `C++ remote client`;
+* `Python remote client`.
+
+Документ нужен, чтобы не скатиться ни в одну из двух крайностей:
+
+* не сделать Python вторичным "тонким клиентом";
+* и не позволить Python bindings разрушить продуктовую и server boundary.
 
 == 2. Контекст
 
-После оформления `Prompt Server` как `published prompt registry +
-deterministic render API` у продукта возникает следующий естественный вопрос:
+У проекта уже есть canonical implementation на C++:
 
-* как правильно войти в Python ecosystem.
+* доменная модель;
+* versioning;
+* render contracts;
+* lifecycle `Draft` / `Published`;
+* deterministic engine behavior.
 
-Причины, по которым Python интеграция выглядит полезной:
+Изначальная идея проекта при этом была такой:
 
-* evaluation scripts;
-* backend use cases;
-* notebooks и исследовательские сценарии;
-* интеграции с orchestration/framework слоями;
-* более простое подключение `TextFoundry` к существующим AI runtime stacks.
+* Python не должен быть merely helper layer;
+* Python должен быть равносилен C++ по возможностям работы с engine;
+* работа с server должна быть доступна и из C++, и из Python.
 
-При этом у проекта уже есть важная архитектурная позиция:
+Это означает, что у проекта фактически должны быть четыре внешние поверхности:
 
-* `Workbench` отвечает за authoring, review и publish;
-* `Engine` отвечает за deterministic assembly;
-* `Prompt Server` отвечает за published-only delivery.
+* `C++ local runtime`
+* `Python local runtime`
+* `C++ remote runtime`
+* `Python remote runtime`
 
-Если Python strategy выбрать неосторожно, можно случайно:
+При этом у них должен быть общий source of truth:
 
-* дать Python-коду обходной доступ к draft/authoring semantics;
-* превратить локальные bindings в альтернативный "настоящий API";
-* заставить server contract подстраиваться под удобство FFI, а не под продукт;
-* получить две конкурирующие integration models вместо одной понятной.
+* не конкретный язык API;
+* а общая engine semantics и общая domain model.
 
 == 3. Проблема, которую нужно было решить
 
-Нужно было определить, какой принцип должен управлять развитием Python
-integration, чтобы:
+Нужно было определить, как правильно описать Python в архитектуре, чтобы:
 
-* Python был сильной интеграционной поверхностью;
-* но не стал архитектурным центром продукта;
-* published-only delivery boundary сохранилась;
-* draft and authoring semantics не утекали в runtime clients;
-* server API оставался product-first contract.
+* Python был first-class surface;
+* C++ оставался canonical implementation;
+* server не подменял local bindings и наоборот;
+* локальные и удалённые API не путались между собой;
+* parity понималась как parity of capabilities, а не как полная синтаксическая
+  идентичность.
 
-Иными словами, вопрос был не "нужен ли Python", а "на каком уровне его нужно
-подключать".
+Если этого не сделать, возникает несколько рисков:
+
+* Python ошибочно документируется как secondary client к server;
+* local bindings и remote SDK начинают смешиваться;
+* server contract деформируется под FFI convenience;
+* разные языковые поверхности начинают расходиться по смыслу.
 
 == 4. Рассмотренные варианты
 
-=== Вариант A. Сделать Python bindings главным внешним API продукта
+=== Вариант A. Считать C++ единственным настоящим API, а Python только remote client
 
 Идея:
-дать Python bindings к engine как основной способ интеграции и уже под них
-подстраивать остальной runtime shape.
+оставить C++ как единственную полноценную runtime surface, а Python описывать
+в основном как SDK к `Prompt Server`.
 
 Плюсы:
 
-* быстро выходит на Python ecosystem;
-* удобно для локальных scripts и notebooks;
-* не нужен отдельный server на первом этапе.
+* проще продуктовая история на первом этапе;
+* меньше surface area;
+* легче удерживать server-centric delivery model.
 
 Минусы:
 
-* продуктовая boundary начинает определяться локальным embedding use case;
-* draft/published distinction сложнее удерживать на уровне внешнего контракта;
-* server позже рискует стать вторичным и неполным отражением bindings API;
-* возникает риск утечки authoring semantics наружу.
+* противоречит исходной идее проекта;
+* Python перестаёт быть first-class local runtime;
+* часть локальных Python use cases оказывается искусственно вторичной;
+* язык становится не альтернативной surface, а только downstream transport.
 
 Вердикт:
 
-* отклонено как стратегический центр.
+* отклонено.
 
-=== Вариант B. Делать только `Prompt Server`, а Python не учитывать заранее
+=== Вариант B. Считать Python bindings главным внешним API, а остальное подстраивать под них
 
 Идея:
-сначала строить server, а Python integration отложить полностью и не учитывать
-в документации.
+сделать Python основным удобным API, а C++ и server трактовать как internal
+implementation details.
 
 Плюсы:
 
-* фокус на одной delivery boundary;
-* меньше отвлекающих архитектурных решений.
+* сильная история для Python ecosystem;
+* удобно для notebooks, scripts и research-side tooling.
 
 Минусы:
 
-* игнорируется важный downstream use case;
-* позже Python integration может появиться реактивно и бессистемно;
-* часть решений по API shape полезно принимать с учётом client ergonomics.
+* теряется canonical роль C++ engine;
+* product model начинает определяться не доменной моделью, а удобством binding;
+* server boundary рискует стать вторичной;
+* сложно удержать аккуратную parity между local и remote surfaces.
 
 Вердикт:
 
-* частично полезно, но слишком узко.
+* отклонено.
 
-=== Вариант C. Сначала определить product/server boundary, затем строить Python client или bindings как downstream integration
+=== Вариант C. Считать canonical implementation C++ engine, а Python и C++ описывать как равноправные language surfaces поверх общей модели
 
 Идея:
-сначала зафиксировать, что центром внешнего runtime contract является
-`Prompt Server`, а Python integration строить поверх него как:
+зафиксировать следующее:
 
-* Python client/SDK к server API;
-* или, в отдельных локальных сценариях, thin bindings к engine, но без
-  подмены product boundary.
+* canonical implementation lives in C++;
+* canonical semantics lives in engine/domain model;
+* Python и C++ являются first-class local surfaces;
+* `Prompt Server` является отдельной remote boundary;
+* и C++, и Python должны иметь remote clients к server.
 
 Плюсы:
 
-* продуктовая модель остаётся целостной;
-* published-only semantics проще удерживать;
-* server API остаётся главным внешним runtime contract;
-* Python получает понятную роль как integration surface;
-* локальные bindings можно делать позже и более аккуратно.
+* сохраняется общий source of truth;
+* Python не становится вторичным;
+* server не подменяет local engine API;
+* появляется симметричная и понятная language model;
+* проще обсуждать parity правильно: по capability и semantics.
 
 Минусы:
 
-* Python integration развивается чуть медленнее;
-* часть локальных сценариев на первом этапе может быть менее удобной;
-* нужно дисциплинированно удерживать границу между SDK и internal engine API.
+* больше поверхностей для документирования и поддержки;
+* нужно явнее различать local API и remote API;
+* потребуется discipline вокруг parity и compatibility.
 
 Вердикт:
 
@@ -130,116 +142,140 @@ integration, чтобы:
 
 == 5. Принятое решение
 
-Принято решение использовать следующий порядок и принцип:
+Принято решение использовать следующую архитектурную модель:
 
-* product/server boundary первична;
-* `Prompt Server` является главным внешним runtime contract для published prompt
-  delivery;
-* Python integration должна строиться поверх этой boundary;
-* direct engine bindings допустимы только как вторичная локальная интеграция, а
-  не как источник product semantics.
+* `C++ Engine` остаётся canonical implementation;
+* `engine semantics` и `domain model` являются источником правды;
+* `C++ local API` и `Python local API` являются first-class language surfaces;
+* `Prompt Server` является отдельной remote runtime boundary;
+* `C++ remote client` и `Python remote client` являются first-class remote
+  surfaces для server.
 
-Это означает:
+Это означает, что у проекта должно быть две разные оси:
 
-* published prompt consumption в Python по умолчанию должна идти через
-  client/SDK к server API;
-* bindings к engine не должны по умолчанию открывать authoring/draft semantics
-  как "обычный" runtime path;
-* server contract нельзя деформировать только ради удобства FFI.
+* `local vs remote`
+* `C++ vs Python`
+
+А не одна ось, где Python просто находится "ниже" C++.
 
 == 6. Детализация принятого решения
 
-=== 6.1. Python client предпочтительнее как первая интеграционная поверхность
+=== 6.1. Parity должна пониматься как parity of capabilities
+
+Правильный смысл parity:
+
+* Python и C++ должны уметь работать с одними и теми же сущностями;
+* должны поддерживать тот же lifecycle;
+* должны поддерживать те же ключевые операции;
+* должны возвращать согласованную семантику ошибок и state transitions.
+
+Parity не означает:
+
+* идентичные method names;
+* идентичные return types;
+* идентичный style API;
+* побуквенное копирование C++ API в Python.
+
+То есть допустима idiomatic разница формы, но не смысла.
+
+=== 6.2. Local API и remote API нельзя смешивать
+
+Local surfaces:
+
+* `C++ local API`
+* `Python local API`
+
+должны работать с engine semantics напрямую.
+
+Remote surfaces:
+
+* `C++ Prompt Server client`
+* `Python Prompt Server client`
+
+должны работать через server boundary.
+
+Это два разных класса API, и их нельзя документировать как один слой.
+
+=== 6.3. Prompt Server не отменяет необходимость local Python surface
+
+Даже если server становится важной частью продукта, это не означает, что
+Python обязан использовать только remote contract.
 
 Причина:
-Python client поверх server API:
 
-* наследует published-only delivery model;
-* не обходит authn/authz boundary;
-* работает в тех же терминах, что и другие downstream clients;
-* не требует знания desktop internals.
+* у Python есть legitimate local use cases;
+* часть tooling and scripting workflows естественно живёт рядом с engine;
+* локальный runtime может быть нужен без server deployment.
 
 Следствие:
 
-* первой реалистичной Python integration should be SDK/client, а не full engine
-  bindings.
+* Python local bindings не являются anti-pattern;
+* anti-pattern возникает только если они начинают подменять engine semantics или
+  конфликтовать с server model.
 
-=== 6.2. Direct bindings могут понадобиться, но не как product-first contract
+=== 6.4. Remote parity тоже должна быть explicit
 
-Причина:
-есть сценарии, где прямой локальный доступ к engine действительно удобен:
+Если server существует, то и `C++`, и `Python` должны иметь понятные клиенты к
+нему.
 
-* offline tooling;
-* local migration utilities;
-* advanced evaluation;
-* developer-side experiments.
+Правильная целевая модель:
 
-Но такие bindings должны пониматься как:
+* local C++ and local Python share engine semantics;
+* remote C++ and remote Python share server contract;
+* local and remote APIs intentionally differ by boundary, not by language
+  favoritism.
 
-* local integration layer;
-* specialist tooling surface;
-* не канонический public runtime contract.
-
-=== 6.3. Draft and authoring semantics нельзя делать "нормой" через Python по умолчанию
+=== 6.5. Source of truth lives in domain model, not in language-specific wrappers
 
 Причина:
-если Python получает слишком широкий доступ:
+как только source of truth переезжает в один из language wrappers:
 
-* published-only policy размывается;
-* server и SDK расходятся по модели;
-* появляется обходной путь мимо review/publish discipline.
+* parity ломается;
+* docs начинают расходиться;
+* compatibility policy становится неясной.
 
-Следствие:
+Поэтому canonical место определения semantics:
 
-* Python integration по умолчанию должна мыслиться через published assets and
-  render delivery.
+* domain entities;
+* lifecycle rules;
+* engine behavior;
+* server contracts.
 
-=== 6.4. Server API shape нужно проектировать product-first, но с учётом Python ergonomics
-
-Причина:
-игнорировать Python use cases полностью тоже неправильно.
-
-Нужно учитывать:
-
-* удобные request/response shapes;
-* понятные typed models;
-* стабильность version-aware API;
-* простую обработку ошибок и metadata.
-
-Но это означает ergonomic influence, а не архитектурное доминирование Python.
+Language wrappers должны адаптировать форму, а не переопределять смысл.
 
 == 7. Последствия решения
 
 Положительные:
 
-* product boundary остаётся целостной;
-* Python получает понятную и безопасную роль;
-* downstream integrations сходятся вокруг одного server contract;
-* published-only semantics проще защищать и тестировать.
+* Python сохраняет first-class product role;
+* C++ сохраняет canonical implementation role;
+* серверная и локальная модели становятся чище;
+* проще документировать продукт через общие contracts.
 
 Компромиссы:
 
-* direct bindings не становятся первым шагом;
-* часть developer workflows может временно быть менее удобной;
-* придётся поддерживать дисциплину между internal engine API и public SDK API.
+* больше surfaces для поддержки;
+* нужно явно различать four API families;
+* parity testing и compatibility governance становятся важнее.
 
 Отрицательные:
 
-* больше работы на старте server/SDK story;
-* некоторые локальные use cases будут просить "просто открыть engine напрямую".
+* выше стоимость API design;
+* выше риск частичного расхождения между wrappers, если не держать discipline.
 
 == 8. Что это означает practically
 
 На ближайшую перспективу это означает:
 
-* сначала конкретизировать `Prompt Server Service Spec`;
-* затем спроектировать Python client/SDK к нему;
-* только после этого, если реально потребуется, решать вопрос о thin engine
-  bindings как отдельной интеграционной поверхности.
+* `Prompt Server` docs должны говорить не только про Python client, но и про
+  dual-language remote access;
+* отдельный future document должен описать `local bindings strategy`;
+* parity нужно валидировать по capability matrix, а не только по названию
+  методов.
 
 == 9. Связанные документы
 
-* xref:project/architecture/adr-build-vs-dspy.adoc[Почему TextFoundry сделан как самостоятельный продукт, а не как решение на базе DSPy]
-* xref:project/functions/prompt-server/adr.adoc[Prompt Server ADR]
+* xref:project/functions/prompt-server/prd.adoc[Prompt Server PRD]
+* xref:project/functions/prompt-server/system-design.adoc[Prompt Server System Design]
 * xref:project/functions/prompt-server/service-spec.adoc[Prompt Server Service Spec]
 * xref:project/architecture/system/hld.adoc[High-Level Design]

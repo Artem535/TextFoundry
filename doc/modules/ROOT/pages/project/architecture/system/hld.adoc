@@ -8,7 +8,8 @@ workflow поверх того же core engine.
 
 * workbench для authoring;
 * core engine для deterministic assembly;
-* future prompt server для published prompt registry and render delivery.
+* future prompt server для published prompt registry and render delivery;
+* dual-language runtime surfaces для C++ и Python.
 
 == 1. System Summary
 
@@ -23,6 +24,7 @@ workflow поверх того же core engine.
 Целевой следующий слой, пока не реализованный:
 
 * `prompt_server` - published-only registry/render runtime для downstream clients
+* `language_surfaces` - C++ and Python local/remote APIs over shared semantics
 
 == 2. Architectural Boundary
 
@@ -103,8 +105,16 @@ Storage слой реализован через ObjectBox:
 В future server model:
 
 * published assets будут доступны через server boundary;
-* backend и Python clients смогут получать render без desktop workflow;
+* backend, C++ и Python clients смогут получать render без desktop workflow;
 * draft/published separation должна сохраниться и на сервере.
+
+Language model в целевой архитектуре:
+
+* `C++` и `Python` должны быть first-class surfaces;
+* local APIs работают поверх engine;
+* remote APIs работают поверх prompt server;
+* parity должна удерживаться на уровне semantics, а не на уровне буквального
+  синтаксиса.
 
 == 7. AI Integration Model
 

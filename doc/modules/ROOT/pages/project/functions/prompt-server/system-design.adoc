@@ -29,9 +29,10 @@ registry + deterministic render API`.
 * automatic semantic rewrite;
 * доступ к GUI review states и raw preview semantics.
 
-Смежные, но не базовые будущие клиенты:
+Смежные и целевые будущие клиенты:
 
-* Python client / SDK;
+* C++ remote client;
+* Python remote client / SDK;
 * backend services;
 * agent runtimes.
 
@@ -66,9 +67,12 @@ registry + deterministic render API`.
 * authn/authz layer
   Ограничивает доступ к delivery API.
 
-* future client SDK layer
-  Вне server runtime, но может включать Python client или thin bindings-friendly
-  wrapper.
+* future remote client layer
+  Вне server runtime, включает C++ и Python clients к одному server contract.
+
+* local bindings layer
+  Вне server runtime, включает local C++ and Python surfaces поверх того же
+  engine semantics.
 
 == 5. Базовый сценарий
 
@@ -84,7 +88,7 @@ flowchart LR
 
 Шаги:
 
-1. Клиент запрашивает published composition, block или render.
+1. Клиент на C++ или Python запрашивает published composition, block или render.
 2. Server resolve-ит identity и version через published repository.
 3. Для render-запроса выполняется parameter validation.
 4. Renderer строит deterministic result.
@@ -112,7 +116,26 @@ flowchart LR
 * `POST /render`
 * `POST /resolve`
 
-== 7. Границы безопасности и доверия
+== 7. Language Surface Model
+
+В целевой архитектуре нужно различать четыре поверхности:
+
+* `C++ local API`
+  local engine access.
+
+* `Python local API`
+  local engine access with Python-idiomatic form.
+
+* `C++ remote client`
+  server access over remote contract.
+
+* `Python remote client`
+  server access over the same remote contract.
+
+Server design не должен предполагать, что Python является единственным или
+основным удалённым клиентом.
+
+== 8. Границы безопасности и доверия
 
 Ключевые правила:
 
@@ -121,7 +144,7 @@ flowchart LR
 * server не должен выполнять authoring-side AI workflows;
 * GUI-specific preview modes не являются частью delivery contract.
 
-== 8. Надёжность и деградация
+== 9. Надёжность и деградация
 
 При недоступности published repository:
 
@@ -136,7 +159,7 @@ flowchart LR
 * документация должна явно помечать capability как planned, а не как уже
   работающий сервис.
 
-== 9. Сравнение с adjacent systems
+== 10. Сравнение с adjacent systems
 
 Этот server design ближе к `prompt registry/render service`, чем к:
 
@@ -153,7 +176,7 @@ flowchart LR
 * версии и identity остаются first-class concepts;
 * deterministic render остаётся центральным runtime contract.
 
-== 10. Операционные свойства
+== 11. Операционные свойства
 
 Ожидаемые свойства:
 
@@ -162,9 +185,9 @@ flowchart LR
 * stricter runtime API surface;
 * отдельный operational surface по сравнению с GUI/TUI workbench;
 * возможность использовать один и тот же published prompt через несколько типов
-  клиентов.
+  клиентов и из двух language surfaces.
 
-== 11. Связанные документы
+== 12. Связанные документы
 
 Upstream:
 

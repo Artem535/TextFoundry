@@ -13,7 +13,8 @@ assets `TextFoundry`.
 * он должен предоставлять deterministic resolve/render API;
 * он должен отделить authoring workbench от runtime consumption;
 * он должен дать командам способ использовать `TextFoundry` не только как
-  desktop tool, но и как инфраструктурный prompt layer.
+  desktop tool, но и как инфраструктурный prompt layer;
+* он должен быть доступен как из C++, так и из Python.
 
 Проблема продукта:
 
@@ -23,7 +24,9 @@ assets `TextFoundry`.
 * нужен способ получать render по `composition id + version + params`;
 * нужен registry-side контракт для published blocks and compositions;
 * есть продуктовая возможность закрыть часть сценариев, для которых сейчас
-  команды используют Langfuse-like prompt storage или самописные registry.
+  команды используют Langfuse-like prompt storage или самописные registry;
+* remote runtime contract должен быть одинаково пригоден для C++ и Python
+  clients.
 
 Цель функции:
 
@@ -32,7 +35,9 @@ assets `TextFoundry`.
 * сохранить deterministic delivery contract;
 * не превратить сервер в удалённый редактор;
 * создать server boundary, поверх которой позже можно строить Python SDK или
-  bindings-friendly client layer.
+  C++/Python client layers;
+* сохранить симметричную multi-language story: local engine surfaces и remote
+  server surfaces.
 
 == 2. Постановка проблемы
 
@@ -65,6 +70,7 @@ assets `TextFoundry`.
 
 * backend services, которым нужен published render;
 * Python-based clients и evaluation scripts;
+* C++ runtime clients;
 * agent runtimes и orchestration layers;
 * external/internal clients, consuming published prompt assets;
 * platform owner;
@@ -77,8 +83,8 @@ assets `TextFoundry`.
 * inspect available published assets and versions;
 * получать metadata о том, какие block versions вошли в render;
 * использовать published assets без доступа к drafts и authoring operations;
-* вызывать один и тот же published prompt из Python, backend и agent clients по
-  единому API.
+* вызывать один и тот же published prompt из Python, C++ backend и agent clients
+  по единому API.
 
 == 4. Область охвата и не-цели
 
@@ -119,7 +125,8 @@ Capability будет считаться успешной, если:
 * published-only policy доказуема тестами и API shape;
 * server contract не требует знания внутренних authoring surfaces;
 * downstream clients не зависят от GUI/TUI semantics;
-* API позволяет безопасно строить Python client поверх того же server boundary.
+* API позволяет безопасно строить как Python, так и C++ remote clients поверх
+  того же server boundary.
 
 == 6. Функциональные требования
 
@@ -133,7 +140,8 @@ Capability будет считаться успешной, если:
 * поддерживать server-side lookup published assets;
 * валидировать входные параметры;
 * возвращать понятные runtime errors;
-* не изменять authoring state.
+* не изменять authoring state;
+* быть language-neutral на уровне contract semantics.
 
 == 7. Нефункциональные требования
 
@@ -161,9 +169,8 @@ Capability будет считаться успешной, если:
 * published repositories и renderer останутся базой delivery runtime;
 * отдельный API слой будет добавлен позже;
 * operational, security и compatibility policy будут оформлены до реализации;
-* Python bindings, если появятся, будут строиться либо как thin wrapper поверх
-  core engine, либо как client к server API, но не должны становиться причиной
-  размывания delivery boundary.
+* local C++ и Python surfaces будут жить поверх общей engine model;
+* remote C++ и Python clients будут жить поверх общего server contract.
 
 == 9. Зависимости и заинтересованные стороны
 
@@ -175,13 +182,15 @@ Capability будет считаться успешной, если:
 * server API layer;
 * authn/authz and deployment decisions;
 * compatibility policy;
-* client SDK decisions.
+* local bindings strategy;
+* remote client SDK decisions.
 
 Заинтересованные стороны:
 
 * platform owner;
 * prompt authors;
 * downstream clients;
+* C++ runtime integrators;
 * Python/runtime integrators;
 * security and operations owners.
 
@@ -193,8 +202,7 @@ Capability будет считаться успешной, если:
 * published registry endpoints позволяют получать versions and metadata;
 * draft data не попадают в server responses;
 * failure behavior понятен и безопасен;
-* базовый Python or backend client может вызвать render без знания desktop
-  internals.
+* базовый Python и C++ client могут вызвать render без знания desktop internals.
 
 Реализация будет считаться готовой к выпуску, если:
 
