@@ -60,6 +60,8 @@ pages:
   script:
     - npm install
     - npm run docs:build
+    - mkdir -p public/presentation
+    - cp doc/modules/ROOT/assets/attachments/textfoundry-intro-onepager.html public/presentation/index.html
   artifacts:
     paths:
       - public

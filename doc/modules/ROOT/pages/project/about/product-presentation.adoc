@@ -11,6 +11,11 @@ Standalone one-page версия:
 
 * link:{attachmentsdir}/textfoundry-intro-onepager.html[Открыть одностраничный сайт-презентацию]
 
+В опубликованном `GitLab Pages` эта презентация дополнительно выкладывается как
+отдельная страница по пути:
+
+* `/presentation/`
+
 == Слайд 1. Что такое TextFoundry
 
 `TextFoundry` - это desktop-first workbench для работы с prompt-артефактами.
