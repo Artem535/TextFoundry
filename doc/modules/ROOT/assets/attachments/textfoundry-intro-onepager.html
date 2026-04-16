@@ -450,6 +450,7 @@
         <a href="#problem">Проблема</a>
         <a href="#workflow">Как работает</a>
         <a href="#server">Сервер</a>
+        <a href="#roadmap">Roadmap</a>
         <a href="#special">Что особенного</a>
         <a href="#dspy">Сравнение с DSPy</a>
         <a href="#value">Практическая польза</a>
@@ -486,6 +487,10 @@
           <div class="hero-stat">
             <strong>Workbench + Server</strong>
             Сегодня центр продукта — GUI/TUI workbench, а следующий слой — future Prompt Server для published delivery.
+          </div>
+          <div class="hero-stat">
+            <strong>Four surfaces</strong>
+            Целевая модель включает C++ local, Python local, C++ remote и Python remote.
           </div>
         </aside>
       </div>
@@ -587,6 +592,37 @@
             <li>Когда нужен render по version-aware API, а не чтение markdown-файлов.</li>
             <li>Когда команда хочет отделить authoring workbench от runtime consumption.</li>
             <li>Когда нужен prompt registry/render layer вместо самописного prompt storage.</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section id="roadmap">
+      <div class="shell grid-2">
+        <article class="panel">
+          <div class="kicker">Roadmap</div>
+          <h2>Как TextFoundry превращается из workbench в runtime platform</h2>
+          <p>
+            Следующая траектория продукта теперь выглядит как последовательный
+            путь, а не как набор несвязанных идей про Python и сервер.
+          </p>
+          <ol>
+            <li>Выделить public C++ local surface поверх canonical engine.</li>
+            <li>Сделать Python local first-class способом работы с тем же semantic contract.</li>
+            <li>Реализовать Prompt Server как published-only registry, resolve и render boundary.</li>
+            <li>Добавить C++ remote и Python remote clients поверх одного server contract.</li>
+            <li>Перейти к hardening, compatibility governance и platform maturity.</li>
+          </ol>
+        </article>
+        <article class="panel">
+          <div class="kicker">Почему порядок важен</div>
+          <h3>Что нельзя перепутать</h3>
+          <ul>
+            <li>Сначала stabilizing local semantic contract, потом bindings.</li>
+            <li>Сначала server boundary, потом полноценные remote clients.</li>
+            <li>Python не должен оставаться вторичным thin client.</li>
+            <li>Server не должен проектироваться только под convenience bindings.</li>
+            <li>Parity должна измеряться по capability и semantics, а не по буквальной форме API.</li>
           </ul>
         </article>
       </div>
@@ -716,7 +752,7 @@
             <li>Продукт сильнее в authoring and delivery, чем в full-scale research automation.</li>
             <li>Часть operational и evaluation практик ещё развивается.</li>
             <li>Prompt Server описан как planned capability, но ещё не реализован в runtime.</li>
-            <li>Python client или bindings пока не оформлены как реализованный продуктовый слой.</li>
+            <li>Python local и remote surfaces уже описаны как целевая capability, но ещё не реализованы как продуктовый слой.</li>
           </ul>
         </article>
       </div>
@@ -744,6 +780,7 @@
       <div class="footer-links">
         <a href="../project/about/product-presentation.html">Текстовая версия презентации</a>
         <a href="../project/architecture/adr-build-vs-dspy.html">ADR про выбор TextFoundry вместо DSPy</a>
+        <a href="../project/architecture/runtime-surfaces-roadmap.html">Roadmap runtime surfaces и Prompt Server</a>
         <a href="../project/architecture/system/hld.html">High-Level Design</a>
       </div>
     </div>
