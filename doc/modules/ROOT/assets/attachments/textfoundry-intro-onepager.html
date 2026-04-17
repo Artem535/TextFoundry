@@ -451,6 +451,7 @@
         <a href="#workflow">Как работает</a>
         <a href="#server">Сервер</a>
         <a href="#roadmap">Roadmap</a>
+        <a href="#functions">Функции</a>
         <a href="#special">Что особенного</a>
         <a href="#dspy">Сравнение с DSPy</a>
         <a href="#value">Практическая польза</a>
@@ -486,11 +487,11 @@
           </div>
           <div class="hero-stat">
             <strong>Workbench + Server</strong>
-            Сегодня центр продукта — GUI/TUI workbench, а следующий слой — future Prompt Server для published delivery.
+            Сегодня центр продукта — GUI/TUI workbench, а следующий слой — planned Prompt Server для published delivery.
           </div>
           <div class="hero-stat">
             <strong>Four surfaces</strong>
-            Целевая модель включает C++ local, Python local, C++ remote и Python remote.
+            Целевая planned-модель включает C++ local, Python local, C++ remote и Python remote.
           </div>
         </aside>
       </div>
@@ -658,6 +659,41 @@
             <li>Deterministic render без обязательного участия LLM.</li>
             <li>Runtime parameters, copy и export результата.</li>
             <li>Qt/QML GUI и FTXUI TUI для рабочих сценариев.</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <section id="functions">
+      <div class="shell grid-2">
+        <article class="panel">
+          <div class="kicker">Полный охват</div>
+          <h2>Какие функции уже существуют в продукте</h2>
+          <p>
+            Помимо базового авторинга и рендера, в текущем продукте уже есть
+            отдельные capability, оформленные как самостоятельные workflow с
+            явным контролем пользователя.
+          </p>
+          <ul>
+            <li><strong>Block Authoring</strong> и <strong>Composition Authoring</strong> для управляемого создания и версионирования prompt-артефактов.</li>
+            <li><strong>Block Generation</strong> для генерации reviewable block draft по инструкции.</li>
+            <li><strong>Prompt Slicing</strong> для декомпозиции большого prompt в набор предлагаемых блоков.</li>
+            <li><strong>Normalization</strong> для явной семантической нормализации текста и composition.</li>
+            <li><strong>Composition Rewrite</strong> для block-preserving rewrite с preview и apply.</li>
+            <li><strong>Update Blocks To Latest</strong> для controlled обновления ссылок композиции на latest block versions.</li>
+            <li><strong>Compare With Latest</strong> для read-only сравнения выбранной версии композиции с latest published.</li>
+            <li><strong>Render Preview</strong> для Raw, Rendered и Normalized preview с runtime params.</li>
+          </ul>
+        </article>
+        <article class="panel">
+          <div class="kicker">Статус</div>
+          <h3>Что уже работает, а что ещё в planned слое</h3>
+          <ul>
+            <li>Основная рабочая поверхность продукта сейчас — desktop GUI/TUI workbench поверх local engine и storage.</li>
+            <li>Все authoring, slicing, normalization, compare, rewrite и render workflows уже существуют как desktop capabilities.</li>
+            <li><strong>Prompt Server</strong> зафиксирован как planned published-only runtime boundary, но ещё не реализован в кодовой базе.</li>
+            <li><strong>Runtime Surfaces</strong> описывают целевую модель `C++ local`, `Python local`, `C++ remote` и `Python remote`, но кроме внутреннего `C++ local` слоя они пока не оформлены как продуктовые поверхности.</li>
+            <li>Это важно для честного позиционирования: сегодня TextFoundry — уже работающий workbench, а не готовая server platform.</li>
           </ul>
         </article>
       </div>
