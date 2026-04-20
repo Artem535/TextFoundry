@@ -113,6 +113,10 @@ target_link_libraries(textfoundry_gui PRIVATE
     sago::platform_folders
 )
 
+target_compile_definitions(textfoundry_gui PRIVATE
+    TEXTFOUNDRY_APP_VERSION="${PROJECT_VERSION}"
+)
+
 if(TARGET KF6::SyntaxHighlighting)
     target_link_libraries(textfoundry_gui PRIVATE KF6::SyntaxHighlighting)
 endif()

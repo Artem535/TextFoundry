@@ -35,4 +35,8 @@ target_link_libraries(tf
         ftxui::dom ftxui::screen ftxui::component
 )
 
+target_compile_definitions(tf PRIVATE
+        TEXTFOUNDRY_APP_VERSION="${PROJECT_VERSION}"
+)
+
 install(TARGETS tf RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})

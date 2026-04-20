@@ -6,6 +6,7 @@
 int main(int argc, char** argv) {
   QGuiApplication app(argc, argv);
   app.setApplicationName("TextFoundry");
+  app.setApplicationVersion(QStringLiteral(TEXTFOUNDRY_APP_VERSION));
   app.setOrganizationName("TextFoundry");
   app.setDesktopFileName("textfoundry");
   app.setWindowIcon(
