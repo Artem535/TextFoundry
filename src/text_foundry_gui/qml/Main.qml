@@ -360,24 +360,28 @@ ApplicationWindow {
                 }
             }
 
-            StackLayout {
+            Item {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
-                currentIndex: root.currentTab
 
-                BlocksPage {
-                    id: blocksPage
-                    rightPaneTab: root.blocksWorkspaceTab
+                StackLayout {
+                    anchors.fill: parent
+                    currentIndex: root.currentTab
+
+                    BlocksPage {
+                        id: blocksPage
+                        rightPaneTab: root.blocksWorkspaceTab
+                    }
+                    CompositionsPage {}
+                    RenderPage {}
+                    SettingsPage {}
                 }
-                CompositionsPage {}
-                RenderPage {}
-                SettingsPage {}
+
+                BlockSliceDialog {}
+                CompositionBlockRewriteDialog {}
             }
         }
     }
-
-    BlockSliceDialog {}
-    CompositionBlockRewriteDialog {}
 
     Dialog {
         id: discardChangesDialog

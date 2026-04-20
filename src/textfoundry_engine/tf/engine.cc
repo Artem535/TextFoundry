@@ -156,6 +156,43 @@ std::vector<std::string> SortedTags(
   return out;
 }
 
+std::string ApplyStructuralStyle(const std::vector<std::string>& fragment_texts,
+                                 const StructuralStyle& style) {
+  std::ostringstream result;
+  if (style.preamble.has_value()) {
+    result << *style.preamble;
+  }
+
+  for (size_t i = 0; i < fragment_texts.size(); ++i) {
+    std::string text = fragment_texts[i];
+    if (style.blockWrapper.has_value()) {
+      std::string wrapped = *style.blockWrapper;
+      constexpr std::string_view kContent = "{{content}}";
+      if (const size_t pos = wrapped.find(kContent); pos != std::string::npos) {
+        wrapped.replace(pos, kContent.size(), text);
+      }
+      text = std::move(wrapped);
+    }
+
+    result << text;
+    if (i + 1 < fragment_texts.size() && style.delimiter.has_value()) {
+      result << *style.delimiter;
+    }
+  }
+
+  if (style.postamble.has_value()) {
+    result << *style.postamble;
+  }
+  return result.str();
+}
+
+StructuralStyle EffectiveStyle(const Composition& composition) {
+  if (composition.GetStyleProfile().has_value()) {
+    return composition.GetStyleProfile()->structural;
+  }
+  return {};
+}
+
 }  // namespace
 
 // Engine implementation
@@ -781,6 +818,151 @@ Result<std::string> Engine::Normalize(const std::string& text,
         Error{ErrorCode::StorageError, "No normalizer configured"});
   }
   return normalizer_->Normalize(text, style);
+}
+
+Result<NormalizedCompositionPreview> Engine::PreviewNormalizeComposition(
+    const CompositionNormalizationRequest& request) {
+  TF_LOG_DEBUG("Previewing normalized composition [id={}]",
+               request.source_composition_id);
+  if (!blockNormalizer_) {
+    TF_LOG_ERROR(
+        "Cannot preview normalized composition: no block normalizer configured");
+    return Result<NormalizedCompositionPreview>(
+        Error{ErrorCode::StorageError, "No block normalizer configured"});
+  }
+  if (request.style.isEmpty()) {
+    return Result<NormalizedCompositionPreview>(
+        Error{ErrorCode::InvalidParamType, "Semantic style is empty"});
+  }
+
+  auto composition_result =
+      request.source_version.has_value()
+          ? LoadComposition(request.source_composition_id, *request.source_version)
+          : LoadComposition(request.source_composition_id);
+  if (composition_result.HasError()) {
+    return Result<NormalizedCompositionPreview>(composition_result.error());
+  }
+
+  const Composition source = composition_result.value();
+  const std::string normalization_key =
+      NormalizationKey(request.style, blockNormalizer_->Fingerprint());
+  const std::string derived_composition_id =
+      request.target_composition_id.value_or(
+          DerivedNormalizedCompositionId(source, request.style,
+                                         blockNormalizer_->Fingerprint()));
+
+  if (request.reuse_cached_blocks && compRepo_) {
+    auto existing = compRepo_->LoadLatest(derived_composition_id);
+    if (!existing.HasError() && existing.value().GetStyleProfile().has_value() &&
+        StyleKey(existing.value().GetStyleProfile()->semantic) ==
+            StyleKey(request.style)) {
+      std::vector<std::string> fragment_texts;
+      fragment_texts.reserve(existing.value().fragments().size());
+      for (const auto& fragment : existing.value().fragments()) {
+        if (fragment.IsSeparator()) {
+          fragment_texts.push_back(fragment.AsSeparator().toString());
+          continue;
+        }
+        if (fragment.IsStaticText()) {
+          fragment_texts.push_back(fragment.AsStaticText().text());
+          continue;
+        }
+        const auto& block_ref = fragment.AsBlockRef();
+        auto block_result = block_ref.version().has_value()
+                                ? LoadBlock(block_ref.GetBlockId(),
+                                            *block_ref.version())
+                                : LoadBlock(block_ref.GetBlockId());
+        if (block_result.HasError()) {
+          return Result<NormalizedCompositionPreview>(block_result.error());
+        }
+        fragment_texts.push_back(block_result.value().templ().Content());
+      }
+
+      return Result<NormalizedCompositionPreview>(NormalizedCompositionPreview{
+          .composition_id = derived_composition_id,
+          .preview_text =
+              ApplyStructuralStyle(fragment_texts, EffectiveStyle(existing.value())),
+          .rewritten_blocks = {},
+      });
+    }
+  }
+
+  std::vector<std::pair<BlockId, BlockId>> rewritten_blocks;
+  std::vector<std::string> fragment_texts;
+  fragment_texts.reserve(source.fragments().size());
+
+  for (const auto& fragment : source.fragments()) {
+    if (fragment.IsSeparator()) {
+      fragment_texts.push_back(fragment.AsSeparator().toString());
+      continue;
+    }
+
+    if (fragment.IsStaticText()) {
+      std::string text = fragment.AsStaticText().text();
+      if (request.normalize_static_text && normalizer_) {
+        auto normalized = normalizer_->Normalize(text, request.style);
+        if (normalized.HasError()) {
+          return Result<NormalizedCompositionPreview>(normalized.error());
+        }
+        text = normalized.value();
+      }
+      fragment_texts.push_back(std::move(text));
+      continue;
+    }
+
+    const auto& block_ref = fragment.AsBlockRef();
+    auto block_result = block_ref.version().has_value()
+                            ? LoadBlock(block_ref.GetBlockId(), *block_ref.version())
+                            : LoadBlock(block_ref.GetBlockId());
+    if (block_result.HasError()) {
+      return Result<NormalizedCompositionPreview>(block_result.error());
+    }
+
+    const Block source_block = block_result.value();
+    const std::string derived_block_id = DerivedNormalizedBlockId(
+        source_block, request.style, blockNormalizer_->Fingerprint());
+    const std::string normalization_key_tag =
+        NormalizationKeyTag(normalization_key);
+
+    bool reused_cached_block = false;
+    if (request.reuse_cached_blocks && blockRepo_) {
+      auto existing = blockRepo_->LoadLatest(derived_block_id);
+      if (!existing.HasError() &&
+          HasTag(existing.value().tags(), normalization_key_tag)) {
+        fragment_texts.push_back(existing.value().templ().Content());
+        rewritten_blocks.emplace_back(source_block.Id(), derived_block_id);
+        reused_cached_block = true;
+      }
+    }
+
+    if (reused_cached_block) {
+      continue;
+    }
+
+    auto normalized =
+        blockNormalizer_->NormalizeBlock({.source_block = source_block,
+                                         .style = request.style});
+    if (normalized.HasError()) {
+      return Result<NormalizedCompositionPreview>(normalized.error());
+    }
+
+    const Template normalized_template(normalized.value().templ);
+    if (PlaceholderSet(source_block.templ()) != PlaceholderSet(normalized_template)) {
+      return Result<NormalizedCompositionPreview>(
+          Error{ErrorCode::InvalidParamType,
+                "Normalized block changed required placeholders"});
+    }
+
+    fragment_texts.push_back(normalized_template.Content());
+    rewritten_blocks.emplace_back(source_block.Id(), derived_block_id);
+  }
+
+  return Result<NormalizedCompositionPreview>(NormalizedCompositionPreview{
+      .composition_id = derived_composition_id,
+      .preview_text =
+          ApplyStructuralStyle(fragment_texts, EffectiveStyle(source)),
+      .rewritten_blocks = std::move(rewritten_blocks),
+  });
 }
 
 Result<NormalizedCompositionResult> Engine::NormalizeComposition(

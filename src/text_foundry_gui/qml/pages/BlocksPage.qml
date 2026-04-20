@@ -9,6 +9,7 @@ Page {
     property int rightPaneTab: 0
     property string pendingDeleteTitle: ""
     property string pendingDeleteMessage: ""
+    readonly property bool detailsStacked: detailsFrame.width < 1180
 
     function collapseAllFolders() {
         blocksTree.expandedFolders = ({})
@@ -154,11 +155,11 @@ Page {
                                         if (!index.valid)
                                             continue
 
+                                        visibleRow += 1
                                         const isFolder = BlocksModel.data(index, BlocksModel.IsFolderRole)
                                         if (!isFolder)
                                             continue
 
-                                        visibleRow += 1
                                         const fullPath = BlocksModel.data(index, BlocksModel.FullPathRole)
                                         const expanded = blocksTree.isExpanded(visibleRow)
                                         if (expanded)
@@ -183,11 +184,11 @@ Page {
                                         if (!index.valid)
                                             continue
 
+                                        visibleRow += 1
                                         const isFolder = BlocksModel.data(index, BlocksModel.IsFolderRole)
                                         if (!isFolder)
                                             continue
 
-                                        visibleRow += 1
                                         const fullPath = BlocksModel.data(index, BlocksModel.FullPathRole)
                                         const shouldExpand = !!expandedFolders[fullPath]
                                         if (shouldExpand)
@@ -327,7 +328,7 @@ Page {
 
                             ScrollBar.vertical: ScrollBar {}
 
-                            Component.onCompleted: expandRecursively()
+                            Component.onCompleted: root.expandAllFolders()
 
                             Connections {
                                 target: BlocksModel
@@ -418,6 +419,7 @@ Page {
         }
 
         Frame {
+            id: detailsFrame
             Layout.fillWidth: true
             Layout.fillHeight: true
             background: Rectangle {
@@ -439,16 +441,17 @@ Page {
                     Item {
                         GridLayout {
                             anchors.fill: parent
-                            columns: 2
+                            columns: root.detailsStacked ? 1 : 2
                             rowSpacing: General.spacingMedium
                             columnSpacing: General.spacingMedium
 
                             Rectangle {
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
-                                Layout.preferredWidth: 340
-                                Layout.minimumWidth: 300
-                                Layout.maximumWidth: 420
+                                Layout.preferredWidth: root.detailsStacked ? -1 : 340
+                                Layout.minimumWidth: root.detailsStacked ? 0 : 300
+                                Layout.maximumWidth: root.detailsStacked ? Number.POSITIVE_INFINITY : 420
+                                Layout.preferredHeight: root.detailsStacked ? 420 : -1
                                 radius: General.radiusSmall
                                 color: ColorPalette.fieldBackground
                                 border.color: ColorPalette.borderStrong
@@ -583,8 +586,9 @@ Page {
                             Rectangle {
                                 Layout.fillWidth: true
                                 Layout.fillHeight: true
-                                Layout.preferredWidth: 820
-                                Layout.minimumWidth: 620
+                                Layout.preferredWidth: root.detailsStacked ? -1 : 820
+                                Layout.minimumWidth: root.detailsStacked ? 0 : 620
+                                Layout.preferredHeight: root.detailsStacked ? 520 : -1
                                 radius: General.radiusSmall
                                 color: ColorPalette.fieldBackground
                                 border.color: ColorPalette.borderStrong

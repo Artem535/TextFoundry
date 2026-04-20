@@ -673,11 +673,22 @@ Page {
 
                                     SvgToolButton {
                                         iconSource: Icons.aiAssistSvg
-                                        labelText: CompositionsVm.normalizing ? "Normalizing..." : "Normalize Style"
+                                        labelText: CompositionsVm.previewingNormalization ? "Previewing..." : "Preview Normalize"
                                         toolTipText: "Preserve structure and adjust style settings such as tone, tense, audience, and locale."
-                                        enabled: !CompositionsVm.normalizing
+                                        enabled: !CompositionsVm.previewingNormalization
+                                                 && !CompositionsVm.normalizing
                                                  && CompositionsVm.normalizationAvailable
                                                  && CompositionsVm.selectedCompositionId.length > 0
+                                        onClicked: CompositionsVm.previewNormalizeSelected()
+                                    }
+
+                                    SvgToolButton {
+                                        iconSource: Icons.saveSvg
+                                        labelText: CompositionsVm.normalizing ? "Applying..." : "Apply Normalize"
+                                        toolTipText: "Create the derived normalized composition from the current preview settings."
+                                        enabled: !CompositionsVm.previewingNormalization
+                                                 && !CompositionsVm.normalizing
+                                                 && CompositionsVm.hasNormalizationPreview
                                         onClicked: CompositionsVm.normalizeSelected()
                                     }
                                 }
@@ -725,6 +736,14 @@ Page {
 
                                 Item {
                                     Layout.fillWidth: true
+                                }
+
+                                Label {
+                                    text: CompositionsVm.hasNormalizationPreview
+                                          ? CompositionsVm.normalizationPreviewTargetId
+                                          : ""
+                                    opacity: 0.72
+                                    visible: CompositionsVm.hasNormalizationPreview
                                 }
 
                                 SvgToolButton {
@@ -797,6 +816,7 @@ Page {
                                     clip: true
                                     spacing: General.spacingSmall
                                     model: CompositionsVm.selectedFragments
+                                    visible: !CompositionsVm.hasNormalizationPreview
 
                                     delegate: Label {
                                         required property string modelData
@@ -804,6 +824,14 @@ Page {
                                         text: modelData
                                         wrapMode: Text.WordWrap
                                     }
+                                }
+
+                                CodePreview {
+                                    anchors.fill: parent
+                                    anchors.margins: General.paddingSmall
+                                    visible: CompositionsVm.hasNormalizationPreview
+                                    text: CompositionsVm.normalizationPreviewText
+                                    definition: "Markdown"
                                 }
                             }
                         }
@@ -898,59 +926,64 @@ Page {
             border.color: ColorPalette.border
         }
 
-        contentItem: ColumnLayout {
-            spacing: General.spacingMedium
+        contentItem: Item {
+            implicitWidth: compareDialog.availableWidth
+            implicitHeight: compareDialog.availableHeight
 
-            Label {
-                Layout.fillWidth: true
-                text: CompositionsVm.compareSummary
-                wrapMode: Text.WordWrap
-                opacity: 0.78
-            }
-
-            RowLayout {
-                Layout.fillWidth: true
+            ColumnLayout {
+                anchors.fill: parent
                 spacing: General.spacingMedium
 
                 Label {
                     Layout.fillWidth: true
-                    text: CompositionsVm.compareLeftTitle
-                    font.bold: true
+                    text: CompositionsVm.compareSummary
+                    wrapMode: Text.WordWrap
+                    opacity: 0.78
                 }
 
-                Label {
+                RowLayout {
                     Layout.fillWidth: true
-                    text: CompositionsVm.compareRightTitle
-                    font.bold: true
-                }
-            }
+                    spacing: General.spacingMedium
 
-            Frame {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                padding: 0
-                background: Rectangle {
-                    radius: General.radiusMedium
-                    color: ColorPalette.fieldBackground
-                    border.color: ColorPalette.border
-                }
-
-                ListView {
-                    id: compareRowsView
-                    anchors.fill: parent
-                    anchors.margins: General.paddingMedium
-                    clip: true
-                    spacing: General.spacingSmall
-                    model: CompositionsVm.compareRows
-
-                    ScrollBar.horizontal: ScrollBar {
-                        policy: ScrollBar.AlwaysOff
-                    }
-                    ScrollBar.vertical: ScrollBar {
-                        policy: ScrollBar.AsNeeded
+                    Label {
+                        Layout.fillWidth: true
+                        text: CompositionsVm.compareLeftTitle
+                        font.bold: true
                     }
 
-                    delegate: Item {
+                    Label {
+                        Layout.fillWidth: true
+                        text: CompositionsVm.compareRightTitle
+                        font.bold: true
+                    }
+                }
+
+                Frame {
+                    Layout.fillWidth: true
+                    Layout.fillHeight: true
+                    padding: 0
+                    background: Rectangle {
+                        radius: General.radiusMedium
+                        color: ColorPalette.fieldBackground
+                        border.color: ColorPalette.border
+                    }
+
+                    ListView {
+                        id: compareRowsView
+                        anchors.fill: parent
+                        anchors.margins: General.paddingMedium
+                        clip: true
+                        spacing: General.spacingSmall
+                        model: CompositionsVm.compareRows
+
+                        ScrollBar.horizontal: ScrollBar {
+                            policy: ScrollBar.AlwaysOff
+                        }
+                        ScrollBar.vertical: ScrollBar {
+                            policy: ScrollBar.AsNeeded
+                        }
+
+                        delegate: Item {
                         required property var modelData
 
                         function diffBackground(kind) {
@@ -1038,10 +1071,11 @@ Page {
                                         wrapMode: Text.WrapAtWordBoundaryOrAnywhere
                                         font.family: General.monospaceFamily
                                         verticalAlignment: Text.AlignTop
-                                    }
-                                }
-                            }
                         }
+                    }
+                }
+            }
+        }
                     }
                 }
             }

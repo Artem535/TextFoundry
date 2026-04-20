@@ -42,12 +42,9 @@ ToolButton {
         }
     }
 
-    ToolTip {
-        parent: control
-        visible: control.compact && control.hovered
-                 && (control.toolTipText.length > 0 || control.labelText.length > 0)
-        text: control.toolTipText.length > 0 ? control.toolTipText : control.labelText
-        delay: 300
-        timeout: 2000
-    }
+    ToolTip.visible: control.compact && control.hovered
+                     && (control.toolTipText.length > 0 || control.labelText.length > 0)
+    ToolTip.text: control.toolTipText.length > 0 ? control.toolTipText : control.labelText
+    ToolTip.delay: 300
+    ToolTip.timeout: 2000
 }

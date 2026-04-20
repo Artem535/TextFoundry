@@ -171,12 +171,32 @@ bool CompositionsViewModel::preserveExamples() const {
 
 bool CompositionsViewModel::normalizing() const { return normalizing_; }
 
+bool CompositionsViewModel::previewingNormalization() const {
+  return previewing_normalization_;
+}
+
 bool CompositionsViewModel::normalizationAvailable() const {
   return session_->engine().HasBlockNormalizer();
 }
 
 QString CompositionsViewModel::normalizationStatusText() const {
   return normalization_status_text_;
+}
+
+bool CompositionsViewModel::hasNormalizationPreview() const {
+  return !normalization_preview_text_.isEmpty();
+}
+
+QString CompositionsViewModel::normalizationPreviewTargetId() const {
+  return normalization_preview_target_id_;
+}
+
+QString CompositionsViewModel::normalizationPreviewText() const {
+  return normalization_preview_text_;
+}
+
+int CompositionsViewModel::normalizationPreviewBlockCount() const {
+  return normalization_preview_block_count_;
 }
 
 QString CompositionsViewModel::statusText() const { return status_text_; }
@@ -204,6 +224,7 @@ QString CompositionsViewModel::compareSummary() const { return compare_summary_;
 void CompositionsViewModel::setSelectedCompositionId(const QString& value) {
   if (selected_composition_id_ == value) return;
   selected_composition_id_ = value;
+  clearNormalizationPreview();
   emit selectedCompositionIdChanged();
   refreshDetails();
 }
@@ -217,60 +238,70 @@ void CompositionsViewModel::setSearchText(const QString& value) {
 void CompositionsViewModel::setTone(const QString& value) {
   if (tone_ == value) return;
   tone_ = value;
+  clearNormalizationPreview();
   emit normalizationChanged();
 }
 
 void CompositionsViewModel::setTense(const QString& value) {
   if (tense_ == value) return;
   tense_ = value;
+  clearNormalizationPreview();
   emit normalizationChanged();
 }
 
 void CompositionsViewModel::setTargetLanguage(const QString& value) {
   if (target_language_ == value) return;
   target_language_ = value;
+  clearNormalizationPreview();
   emit normalizationChanged();
 }
 
 void CompositionsViewModel::setPerson(const QString& value) {
   if (person_ == value) return;
   person_ = value;
+  clearNormalizationPreview();
   emit normalizationChanged();
 }
 
 void CompositionsViewModel::setRewriteStrength(const QString& value) {
   if (rewrite_strength_ == value) return;
   rewrite_strength_ = value;
+  clearNormalizationPreview();
   emit normalizationChanged();
 }
 
 void CompositionsViewModel::setAudience(const QString& value) {
   if (audience_ == value) return;
   audience_ = value;
+  clearNormalizationPreview();
   emit normalizationChanged();
 }
 
 void CompositionsViewModel::setLocale(const QString& value) {
   if (locale_ == value) return;
   locale_ = value;
+  clearNormalizationPreview();
   emit normalizationChanged();
 }
 
 void CompositionsViewModel::setTerminologyRigidity(const QString& value) {
   if (terminology_rigidity_ == value) return;
   terminology_rigidity_ = value;
+  clearNormalizationPreview();
   emit normalizationChanged();
 }
 
 void CompositionsViewModel::setPreserveFormatting(const bool value) {
   if (preserve_formatting_ == value) return;
   preserve_formatting_ = value;
+  clearNormalizationPreview();
   emit normalizationChanged();
 }
 
 void CompositionsViewModel::setPreserveExamples(const bool value) {
   if (preserve_examples_ == value) return;
   preserve_examples_ = value;
+  clearNormalizationPreview();
   emit normalizationChanged();
 }
 
@@ -286,6 +317,7 @@ void CompositionsViewModel::selectComposition(const QString& value) {
 void CompositionsViewModel::selectCompositionVersion(const QString& value) {
   if (value.isEmpty() || selected_version_ == value) return;
   selected_version_ = value;
+  clearNormalizationPreview();
   emit detailsChanged();
   refreshDetails();
 }
@@ -335,7 +367,69 @@ void CompositionsViewModel::deleteSelected() {
   setStatusText(QStringLiteral("Deleted composition %1.").arg(deleted_id));
 }
 
+void CompositionsViewModel::previewNormalizeSelected() {
+  if (!session_->engine().HasBlockNormalizer()) {
+    setStatusText(QStringLiteral("Configure AI settings first."));
+    return;
+  }
+  if (selected_composition_id_.isEmpty()) {
+    setStatusText(QStringLiteral("Select a composition first."));
+    return;
+  }
+
+  const auto style = currentSemanticStyle();
+  if (style.isEmpty()) {
+    setStatusText(QStringLiteral("Specify at least one semantic style field."));
+    return;
+  }
+
+  Version version;
+  if (const auto parse_error = ParseVersionText(selected_version_, version);
+      parse_error.has_value()) {
+    setStatusText(QString("Error: %1").arg(QString::fromStdString(*parse_error)));
+    return;
+  }
+
+  previewing_normalization_ = true;
+  emit normalizationChanged();
+
+  auto result = session_->engine().PreviewNormalizeComposition(
+      CompositionNormalizationRequest{
+          .source_composition_id = selected_composition_id_.toStdString(),
+          .source_version = version,
+          .style = style,
+      });
+
+  previewing_normalization_ = false;
+  emit normalizationChanged();
+
+  if (result.HasError()) {
+    clearNormalizationPreview();
+    normalization_status_text_ =
+        QString("Error: %1").arg(QString::fromStdString(result.error().message));
+    emit normalizationChanged();
+    setStatusText(QStringLiteral("Composition normalization preview failed."));
+    return;
+  }
+
+  normalization_preview_target_id_ =
+      QString::fromStdString(result.value().composition_id);
+  normalization_preview_text_ =
+      QString::fromStdString(result.value().preview_text);
+  normalization_preview_block_count_ =
+      static_cast<int>(result.value().rewritten_blocks.size());
+  normalization_status_text_ =
+      QStringLiteral("Preview ready for derived composition %1.")
+          .arg(normalization_preview_target_id_);
+  emit normalizationChanged();
+  setStatusText(QStringLiteral("Normalization preview generated."));
+}
+
 void CompositionsViewModel::normalizeSelected() {
+  if (!hasNormalizationPreview()) {
+    setStatusText(QStringLiteral("Preview normalization first."));
+    return;
+  }
   if (!session_->engine().HasBlockNormalizer()) {
     setStatusText(QStringLiteral("Configure AI settings first."));
     return;
@@ -379,6 +473,10 @@ void CompositionsViewModel::normalizeSelected() {
     return;
   }
 
+  normalization_status_text_ =
+      QStringLiteral("Created normalized composition %1.")
+          .arg(QString::fromStdString(result.value().composition_id));
+  clearNormalizationPreview();
   normalization_status_text_ =
       QStringLiteral("Created normalized composition %1.")
           .arg(QString::fromStdString(result.value().composition_id));
@@ -730,6 +828,7 @@ void CompositionsViewModel::refreshFilteredCompositions() {
 }
 
 void CompositionsViewModel::refreshDetails() {
+  clearNormalizationPreview();
   if (selected_composition_id_.isEmpty()) {
     selected_version_.clear();
     selected_versions_.clear();
@@ -876,6 +975,19 @@ void CompositionsViewModel::setStatusText(QString value) {
   status_text_ = std::move(value);
   session_->publishStatus(status_text_);
   emit statusTextChanged();
+}
+
+void CompositionsViewModel::clearNormalizationPreview() {
+  if (normalization_preview_target_id_.isEmpty() &&
+      normalization_preview_text_.isEmpty() &&
+      normalization_preview_block_count_ == 0) {
+    return;
+  }
+
+  normalization_preview_target_id_.clear();
+  normalization_preview_text_.clear();
+  normalization_preview_block_count_ = 0;
+  emit normalizationChanged();
 }
 
 SemanticStyle CompositionsViewModel::currentSemanticStyle() const {

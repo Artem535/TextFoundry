@@ -3,28 +3,76 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import TextFoundry
 
-Dialog {
-    id: rewriteDialog
-    parent: Overlay.overlay
-    x: Math.round((parent.width - width) / 2)
-    y: Math.round((parent.height - height) / 2)
-    width: Math.min(parent.width - 64, 980)
-    height: Math.min(parent.height - 64, 760)
-    modal: true
-    dim: true
+Item {
+    id: rewriteWorkspace
+    anchors.fill: parent
     visible: CompositionBlockRewriteVm.open
-    title: "Rewrite Blocks"
-    standardButtons: Dialog.NoButton
-    onClosed: CompositionBlockRewriteVm.closeDialog()
+    z: 21
 
-    background: Rectangle {
-        radius: General.radiusMedium
-        color: ColorPalette.surface
-        border.color: ColorPalette.border
+    Rectangle {
+        anchors.fill: parent
+        color: ColorPalette.background
     }
 
-    contentItem: ColumnLayout {
+    ColumnLayout {
+        anchors.fill: parent
         spacing: General.spacingMedium
+
+        Frame {
+            Layout.fillWidth: true
+            padding: General.paddingMedium
+            background: Rectangle {
+                radius: General.radiusMedium
+                color: ColorPalette.surface
+                border.color: ColorPalette.border
+            }
+
+            RowLayout {
+                anchors.fill: parent
+                spacing: General.spacingSmall
+
+                ColumnLayout {
+                    spacing: 2
+
+                    Label {
+                        text: "Rewrite Blocks"
+                        font.bold: true
+                        color: ColorPalette.primary
+                    }
+
+                    Label {
+                        text: "AI rewrite workspace"
+                        opacity: 0.72
+                    }
+                }
+
+                Item { Layout.fillWidth: true }
+
+                SvgToolButton {
+                    iconSource: Icons.aiAssistSvg
+                    labelText: CompositionBlockRewriteVm.previewing ? "Previewing..." : "Preview"
+                    enabled: !CompositionBlockRewriteVm.previewing
+                             && !CompositionBlockRewriteVm.applying
+                             && CompositionBlockRewriteVm.rewriteAvailable
+                    onClicked: CompositionBlockRewriteVm.preview()
+                }
+
+                SvgToolButton {
+                    iconSource: Icons.saveSvg
+                    labelText: CompositionBlockRewriteVm.applying ? "Applying..." : "Apply All"
+                    enabled: !CompositionBlockRewriteVm.previewing
+                             && !CompositionBlockRewriteVm.applying
+                             && CompositionBlockRewriteVm.patchCount > 0
+                    onClicked: CompositionBlockRewriteVm.applyAll()
+                }
+
+                SvgToolButton {
+                    iconSource: Icons.backSvg
+                    labelText: "Back"
+                    onClicked: CompositionBlockRewriteVm.closeDialog()
+                }
+            }
+        }
 
         RowLayout {
             Layout.fillWidth: true
@@ -128,37 +176,6 @@ Dialog {
                     text: CompositionBlockRewriteVm.previewText
                     definition: "Markdown"
                 }
-            }
-        }
-
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: General.spacingSmall
-
-            Item { Layout.fillWidth: true }
-
-            SvgToolButton {
-                iconSource: Icons.closeSvg
-                labelText: "Cancel"
-                onClicked: rewriteDialog.close()
-            }
-
-            SvgToolButton {
-                iconSource: Icons.aiAssistSvg
-                labelText: CompositionBlockRewriteVm.previewing ? "Previewing..." : "Preview"
-                enabled: !CompositionBlockRewriteVm.previewing
-                         && !CompositionBlockRewriteVm.applying
-                         && CompositionBlockRewriteVm.rewriteAvailable
-                onClicked: CompositionBlockRewriteVm.preview()
-            }
-
-            SvgToolButton {
-                iconSource: Icons.saveSvg
-                labelText: CompositionBlockRewriteVm.applying ? "Applying..." : "Apply All"
-                enabled: !CompositionBlockRewriteVm.previewing
-                         && !CompositionBlockRewriteVm.applying
-                         && CompositionBlockRewriteVm.patchCount > 0
-                onClicked: CompositionBlockRewriteVm.applyAll()
             }
         }
     }

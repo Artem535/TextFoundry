@@ -40,8 +40,13 @@ class CompositionsViewModel : public QObject {
   Q_PROPERTY(bool preserveFormatting READ preserveFormatting WRITE setPreserveFormatting NOTIFY normalizationChanged)
   Q_PROPERTY(bool preserveExamples READ preserveExamples WRITE setPreserveExamples NOTIFY normalizationChanged)
   Q_PROPERTY(bool normalizing READ normalizing NOTIFY normalizationChanged)
+  Q_PROPERTY(bool previewingNormalization READ previewingNormalization NOTIFY normalizationChanged)
   Q_PROPERTY(bool normalizationAvailable READ normalizationAvailable NOTIFY normalizationChanged)
   Q_PROPERTY(QString normalizationStatusText READ normalizationStatusText NOTIFY normalizationChanged)
+  Q_PROPERTY(bool hasNormalizationPreview READ hasNormalizationPreview NOTIFY normalizationChanged)
+  Q_PROPERTY(QString normalizationPreviewTargetId READ normalizationPreviewTargetId NOTIFY normalizationChanged)
+  Q_PROPERTY(QString normalizationPreviewText READ normalizationPreviewText NOTIFY normalizationChanged)
+  Q_PROPERTY(int normalizationPreviewBlockCount READ normalizationPreviewBlockCount NOTIFY normalizationChanged)
   Q_PROPERTY(QString statusText READ statusText NOTIFY statusTextChanged)
   Q_PROPERTY(bool compareOpen READ compareOpen NOTIFY compareChanged)
   Q_PROPERTY(QString compareLeftTitle READ compareLeftTitle NOTIFY compareChanged)
@@ -81,8 +86,13 @@ class CompositionsViewModel : public QObject {
   bool preserveFormatting() const;
   bool preserveExamples() const;
   bool normalizing() const;
+  bool previewingNormalization() const;
   bool normalizationAvailable() const;
   QString normalizationStatusText() const;
+  bool hasNormalizationPreview() const;
+  QString normalizationPreviewTargetId() const;
+  QString normalizationPreviewText() const;
+  int normalizationPreviewBlockCount() const;
   QString statusText() const;
   bool compareOpen() const;
   QString compareLeftTitle() const;
@@ -110,6 +120,7 @@ class CompositionsViewModel : public QObject {
   Q_INVOKABLE void selectCompositionVersion(const QString& value);
   Q_INVOKABLE void deprecateSelected();
   Q_INVOKABLE void deleteSelected();
+  Q_INVOKABLE void previewNormalizeSelected();
   Q_INVOKABLE void normalizeSelected();
   Q_INVOKABLE void updateBlocksToLatest();
   Q_INVOKABLE void openCompareWithLatest();
@@ -130,6 +141,7 @@ class CompositionsViewModel : public QObject {
   void refreshFilteredCompositions();
   void refreshDetails();
   void setStatusText(QString value);
+  void clearNormalizationPreview();
   SemanticStyle currentSemanticStyle() const;
 
   SessionViewModel* session_;
@@ -156,8 +168,12 @@ class CompositionsViewModel : public QObject {
   QString terminology_rigidity_ = QStringLiteral("strict");
   bool preserve_formatting_ = true;
   bool preserve_examples_ = true;
+  bool previewing_normalization_ = false;
   bool normalizing_ = false;
   QString normalization_status_text_ = QStringLiteral("Create a normalized composition to preserve structure and placeholders.");
+  QString normalization_preview_target_id_;
+  QString normalization_preview_text_;
+  int normalization_preview_block_count_ = 0;
   QString status_text_ = QStringLiteral("Select a composition to see details.");
   bool compare_open_ = false;
   QString compare_left_title_;

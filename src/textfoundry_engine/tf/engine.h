@@ -85,6 +85,12 @@ struct NormalizedCompositionResult {
   std::vector<std::pair<BlockId, BlockId>> rewritten_blocks;
 };
 
+struct NormalizedCompositionPreview {
+  CompositionId composition_id;
+  std::string preview_text;
+  std::vector<std::pair<BlockId, BlockId>> rewritten_blocks;
+};
+
 struct CompositionRewriteContextBlock {
   BlockId block_id;
   BlockType type = BlockType::Domain;
@@ -351,6 +357,15 @@ class Engine {
    */
   [[nodiscard]] Result<std::string> Normalize(const std::string& text,
                                               const SemanticStyle& style) const;
+
+  /**
+   * Create a derived composition by normalizing individual block templates.
+   *
+   * The original composition structure is preserved. Block refs are rewritten
+   * to newly published normalized block versions or cached derived blocks.
+   */
+  [[nodiscard]] Result<NormalizedCompositionPreview> PreviewNormalizeComposition(
+      const CompositionNormalizationRequest& request);
 
   /**
    * Create a derived composition by normalizing individual block templates.

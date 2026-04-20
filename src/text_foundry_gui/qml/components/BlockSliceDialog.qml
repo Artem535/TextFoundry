@@ -3,28 +3,78 @@ import QtQuick.Controls
 import QtQuick.Layouts
 import TextFoundry
 
-Dialog {
-    id: slicePromptDialog
-    parent: Overlay.overlay
-    x: Math.round((parent.width - width) / 2)
-    y: Math.round((parent.height - height) / 2)
-    width: Math.min(parent.width - 64, 1040)
-    height: Math.min(parent.height - 64, 820)
-    modal: true
-    dim: true
+Item {
+    id: sliceWorkspace
+    anchors.fill: parent
     visible: BlockSliceVm.open
-    title: BlockSliceVm.dialogTitle
-    standardButtons: Dialog.NoButton
-    onClosed: BlockSliceVm.closeDialog()
+    z: 20
 
-    background: Rectangle {
-        radius: General.radiusMedium
-        color: ColorPalette.surface
-        border.color: ColorPalette.border
+    Rectangle {
+        anchors.fill: parent
+        color: ColorPalette.background
     }
 
-    contentItem: ColumnLayout {
+    ColumnLayout {
+        anchors.fill: parent
         spacing: General.spacingMedium
+
+        Frame {
+            Layout.fillWidth: true
+            padding: General.paddingMedium
+            background: Rectangle {
+                radius: General.radiusMedium
+                color: ColorPalette.surface
+                border.color: ColorPalette.border
+            }
+
+            RowLayout {
+                anchors.fill: parent
+                spacing: General.spacingSmall
+
+                ColumnLayout {
+                    spacing: 2
+
+                    Label {
+                        text: BlockSliceVm.dialogTitle
+                        font.bold: true
+                        color: ColorPalette.primary
+                    }
+
+                    Label {
+                        text: BlockSliceVm.updateMode
+                              ? "AI rewrite workspace"
+                              : "AI generation workspace"
+                        opacity: 0.72
+                    }
+                }
+
+                Item { Layout.fillWidth: true }
+
+                SvgToolButton {
+                    iconSource: Icons.aiAssistSvg
+                    labelText: BlockSliceVm.generating ? "Generating..." : "Generate"
+                    enabled: !BlockSliceVm.generating
+                             && !BlockSliceVm.publishing
+                             && BlockSliceVm.aiGenerationAvailable
+                    onClicked: BlockSliceVm.generate()
+                }
+
+                SvgToolButton {
+                    iconSource: Icons.saveSvg
+                    labelText: BlockSliceVm.publishing ? "Publishing..." : BlockSliceVm.publishButtonText
+                    enabled: !BlockSliceVm.generating
+                             && !BlockSliceVm.publishing
+                             && BlockSliceVm.generatedCount > 0
+                    onClicked: BlockSliceVm.publishAll()
+                }
+
+                SvgToolButton {
+                    iconSource: Icons.backSvg
+                    labelText: "Back"
+                    onClicked: BlockSliceVm.closeDialog()
+                }
+            }
+        }
 
         RowLayout {
             Layout.fillWidth: true
@@ -43,6 +93,7 @@ Dialog {
                 ScrollView {
                     id: sliceScroll
                     anchors.fill: parent
+                    anchors.margins: General.paddingMedium
                     clip: true
                     ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
@@ -232,43 +283,13 @@ Dialog {
                 }
             }
         }
-        RowLayout {
-            Layout.fillWidth: true
-            spacing: General.spacingSmall
-
-            Item { Layout.fillWidth: true }
-
-            SvgToolButton {
-                iconSource: Icons.closeSvg
-                labelText: "Cancel"
-                onClicked: slicePromptDialog.close()
-            }
-
-            SvgToolButton {
-                iconSource: Icons.aiAssistSvg
-                labelText: BlockSliceVm.generating ? "Generating..." : "Generate"
-                enabled: !BlockSliceVm.generating
-                         && !BlockSliceVm.publishing
-                         && BlockSliceVm.aiGenerationAvailable
-                onClicked: BlockSliceVm.generate()
-            }
-
-            SvgToolButton {
-                iconSource: Icons.saveSvg
-                labelText: BlockSliceVm.publishing ? "Publishing..." : BlockSliceVm.publishButtonText
-                enabled: !BlockSliceVm.generating
-                         && !BlockSliceVm.publishing
-                         && BlockSliceVm.generatedCount > 0
-                onClicked: BlockSliceVm.publishAll()
-            }
-        }
     }
 
     Connections {
         target: BlockSliceVm
 
         function onPublished() {
-            slicePromptDialog.close()
+            BlockSliceVm.closeDialog()
         }
     }
 }
