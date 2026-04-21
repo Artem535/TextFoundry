@@ -63,6 +63,8 @@ build_appimage:
     QT_PREFIX: "/opt/qt/Qt/6.10.0/clang_64"
     CMAKE_VERSION: "4.2.3"
     CMAKE_DIR: "$CI_PROJECT_DIR/.cache/cmake"
+    ECM_VERSION: "6.23.0"
+    ECM_PREFIX: "$CI_PROJECT_DIR/.cache/ecm"
     EXTRA_QT_PLUGINS: "platforms/libqxcb.so"
     EXTRA_QT_MODULES: "waylandclient"
   cache:
@@ -76,19 +78,22 @@ build_appimage:
       - .cache/vcpkg-bincache
       - .cache/ccache
       - .cache/cmake
+      - .cache/ecm
       - build-rel/_deps
       - build-rel/vcpkg_installed
   script:
     - apt-get update
-    - apt-get install -y build-essential clang cmake ninja-build git ccache extra-cmake-modules patchelf file wget curl libfuse2 libgl1-mesa-dev libglx-mesa0 mesa-common-dev libx11-dev libxext-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev libwayland-client0 libwayland-cursor0 libwayland-egl1 libxkbcommon0 libdbus-1-3
+    - apt-get install -y build-essential clang cmake ninja-build git ccache extra-cmake-modules patchelf file wget curl xz-utils libfuse2 libgl1-mesa-dev libglx-mesa0 mesa-common-dev libx11-dev libxext-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev libwayland-client0 libwayland-cursor0 libwayland-egl1 libxkbcommon0 libdbus-1-3
     - mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE" "$CCACHE_DIR"
     - mkdir -p "$CMAKE_DIR"
+    - mkdir -p "$ECM_PREFIX"
     - test -x "$CMAKE_DIR/bin/cmake" || { wget -q "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-linux-x86_64.tar.gz" -O /tmp/cmake.tar.gz && tar -xzf /tmp/cmake.tar.gz -C "$CMAKE_DIR" --strip-components=1; }
     - export PATH="$CMAKE_DIR/bin:$PATH"
     - cmake --version
+    - test -f "$ECM_PREFIX/share/ECM/cmake/ECMConfig.cmake" || { wget -q "https://download.kde.org/stable/frameworks/${ECM_VERSION%.*}/extra-cmake-modules-${ECM_VERSION}.tar.xz" -O /tmp/ecm.tar.xz && rm -rf /tmp/ecm-src /tmp/ecm-build && mkdir -p /tmp/ecm-src /tmp/ecm-build && tar -xJf /tmp/ecm.tar.xz -C /tmp/ecm-src --strip-components=1 && cmake -S /tmp/ecm-src -B /tmp/ecm-build -DCMAKE_INSTALL_PREFIX="$ECM_PREFIX" && cmake --build /tmp/ecm-build -j"$(nproc)" && cmake --install /tmp/ecm-build; }
     - test -d "$VCPKG_ROOT/.git" || git clone --depth 1 https://github.com/microsoft/vcpkg.git "$VCPKG_ROOT"
     - "$VCPKG_ROOT/bootstrap-vcpkg.sh"
-    - cmake --preset vcpkg-rel --log-level=VERBOSE -DCMAKE_PREFIX_PATH="$QT_PREFIX" -DCMAKE_INSTALL_PREFIX=/usr -DTEXTFOUNDRY_VENDORED_KSYNTAXHIGHLIGHTING=OFF -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+    - cmake --preset vcpkg-rel --log-level=VERBOSE -DCMAKE_PREFIX_PATH="$ECM_PREFIX;$QT_PREFIX" -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
     - cmake --build build-rel --verbose -j"$(nproc)"
     - rm -rf AppDir
     - DESTDIR="$PWD/AppDir" cmake --install build-rel --prefix /usr
