@@ -5,6 +5,7 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QColor>
+#include <QLoggingCategory>
 #include <QQuickTextDocument>
 #include <QTextDocument>
 #include <QVariant>
@@ -15,6 +16,8 @@
 #endif
 
 namespace tf::gui {
+
+Q_LOGGING_CATEGORY(kSyntaxHighlighterLog, "textfoundry.gui.syntaxhighlighter")
 
 #ifdef TEXTFOUNDRY_HAS_KSYNTAXHIGHLIGHTING
 class SyntaxHighlighter::Impl {
@@ -146,6 +149,17 @@ void SyntaxHighlighter::applySettings() {
       dark_theme_ ? KSyntaxHighlighting::Repository::DarkTheme
                   : KSyntaxHighlighting::Repository::LightTheme);
 
+  const auto* document = resolveDocument(text_edit_);
+  qCInfo(kSyntaxHighlighterLog).noquote()
+      << "Applying syntax highlighting:"
+      << "requestedDefinition=" << definition_
+      << "definitionValid=" << definition.isValid()
+      << "definitionName=" << definition.name()
+      << "definitionPath=" << definition.filePath()
+      << "themeValid=" << theme.isValid()
+      << "themeName=" << theme.name()
+      << "documentChars=" << (document ? document->characterCount() : 0);
+
   impl_->highlighter->setDefinition(definition);
   impl_->highlighter->setTheme(theme);
 
@@ -180,6 +194,7 @@ void SyntaxHighlighter::applySettings() {
   }
 
   if (text_edit_ == nullptr) {
+    qCWarning(kSyntaxHighlighterLog) << "Syntax highlighter has no target textEdit";
     return;
   }
 
