@@ -5,7 +5,8 @@
 #define OBX_CPP_FILE
 #include "objectbox_repository.h"
 
-#include <ranges>
+#include <algorithm>
+#include <set>
 #include <unordered_set>
 
 #include "logger.h"
@@ -66,11 +67,10 @@ std::vector<BlockId> BlockRepository::list(
     std::optional<BlockType> typeFilter) {
   // If no typeFilter is provided, return all blocks
   if (!typeFilter.has_value()) {
-    const auto blockIds = box_block_->getAll() |
-                          std::views::transform([&](const auto& block) {
-                            return block->blockId;
-                          }) |
-                          std::ranges::to<std::set<BlockId> >();
+    std::set<BlockId> blockIds;
+    for (const auto& block : box_block_->getAll()) {
+      blockIds.insert(block->blockId);
+    }
 
     if (blockIds.empty()) {
       TF_LOG_WARN("BlockRepository::list| No blocks found");
@@ -89,10 +89,10 @@ std::vector<BlockId> BlockRepository::list(
     TF_LOG_WARN("BlockRepository::list| Blocks by types not found");
   }
 
-  const auto results_set =
-      objects |
-      std::views::transform([](const auto& block) { return block.blockId; }) |
-      std::ranges::to<std::set<BlockId> >();
+  std::set<BlockId> results_set;
+  for (const auto& block : objects) {
+    results_set.insert(block.blockId);
+  }
 
   return {results_set.begin(), results_set.end()};
 }
@@ -106,11 +106,13 @@ Result<Version> BlockRepository::GetLatestVersion(const BlockId& id) {
     return Result<Version>(Error{ErrorCode::StorageError, "Block not found"});
   }
 
-  const auto versions =
-      blocks | std::views::transform([](const auto& block) {
-        return Version{block.versionMajor, block.versionMinor};
-      });
-  const auto version = *std::ranges::max_element(versions);
+  Version version{blocks.front().versionMajor, blocks.front().versionMinor};
+  for (const auto& block : blocks) {
+    const Version candidate{block.versionMajor, block.versionMinor};
+    if (candidate > version) {
+      version = candidate;
+    }
+  }
   return Result{version};
 }
 
@@ -129,7 +131,7 @@ Result<std::vector<Version>> BlockRepository::ListVersions(const BlockId& id) {
   for (const auto& block : blocks) {
     versions.push_back(Version{block.versionMajor, block.versionMinor});
   }
-  std::ranges::sort(versions, std::greater{});
+  std::sort(versions.begin(), versions.end(), std::greater{});
   versions.erase(std::unique(versions.begin(), versions.end()), versions.end());
   return Result<std::vector<Version>>(std::move(versions));
 }
@@ -307,13 +309,14 @@ Result<Version> CompositionRepository::GetLatestVersion(
         Error{ErrorCode::StorageError, "Composition not found"});
   }
 
-  // Find maximum version
-  const auto versions =
-      compositions | std::views::transform([](const auto& comp) {
-        return Version{comp.versionMajor, comp.versionMinor};
-      });
-
-  const auto max_version = *std::ranges::max_element(versions);
+  Version max_version{compositions.front().versionMajor,
+                      compositions.front().versionMinor};
+  for (const auto& comp : compositions) {
+    const Version candidate{comp.versionMajor, comp.versionMinor};
+    if (candidate > max_version) {
+      max_version = candidate;
+    }
+  }
   return Result{max_version};
 }
 
@@ -335,7 +338,7 @@ Result<std::vector<Version>> CompositionRepository::ListVersions(
   for (const auto& comp : compositions) {
     versions.push_back(Version{comp.versionMajor, comp.versionMinor});
   }
-  std::ranges::sort(versions, std::greater{});
+  std::sort(versions.begin(), versions.end(), std::greater{});
   versions.erase(std::unique(versions.begin(), versions.end()), versions.end());
   return Result<std::vector<Version>>(std::move(versions));
 }
