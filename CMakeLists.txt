@@ -9,6 +9,13 @@ include(GNUInstallDirs)
 include(FetchContent)
 include(CMakePackageConfigHelpers)
 
+if(UNIX AND NOT APPLE)
+  # Keep runtime lookup relative to the installed executable location so
+  # linuxdeploy can resolve bundled shared libraries inside AppDir.
+  set(CMAKE_INSTALL_RPATH
+      "\$ORIGIN/../${CMAKE_INSTALL_LIBDIR};\$ORIGIN/../lib")
+endif()
+
 set(TEXTFOUNDRY_INSTALL_CMAKEDIR
     "${CMAKE_INSTALL_LIBDIR}/cmake/TextFoundry")
 
