@@ -61,6 +61,8 @@ build_appimage:
     DEBIAN_FRONTEND: noninteractive
     APPIMAGE_EXTRACT_AND_RUN: "1"
     QT_PREFIX: "/opt/qt/Qt/6.10.0/clang_64"
+    CMAKE_VERSION: "4.2.3"
+    CMAKE_DIR: "$CI_PROJECT_DIR/.cache/cmake"
     EXTRA_QT_PLUGINS: "platforms/libqxcb.so"
     EXTRA_QT_MODULES: "waylandclient"
   cache:
@@ -73,12 +75,17 @@ build_appimage:
       - .cache/vcpkg
       - .cache/vcpkg-bincache
       - .cache/ccache
+      - .cache/cmake
       - build-rel/_deps
       - build-rel/vcpkg_installed
   script:
     - apt-get update
     - apt-get install -y build-essential clang cmake ninja-build git ccache extra-cmake-modules patchelf file wget curl libfuse2 libgl1-mesa-dev libglx-mesa0 mesa-common-dev libx11-dev libxext-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev libwayland-client0 libwayland-cursor0 libwayland-egl1 libxkbcommon0 libdbus-1-3
     - mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE" "$CCACHE_DIR"
+    - mkdir -p "$CMAKE_DIR"
+    - test -x "$CMAKE_DIR/bin/cmake" || { wget -q "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-linux-x86_64.tar.gz" -O /tmp/cmake.tar.gz && tar -xzf /tmp/cmake.tar.gz -C "$CMAKE_DIR" --strip-components=1; }
+    - export PATH="$CMAKE_DIR/bin:$PATH"
+    - cmake --version
     - test -d "$VCPKG_ROOT/.git" || git clone --depth 1 https://github.com/microsoft/vcpkg.git "$VCPKG_ROOT"
     - "$VCPKG_ROOT/bootstrap-vcpkg.sh"
     - cmake --preset vcpkg-rel --log-level=VERBOSE -DCMAKE_PREFIX_PATH="$QT_PREFIX" -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
