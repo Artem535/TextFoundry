@@ -2,6 +2,9 @@
 #include <QIcon>
 #include <QDir>
 #include <QQmlApplicationEngine>
+#include <qqml.h>
+
+#include "components/syntax_highlighter.h"
 
 int main(int argc, char** argv) {
   QGuiApplication app(argc, argv);
@@ -13,6 +16,8 @@ int main(int argc, char** argv) {
       QIcon(QStringLiteral(":/qt/qml/TextFoundry/resource/app/textfoundry.svg")));
 
   QQmlApplicationEngine engine;
+  qmlRegisterType<tf::gui::SyntaxHighlighter>("TextFoundry", 1, 0,
+                                              "SyntaxHighlighter");
   const QString app_dir = QCoreApplication::applicationDirPath();
   engine.addImportPath(app_dir + QStringLiteral("/../lib/qt6/qml"));
   engine.addImportPath(app_dir + QStringLiteral("/../lib64/qt6/qml"));

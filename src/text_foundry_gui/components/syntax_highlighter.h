@@ -10,7 +10,6 @@ namespace tf::gui {
 
 class SyntaxHighlighter : public QObject {
   Q_OBJECT
-  QML_ELEMENT
   Q_PROPERTY(QObject* textEdit READ textEdit WRITE setTextEdit NOTIFY textEditChanged)
   Q_PROPERTY(QString definition READ definition WRITE setDefinition NOTIFY definitionChanged)
   Q_PROPERTY(bool darkTheme READ darkTheme WRITE setDarkTheme NOTIFY darkThemeChanged)
