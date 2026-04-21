@@ -1,7 +1,6 @@
 import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
-import org.kde.syntaxhighlighting
 import TextFoundry
 
 Item {
@@ -410,8 +409,6 @@ Item {
     SyntaxHighlighter {
         textEdit: templateEditor
         definition: "Markdown"
-        theme: Repository.defaultTheme(ColorPalette.darkTheme
-                                       ? Repository.DarkTheme
-                                       : Repository.LightTheme)
+        darkTheme: ColorPalette.darkTheme
     }
 }

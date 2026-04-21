@@ -2,7 +2,6 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import TextFoundry
-import org.kde.syntaxhighlighting
 
 Frame {
     id: root
@@ -42,8 +41,6 @@ Frame {
     SyntaxHighlighter {
         textEdit: textEdit
         definition: root.definition
-        theme: Repository.defaultTheme(ColorPalette.darkTheme
-                                       ? Repository.DarkTheme
-                                       : Repository.LightTheme)
+        darkTheme: ColorPalette.darkTheme
     }
 }

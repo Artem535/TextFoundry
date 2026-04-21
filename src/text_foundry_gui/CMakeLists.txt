@@ -76,6 +76,8 @@ qt_add_qml_module(textfoundry_gui
         qml/pages/SettingsPage.qml
         qml/components/InfoCard.qml
     SOURCES
+        components/syntax_highlighter.cc
+        components/syntax_highlighter.h
         app/session_view_model.cc
         app/session_view_model.h
         models/blocks_model.cc
@@ -121,6 +123,9 @@ target_compile_definitions(textfoundry_gui PRIVATE
 
 if(TARGET KF6::SyntaxHighlighting)
     target_link_libraries(textfoundry_gui PRIVATE KF6::SyntaxHighlighting)
+    target_compile_definitions(textfoundry_gui PRIVATE
+        TEXTFOUNDRY_HAS_KSYNTAXHIGHLIGHTING=1
+    )
 endif()
 
 set_target_properties(textfoundry_gui PROPERTIES
