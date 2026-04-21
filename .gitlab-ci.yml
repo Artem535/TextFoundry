@@ -122,10 +122,21 @@ build_appimage:
     - cp -av "$QT_PREFIX/plugins/platforms/libqxcb.so" AppDir/usr/plugins/platforms/
     - cp -av "$QT_PREFIX/plugins/platforms/"libqwayland*.so AppDir/usr/plugins/platforms/ || true
     - |
+      copied_qt5compat=0
+      mkdir -p AppDir/usr/qml
       for qt_qml_base in "$QT_PREFIX/qml" /usr/lib64/qt6/qml /usr/lib/qt6/qml; do
         if [ -d "$qt_qml_base/Qt5Compat" ]; then
-          mkdir -p AppDir/usr/qml
           cp -a "$qt_qml_base/Qt5Compat" AppDir/usr/qml/
+          copied_qt5compat=1
+          break
+        fi
+      done
+      test "$copied_qt5compat" = 1 || { echo "Qt5Compat QML module not found in Qt installation"; exit 1; }
+      test -f AppDir/usr/qml/Qt5Compat/GraphicalEffects/qmldir || { echo "Qt5Compat.GraphicalEffects qmldir missing in AppDir"; find AppDir/usr/qml -maxdepth 4 -type f | sort; exit 1; }
+      for qt_qml_base in "$QT_PREFIX/qml" /usr/lib64/qt6/qml /usr/lib/qt6/qml; do
+        if [ -d "$qt_qml_base/org/kde/graphicaleffects" ]; then
+          mkdir -p AppDir/usr/qml/org/kde
+          cp -a "$qt_qml_base/org/kde/graphicaleffects" AppDir/usr/qml/org/kde/
           break
         fi
       done
@@ -137,7 +148,7 @@ build_appimage:
     - export PATH="$QT_PREFIX/bin:$PATH"
     - export LD_LIBRARY_PATH="$QT_PREFIX/lib:${LD_LIBRARY_PATH:-}"
     - export QML_SOURCES_PATHS="$CI_PROJECT_DIR/src/text_foundry_gui/qml"
-    - export QML2_IMPORT_PATH="$QT_PREFIX/qml"
+    - export QML2_IMPORT_PATH="$QT_PREFIX/qml:/usr/lib64/qt6/qml:/usr/lib/qt6/qml"
     - ./linuxdeploy-x86_64.AppImage --appdir AppDir --executable AppDir/usr/bin/tf-gui --desktop-file AppDir/usr/share/applications/textfoundry.desktop --icon-file AppDir/usr/share/icons/hicolor/scalable/apps/textfoundry.svg --plugin qt --output appimage
     - ls -lah *.AppImage
   artifacts:
