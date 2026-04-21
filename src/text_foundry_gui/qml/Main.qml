@@ -97,6 +97,10 @@ ApplicationWindow {
     }
 
     header: ToolBar {
+        topInset: 0
+        bottomInset: 0
+        leftInset: 0
+        rightInset: 0
         padding: General.headerPadding
         contentHeight: General.headerHeight
         background: Rectangle {
@@ -125,6 +129,10 @@ ApplicationWindow {
     }
 
     footer: Frame {
+        topInset: 0
+        bottomInset: 0
+        leftInset: 0
+        rightInset: 0
         padding: General.footerPadding
         background: Rectangle {
             color: ColorPalette.footerBackground
