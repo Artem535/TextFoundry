@@ -108,6 +108,16 @@ build_appimage:
     - DESTDIR="$PWD/AppDir" cmake --install build-rel --prefix /usr
     - mkdir -p AppDir/usr/lib
     - cp -av build-rel/_deps/objectbox-download-src/lib/libobjectbox.so AppDir/usr/lib/
+    - |
+      SYNTAX_QML_DIR="$(find build-rel/_deps/syntax_highlighting-build -type f -name qmldir -path '*/org/kde/syntaxhighlighting/qmldir' -printf '%h\n' | head -n 1)"
+      if [ -n "$SYNTAX_QML_DIR" ]; then
+        mkdir -p AppDir/usr/qml/org/kde
+        cp -a "$SYNTAX_QML_DIR" AppDir/usr/qml/org/kde/
+      else
+        echo "org.kde.syntaxhighlighting QML module not found under syntax_highlighting-build"
+        find build-rel/_deps/syntax_highlighting-build -maxdepth 6 \( -name qmldir -o -name '*.so' \) | sort | sed -n '1,200p'
+        exit 1
+      fi
     - mkdir -p AppDir/usr/plugins/platforms
     - cp -av "$QT_PREFIX/plugins/platforms/libqxcb.so" AppDir/usr/plugins/platforms/
     - cp -av "$QT_PREFIX/plugins/platforms/"libqwayland*.so AppDir/usr/plugins/platforms/ || true
