@@ -90,8 +90,14 @@ build_appimage:
     - test -x "$CMAKE_DIR/bin/cmake" || { wget -q "https://github.com/Kitware/CMake/releases/download/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}-linux-x86_64.tar.gz" -O /tmp/cmake.tar.gz && tar -xzf /tmp/cmake.tar.gz -C "$CMAKE_DIR" --strip-components=1; }
     - export PATH="$CMAKE_DIR/bin:$PATH"
     - cmake --version
-    - if [ ! -f "$ECM_PREFIX/share/ECM/cmake/ECMConfig.cmake" ]; then wget -q "https://ftp.fau.de/kde/stable/frameworks/${ECM_VERSION%.*}/extra-cmake-modules-${ECM_VERSION}.tar.xz" -O /tmp/ecm.tar.xz && rm -rf /tmp/ecm-src /tmp/ecm-build && mkdir -p /tmp/ecm-src /tmp/ecm-build && tar -xJf /tmp/ecm.tar.xz -C /tmp/ecm-src --strip-components=1 && cmake -S /tmp/ecm-src -B /tmp/ecm-build -DCMAKE_INSTALL_PREFIX="$ECM_PREFIX" && cmake --build /tmp/ecm-build -j"$(nproc)" && cmake --install /tmp/ecm-build; fi
-    - test -f "$ECM_PREFIX/share/ECM/cmake/ECMConfig.cmake"
+    - if [ ! -f "$ECM_PREFIX/share/ECM/cmake/ECMConfig.cmake" ]; then rm -rf /tmp/ecm-src /tmp/ecm-build; fi
+    - if [ ! -f "$ECM_PREFIX/share/ECM/cmake/ECMConfig.cmake" ]; then mkdir -p /tmp/ecm-src /tmp/ecm-build; fi
+    - if [ ! -f "$ECM_PREFIX/share/ECM/cmake/ECMConfig.cmake" ]; then wget -q "https://ftp.fau.de/kde/stable/frameworks/${ECM_VERSION%.*}/extra-cmake-modules-${ECM_VERSION}.tar.xz" -O /tmp/ecm.tar.xz; fi
+    - if [ ! -f "$ECM_PREFIX/share/ECM/cmake/ECMConfig.cmake" ]; then tar -xJf /tmp/ecm.tar.xz -C /tmp/ecm-src --strip-components=1; fi
+    - if [ ! -f "$ECM_PREFIX/share/ECM/cmake/ECMConfig.cmake" ]; then cmake -S /tmp/ecm-src -B /tmp/ecm-build -DCMAKE_INSTALL_PREFIX="$ECM_PREFIX"; fi
+    - if [ ! -f "$ECM_PREFIX/share/ECM/cmake/ECMConfig.cmake" ]; then cmake --build /tmp/ecm-build -j"$(nproc)"; fi
+    - if [ ! -f "$ECM_PREFIX/share/ECM/cmake/ECMConfig.cmake" ]; then cmake --install /tmp/ecm-build; fi
+    - test -f "$ECM_PREFIX/share/ECM/cmake/ECMConfig.cmake" || { echo "ECMConfig.cmake not found under $ECM_PREFIX"; find "$ECM_PREFIX" -maxdepth 4 -type f | sort; exit 1; }
     - test -d "$VCPKG_ROOT/.git" || git clone --depth 1 https://github.com/microsoft/vcpkg.git "$VCPKG_ROOT"
     - "$VCPKG_ROOT/bootstrap-vcpkg.sh"
     - cmake --preset vcpkg-rel --log-level=VERBOSE -DCMAKE_PREFIX_PATH="$ECM_PREFIX;$QT_PREFIX" -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
