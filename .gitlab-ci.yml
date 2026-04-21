@@ -111,6 +111,8 @@ build_appimage:
     - mkdir -p AppDir/usr/plugins/platforms
     - cp -av "$QT_PREFIX/plugins/platforms/libqxcb.so" AppDir/usr/plugins/platforms/
     - cp -av "$QT_PREFIX/plugins/platforms/"libqwayland*.so AppDir/usr/plugins/platforms/ || true
+    - printf '%s\n' '#!/bin/sh' 'HERE="$(dirname "$(readlink -f "$0")")"' 'export QT_QPA_PLATFORM="${QT_QPA_PLATFORM:-xcb}"' 'export QML2_IMPORT_PATH="$HERE/usr/qml${QML2_IMPORT_PATH:+:$QML2_IMPORT_PATH}"' 'exec "$HERE/usr/bin/tf-gui" "$@"' > AppDir/AppRun
+    - chmod +x AppDir/AppRun
     - wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
     - wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
     - chmod +x linuxdeploy-*.AppImage
