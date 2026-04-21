@@ -5,7 +5,6 @@
 #include "block.h"
 
 #include <ctre-unicode.hpp>
-#include <ranges>
 #include <regex>
 
 #include "block_ref.h"
@@ -14,12 +13,10 @@ namespace tf {
 // Template implementation
 std::vector<std::string> Template::ExtractParamNames() const {
   // Regex to match {{paramName}} pattern
-  const auto names = ctre::search_all<R"(\{\{(\w+)\}\})">(content_) |
-                     std::views::transform([](const auto& match) {
-                       return match.template get<1>().to_string();
-                     }) |
-                     std::ranges::to<std::vector<std::string> >();
-  ;
+  std::vector<std::string> names;
+  for (const auto& match : ctre::search_all<R"(\{\{(\w+)\}\})">(content_)) {
+    names.push_back(match.template get<1>().to_string());
+  }
   return names;
 }
 
