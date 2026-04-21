@@ -54,6 +54,65 @@ build_rpm:
         - vcpkg-configuration.json
         - .gitlab-ci.yml
 
+build_appimage:
+  stage: build
+  image: harbor.raftds.com/simple-task/qt:6.10-ubuntu-clang-pack
+  variables:
+    DEBIAN_FRONTEND: noninteractive
+    APPIMAGE_EXTRACT_AND_RUN: "1"
+    QT_PREFIX: "/opt/qt/Qt/6.10.0/clang_64"
+    EXTRA_QT_PLUGINS: "platforms/libqxcb.so"
+    EXTRA_QT_MODULES: "waylandclient"
+  cache:
+    key:
+      prefix: "appimage-ubuntu-qt610"
+      files:
+        - vcpkg.json
+        - vcpkg-configuration.json
+    paths:
+      - .cache/vcpkg
+      - .cache/vcpkg-bincache
+      - .cache/ccache
+      - build-rel/_deps
+      - build-rel/vcpkg_installed
+  script:
+    - apt-get update
+    - apt-get install -y build-essential clang cmake ninja-build git ccache extra-cmake-modules patchelf file wget curl libfuse2 libgl1-mesa-dev libglx-mesa0 mesa-common-dev libx11-dev libxext-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev libwayland-client0 libwayland-cursor0 libwayland-egl1 libxkbcommon0 libdbus-1-3
+    - mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE" "$CCACHE_DIR"
+    - test -d "$VCPKG_ROOT/.git" || git clone --depth 1 https://github.com/microsoft/vcpkg.git "$VCPKG_ROOT"
+    - "$VCPKG_ROOT/bootstrap-vcpkg.sh"
+    - cmake --preset vcpkg-rel --log-level=VERBOSE -DCMAKE_PREFIX_PATH="$QT_PREFIX" -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+    - cmake --build build-rel --verbose -j"$(nproc)"
+    - rm -rf AppDir
+    - DESTDIR="$PWD/AppDir" cmake --install build-rel --prefix /usr
+    - mkdir -p AppDir/usr/plugins/platforms
+    - cp -av "$QT_PREFIX/plugins/platforms/libqxcb.so" AppDir/usr/plugins/platforms/
+    - cp -av "$QT_PREFIX/plugins/platforms/"libqwayland*.so AppDir/usr/plugins/platforms/ || true
+    - wget -q https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+    - wget -q https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+    - chmod +x linuxdeploy-*.AppImage
+    - export PATH="$QT_PREFIX/bin:$PATH"
+    - export LD_LIBRARY_PATH="$QT_PREFIX/lib:${LD_LIBRARY_PATH:-}"
+    - export QML_SOURCES_PATHS="$CI_PROJECT_DIR/src/text_foundry_gui/qml"
+    - export QML2_IMPORT_PATH="$QT_PREFIX/qml"
+    - ./linuxdeploy-x86_64.AppImage --appdir AppDir --executable AppDir/usr/bin/tf-gui --desktop-file AppDir/usr/share/applications/textfoundry.desktop --icon-file AppDir/usr/share/icons/hicolor/scalable/apps/textfoundry.svg --plugin qt --output appimage
+    - ls -lah *.AppImage
+  artifacts:
+    paths:
+      - "*.AppImage"
+    expire_in: 7 days
+  rules:
+    - changes:
+        - CMakeLists.txt
+        - CMakePresets.json
+        - cmake/**/*
+        - src/**/*
+        - tests/**/*
+        - examples/**/*
+        - vcpkg.json
+        - vcpkg-configuration.json
+        - .gitlab-ci.yml
+
 pages:
   stage: docs
   image: node:22-bookworm
