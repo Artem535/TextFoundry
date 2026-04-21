@@ -1,5 +1,5 @@
 import QtQuick
-import QtQuick.Effects
+import Qt5Compat.GraphicalEffects
 
 Item {
     id: root
@@ -26,10 +26,9 @@ Item {
         mipmap: true
     }
 
-    MultiEffect {
+    ColorOverlay {
         anchors.fill: sourceImage
         source: sourceImage
-        colorization: 1.0
-        colorizationColor: root.color
+        color: root.color
     }
 }
