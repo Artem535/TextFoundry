@@ -56,7 +56,7 @@ build_rpm:
 
 build_appimage:
   stage: build
-  image: harbor.raftds.com/simple-task/qt:6.10-ubuntu-clang-pack
+  image: harbor.raftds.com/textfoundry/qt:6.10-ubuntu-clang-pack
   variables:
     DEBIAN_FRONTEND: noninteractive
     APPIMAGE_EXTRACT_AND_RUN: "1"
