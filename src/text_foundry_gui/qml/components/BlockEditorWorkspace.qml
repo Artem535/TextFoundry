@@ -343,9 +343,15 @@ Item {
                             selectByMouse: true
                             font.family: General.monospaceFamily
                             font.pixelSize: SessionVm.previewFontSize
-                            color: templateEditorFrame.palette.windowText
-                            selectedTextColor: templateEditorFrame.palette.highlightedText
-                            selectionColor: templateEditorFrame.palette.highlight
+                            color: templateSyntaxHighlighter.textColor.valid
+                                   ? templateSyntaxHighlighter.textColor
+                                   : ColorPalette.textPrimary
+                            selectedTextColor: templateSyntaxHighlighter.selectedTextColor.valid
+                                               ? templateSyntaxHighlighter.selectedTextColor
+                                               : ColorPalette.textPrimary
+                            selectionColor: templateSyntaxHighlighter.selectionColor.valid
+                                            ? templateSyntaxHighlighter.selectionColor
+                                            : templateEditorFrame.palette.highlight
                             onTextChanged: if (text !== BlockEditorVm.templateText) BlockEditorVm.templateText = text
                         }
                     }
@@ -407,6 +413,7 @@ Item {
     }
 
     SyntaxHighlighter {
+        id: templateSyntaxHighlighter
         textEdit: templateEditor
         definition: "Markdown"
         darkTheme: ColorPalette.darkTheme

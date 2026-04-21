@@ -99,6 +99,12 @@ void SyntaxHighlighter::setDarkTheme(bool value) {
   applySettings();
 }
 
+QColor SyntaxHighlighter::textColor() const { return text_color_; }
+
+QColor SyntaxHighlighter::selectedTextColor() const { return selected_text_color_; }
+
+QColor SyntaxHighlighter::selectionColor() const { return selection_color_; }
+
 void SyntaxHighlighter::rebuildHighlighter() {
 #ifdef TEXTFOUNDRY_HAS_KSYNTAXHIGHLIGHTING
   impl_->highlighter.reset();
@@ -143,7 +149,7 @@ void SyntaxHighlighter::applySettings() {
   impl_->highlighter->setDefinition(definition);
   impl_->highlighter->setTheme(theme);
 
-  if (text_edit_ == nullptr || !theme.isValid()) {
+  if (!theme.isValid()) {
     return;
   }
 
@@ -153,16 +159,38 @@ void SyntaxHighlighter::applySettings() {
   const QColor selection =
       ThemeColor(theme.editorColor(KSyntaxHighlighting::Theme::TextSelection));
 
-  if (normal_text.isValid()) {
+  const QColor resolved_selected_text =
+      selected_text.isValid() ? selected_text : normal_text;
+
+  bool colors_changed = false;
+  if (text_color_ != normal_text) {
+    text_color_ = normal_text;
+    colors_changed = true;
+  }
+  if (selected_text_color_ != resolved_selected_text) {
+    selected_text_color_ = resolved_selected_text;
+    colors_changed = true;
+  }
+  if (selection_color_ != selection) {
+    selection_color_ = selection;
+    colors_changed = true;
+  }
+  if (colors_changed) {
+    emit themeColorsChanged();
+  }
+
+  if (text_edit_ == nullptr) {
+    return;
+  }
+
+  if (text_color_.isValid()) {
     text_edit_->setProperty("color", normal_text);
   }
-  if (selected_text.isValid()) {
-    text_edit_->setProperty("selectedTextColor", selected_text);
-  } else if (normal_text.isValid()) {
-    text_edit_->setProperty("selectedTextColor", normal_text);
+  if (selected_text_color_.isValid()) {
+    text_edit_->setProperty("selectedTextColor", selected_text_color_);
   }
-  if (selection.isValid()) {
-    text_edit_->setProperty("selectionColor", selection);
+  if (selection_color_.isValid()) {
+    text_edit_->setProperty("selectionColor", selection_color_);
   }
 #endif
 }

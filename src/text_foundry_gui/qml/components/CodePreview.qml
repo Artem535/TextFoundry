@@ -32,13 +32,20 @@ Frame {
             selectByMouse: true
             font.family: General.monospaceFamily
             font.pixelSize: SessionVm.previewFontSize
-            color: root.palette.windowText
-            selectedTextColor: root.palette.highlightedText
-            selectionColor: root.palette.highlight
+            color: syntaxHighlighter.textColor.valid
+                   ? syntaxHighlighter.textColor
+                   : ColorPalette.textPrimary
+            selectedTextColor: syntaxHighlighter.selectedTextColor.valid
+                               ? syntaxHighlighter.selectedTextColor
+                               : ColorPalette.textPrimary
+            selectionColor: syntaxHighlighter.selectionColor.valid
+                            ? syntaxHighlighter.selectionColor
+                            : root.palette.highlight
         }
     }
 
     SyntaxHighlighter {
+        id: syntaxHighlighter
         textEdit: textEdit
         definition: root.definition
         darkTheme: ColorPalette.darkTheme
