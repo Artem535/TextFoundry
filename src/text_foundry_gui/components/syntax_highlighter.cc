@@ -2,6 +2,8 @@
 
 #include <memory>
 
+#include <QCoreApplication>
+#include <QDir>
 #include <QQuickTextDocument>
 #include <QTextDocument>
 #include <QVariant>
@@ -19,11 +21,34 @@ class SyntaxHighlighter::Impl {
   KSyntaxHighlighting::Repository repository;
   std::unique_ptr<KSyntaxHighlighting::SyntaxHighlighter> highlighter;
 };
+
+static void AddRepositorySearchPaths(KSyntaxHighlighting::Repository& repository) {
+  const QString app_dir = QCoreApplication::applicationDirPath();
+  const QStringList search_paths = {
+      QDir(app_dir).absoluteFilePath(QStringLiteral("../share/org.kde.syntax-highlighting")),
+      QDir(app_dir).absoluteFilePath(QStringLiteral("../../share/org.kde.syntax-highlighting")),
+#ifdef TEXTFOUNDRY_KSYNTAX_DATA_DIR
+      QStringLiteral(TEXTFOUNDRY_KSYNTAX_DATA_DIR),
+#endif
+  };
+
+  for (const QString& path : search_paths) {
+    const QDir dir(path);
+    if (!dir.exists()) {
+      continue;
+    }
+
+    if (dir.exists(QStringLiteral("syntax")) || dir.exists(QStringLiteral("themes"))) {
+      repository.addCustomSearchPath(dir.absolutePath());
+    }
+  }
+}
 #endif
 
 SyntaxHighlighter::SyntaxHighlighter(QObject* parent) : QObject(parent) {
 #ifdef TEXTFOUNDRY_HAS_KSYNTAXHIGHLIGHTING
   impl_ = new Impl();
+  AddRepositorySearchPaths(impl_->repository);
 #endif
 }
 

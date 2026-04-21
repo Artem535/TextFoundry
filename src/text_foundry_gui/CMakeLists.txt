@@ -127,6 +127,11 @@ if(TARGET KF6::SyntaxHighlighting)
     target_compile_definitions(textfoundry_gui PRIVATE
         TEXTFOUNDRY_HAS_KSYNTAXHIGHLIGHTING=1
     )
+    if(DEFINED syntax_highlighting_SOURCE_DIR)
+        target_compile_definitions(textfoundry_gui PRIVATE
+            TEXTFOUNDRY_KSYNTAX_DATA_DIR="${syntax_highlighting_SOURCE_DIR}/data"
+        )
+    endif()
 endif()
 
 set_target_properties(textfoundry_gui PROPERTIES
