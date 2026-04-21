@@ -121,6 +121,28 @@ build_appimage:
     - export QML_SOURCES_PATHS="$CI_PROJECT_DIR/src/text_foundry_gui/qml"
     - if [ -f build-rel/_deps/syntax_highlighting-build/prefix.sh ]; then . build-rel/_deps/syntax_highlighting-build/prefix.sh; fi
     - export QML2_IMPORT_PATH="$QT_PREFIX/qml${QML2_IMPORT_PATH:+:$QML2_IMPORT_PATH}"
+    - |
+      echo "QML2_IMPORT_PATH=$QML2_IMPORT_PATH"
+      SYNTAX_QML_DIR=""
+      OLD_IFS="$IFS"
+      IFS=':'
+      for base in $QML2_IMPORT_PATH; do
+        if [ -f "$base/org/kde/syntaxhighlighting/qmldir" ]; then
+          SYNTAX_QML_DIR="$base/org/kde/syntaxhighlighting"
+          break
+        fi
+      done
+      IFS="$OLD_IFS"
+      if [ -z "$SYNTAX_QML_DIR" ]; then
+        echo "org.kde.syntaxhighlighting QML module not found in import paths"
+        for base in $(printf '%s' "$QML2_IMPORT_PATH" | tr ':' ' '); do
+          echo "-- scanned import base: $base"
+          find "$base" -maxdepth 4 \( -name qmldir -o -name '*.so' \) 2>/dev/null | sort | sed -n '1,60p'
+        done
+        exit 1
+      fi
+      mkdir -p AppDir/usr/qml/org/kde
+      cp -a "$SYNTAX_QML_DIR" AppDir/usr/qml/org/kde/
     - ./linuxdeploy-x86_64.AppImage --appdir AppDir --executable AppDir/usr/bin/tf-gui --desktop-file AppDir/usr/share/applications/textfoundry.desktop --icon-file AppDir/usr/share/icons/hicolor/scalable/apps/textfoundry.svg --plugin qt --output appimage
     - ls -lah *.AppImage
   artifacts:
