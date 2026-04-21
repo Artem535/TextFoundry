@@ -13,7 +13,7 @@ SvgIcon::SvgIcon(QQuickItem* parent) : QQuickPaintedItem(parent) {
   updateGeometry();
 }
 
-SvgIcon::~SvgIcon() { delete renderer_; }
+SvgIcon::~SvgIcon() = default;
 
 QUrl SvgIcon::source() const { return source_; }
 
@@ -96,7 +96,7 @@ void SvgIcon::reloadRenderer() {
     return;
   }
 
-  renderer_ = new QSvgRenderer(file.readAll(), this);
+  renderer_ = new QSvgRenderer(file.readAll());
   update();
 }
 
