@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <format>
+#include <fmt/format.h>
 #include <stdexcept>
 #include <string>
 #include <variant>
@@ -67,7 +67,7 @@ struct Error {
   // Factory methods for common errors
   [[nodiscard]] static Error MissingParam(const std::string_view& paramName) {
     return Error{ErrorCode::MissingParam,
-                 std::format("Missing required parameter: {}", paramName)};
+                 fmt::format("Missing required parameter: {}", paramName)};
   }
 
   [[nodiscard]] static Error VersionRequired() {

@@ -4,10 +4,9 @@
 
 #pragma once
 
-#include <fmt/base.h>
+#include <fmt/format.h>
 
 #include <cstdint>
-#include <format>
 #include <string>
 
 namespace tf {
@@ -28,7 +27,7 @@ struct Version {
    * Convert version to string format "major.minor"
    */
   [[nodiscard]] std::string ToString() const {
-    return std::format("{}.{}", major, minor);
+    return fmt::format("{}.{}", major, minor);
   }
 };
 
@@ -45,14 +44,5 @@ struct fmt::formatter<tf::Version> {
   template <typename FormatContext>
   auto format(const tf::Version& v, FormatContext& ctx) const {
     return fmt::format_to(ctx.out(), "{}.{}", v.major, v.minor);
-  }
-};
-
-// C++23 std::format support
-template <>
-struct std::formatter<tf::Version> : std::formatter<std::string> {
-  template <typename FormatContext>
-  auto format(const tf::Version& v, FormatContext& ctx) const {
-    return std::formatter<std::string>::format(v.ToString(), ctx);
   }
 };

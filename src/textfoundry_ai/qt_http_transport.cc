@@ -7,7 +7,7 @@
 #include <QTimer>
 #include <QUrl>
 
-#include <format>
+#include <fmt/format.h>
 
 namespace tf::ai {
 
@@ -51,7 +51,7 @@ Result<HttpResponse> QtHttpTransport::PostJson(
   } else {
     reply->abort();
     const Error error{ErrorCode::StorageError,
-                      std::format("HTTP request timed out after {} ms",
+                      fmt::format("HTTP request timed out after {} ms",
                                   timeout_.count())};
     reply->deleteLater();
     return Result<HttpResponse>(error);

@@ -1,4 +1,5 @@
 find_package(reflectcpp CONFIG REQUIRED)
+find_package(fmt CONFIG REQUIRED)
 find_package(Qt6 6.8 REQUIRED COMPONENTS Core Network)
 
 add_library(textfoundry_ai_openai STATIC
@@ -23,6 +24,7 @@ target_link_libraries(textfoundry_ai_openai
     PUBLIC
         textfoundry_core
         reflectcpp::reflectcpp
+        fmt::fmt
         Qt6::Core
         Qt6::Network
 )

@@ -1,6 +1,6 @@
 #include "openai_compatible_block_generator.h"
 
-#include <format>
+#include <fmt/format.h>
 #include <optional>
 #include <rfl/json.hpp>
 #include <utility>
@@ -458,7 +458,7 @@ Result<GeneratedBlockData> OpenAiCompatibleBlockGenerator::ParseResponse(
   if (response.status_code < 200 || response.status_code >= 300) {
     return Result<GeneratedBlockData>(
         Error{ErrorCode::StorageError,
-              std::format("OpenAI-compatible request failed with status {}",
+              fmt::format("OpenAI-compatible request failed with status {}",
                           response.status_code)});
   }
 
@@ -489,7 +489,7 @@ Result<GeneratedBlockBatch> OpenAiCompatibleBlockGenerator::ParseBatchResponse(
   if (response.status_code < 200 || response.status_code >= 300) {
     return Result<GeneratedBlockBatch>(
         Error{ErrorCode::StorageError,
-              std::format("OpenAI-compatible request failed with status {}",
+              fmt::format("OpenAI-compatible request failed with status {}",
                           response.status_code)});
   }
 

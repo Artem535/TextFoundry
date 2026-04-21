@@ -14,6 +14,7 @@ FetchContent_MakeAvailable(objectbox)
 find_package(ctre CONFIG REQUIRED)
 find_package(spdlog CONFIG REQUIRED)
 find_package(reflectcpp CONFIG REQUIRED)
+find_package(fmt CONFIG REQUIRED)
 
 
 add_library(textfoundry_core STATIC
@@ -56,6 +57,7 @@ target_link_libraries(textfoundry_core
             spdlog::spdlog
             objectbox
             reflectcpp::reflectcpp
+            fmt::fmt
 )
 
 set_target_properties(textfoundry_core PROPERTIES EXPORT_NAME Core)

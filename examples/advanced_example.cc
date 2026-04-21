@@ -1,6 +1,6 @@
 #include <tf/engine.h>
 
-#include <format>
+#include <fmt/format.h>
 #include <iostream>
 #include <vector>
 
@@ -8,17 +8,17 @@ using namespace tf;
 
 void print_render_result(const Result<RenderResult>& result) {
   if (result.HasError()) {
-    std::cerr << std::format("❌ Error [{}]: {}\n",
+    std::cerr << fmt::format("❌ Error [{}]: {}\n",
                              static_cast<int>(result.error().code),
                              result.error().message);
     return;
   }
   const auto& rr = result.value();
-  std::cout << std::format(
+  std::cout << fmt::format(
       "✅ Success | Composition: {} v{}.{} | Blocks used: {}\n",
       rr.compositionId, rr.compositionVersion.major,
       rr.compositionVersion.minor, rr.blocksUsed.size());
-  std::cout << std::format("Text ({} chars):\n{}\n", rr.text.length(), rr.text);
+  std::cout << fmt::format("Text ({} chars):\n{}\n", rr.text.length(), rr.text);
   std::cout << "------------------------------------------------\n\n";
 }
 
@@ -352,7 +352,7 @@ std::string render(const Composition& comp, const RenderContext& ctx) {
       return 1;
     }
     Version comp_version = comp_pub.value().version();
-    std::cout << std::format("✅ Composition published v{}.{}\n\n",
+    std::cout << fmt::format("✅ Composition published v{}.{}\n\n",
                              comp_version.major, comp_version.minor);
 
     // Render with runtime context
@@ -373,7 +373,7 @@ std::string render(const Composition& comp, const RenderContext& ctx) {
       auto ver_res = engine.GetLatestBlockVersion(bid);
       if (ver_res.HasValue()) {
         auto ver = ver_res.value();
-        std::cout << std::format("  - {} v{}.{}\n", bid, ver.major, ver.minor);
+        std::cout << fmt::format("  - {} v{}.{}\n", bid, ver.major, ver.minor);
       }
     }
 
@@ -383,7 +383,7 @@ std::string render(const Composition& comp, const RenderContext& ctx) {
       auto ver_res = engine.GetLatestCompositionVersion(cid);
       if (ver_res.HasValue()) {
         auto ver = ver_res.value();
-        std::cout << std::format("  - {} v{}.{}\n", cid, ver.major, ver.minor);
+        std::cout << fmt::format("  - {} v{}.{}\n", cid, ver.major, ver.minor);
       }
     }
 

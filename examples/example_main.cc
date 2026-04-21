@@ -1,22 +1,22 @@
 #include <tf/engine.h>
 
-#include <format>
+#include <fmt/format.h>
 #include <iostream>
 
 using namespace tf;
 
 void print_render_result(const Result<RenderResult>& result) {
   if (result.HasError()) {
-    std::cerr << std::format("❌ Ошибка [{}]: {}\n",
+    std::cerr << fmt::format("❌ Ошибка [{}]: {}\n",
                              static_cast<int>(result.error().code),
                              result.error().message);
     return;
   }
   const auto& rr = result.value();
-  std::cout << std::format("✅ Успех | Композиция: {} v{}.{} | Блоков: {}\n",
+  std::cout << fmt::format("✅ Успех | Композиция: {} v{}.{} | Блоков: {}\n",
                            rr.compositionId, rr.compositionVersion.major,
                            rr.compositionVersion.minor, rr.blocksUsed.size());
-  std::cout << std::format("Текст ({} символов):\n{}\n", rr.text.length(),
+  std::cout << fmt::format("Текст ({} символов):\n{}\n", rr.text.length(),
                            rr.text);
   std::cout << "------------------------------------------------\n\n";
 }
@@ -54,7 +54,7 @@ int main() {
 
     // Получаем версию для использования в композиции
     Version header_version = header_pub.value().version();
-    std::cout << std::format("   ✅ doc.header опубликован v{}.{}\n",
+    std::cout << fmt::format("   ✅ doc.header опубликован v{}.{}\n",
                              header_version.major, header_version.minor);
 
     // Блок 2: Описание endpoint'а
@@ -73,7 +73,7 @@ int main() {
     auto endpoint_pub =
         engine.PublishBlock(std::move(endpoint_draft), Version{1, 0});
     Version endpoint_version = endpoint_pub.value().version();
-    std::cout << std::format("   ✅ api.endpoint опубликован v{}.{}\n",
+    std::cout << fmt::format("   ✅ api.endpoint опубликован v{}.{}\n",
                              endpoint_version.major, endpoint_version.minor);
 
     // Блок 3: Ограничения (rate limit)
@@ -88,7 +88,7 @@ int main() {
 
     auto limit_pub = engine.PublishBlock(std::move(limit_draft), Version{1, 0});
     Version limit_version = limit_pub.value().version();
-    std::cout << std::format("   ✅ api.constraint опубликован v{}.{}\n",
+    std::cout << fmt::format("   ✅ api.constraint опубликован v{}.{}\n",
                              limit_version.major, limit_version.minor);
 
     // === 2. Создание композиции с ЯВНЫМИ версиями ===
@@ -160,7 +160,7 @@ curl -X POST https://api.example.com/v1/users \
       return 1;
     }
 
-    std::cout << std::format(
+    std::cout << fmt::format(
         "   ✅ Композиция {} опубликована v{}.{}\n", comp_pub.value().id(),
         comp_pub.value().version().major, comp_pub.value().version().minor);
 
@@ -196,7 +196,7 @@ curl -X POST https://api.example.com/v1/users \
 
     auto header_pub_v2 =
         engine.PublishBlock(std::move(header_v2), Version{2, 0});
-    std::cout << std::format("   ✅ doc.header v2.0 создан\n");
+    std::cout << fmt::format("   ✅ doc.header v2.0 создан\n");
 
     // Старая композиция все еще использует v1.0 (воспроизводимость!)
     std::cout << "   ℹ️ Старая композиция все еще ссылается на v1.0\n";
@@ -242,7 +242,7 @@ curl -X POST https://api.example.com/v1/users \
     // strict_mode=true в конфиге - ошибка при отсутствии параметра
     auto bad_result = engine.Render("bad.composition", Version{1, 0});
     if (bad_result.HasError()) {
-      std::cout << std::format("   ⚠️ Ожидаемая ошибка: {}",
+      std::cout << fmt::format("   ⚠️ Ожидаемая ошибка: {}",
                                bad_result.error().message);
     }
 

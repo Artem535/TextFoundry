@@ -2,7 +2,7 @@
 
 #include "prompt_constants.h"
 
-#include <format>
+#include <fmt/format.h>
 #include <rfl/json.hpp>
 #include <sstream>
 
@@ -263,7 +263,7 @@ OpenAiCompatibleCompositionBlockRewriter::ParseResponse(
   if (response.status_code < 200 || response.status_code >= 300) {
     return Result<CompositionBlockRewritePreview>(
         Error{ErrorCode::StorageError,
-              std::format(
+              fmt::format(
                   "OpenAI-compatible composition rewrite request failed with status {}",
                   response.status_code)});
   }

@@ -314,7 +314,7 @@ Error Engine::DeleteBlock(const BlockId& id) {
         if (fragment.IsBlockRef() && fragment.AsBlockRef().GetBlockId() == id) {
           return Error{
               ErrorCode::InvalidStateTransition,
-              std::format("Block is used by composition {}@{}.{}",
+              fmt::format("Block is used by composition {}@{}.{}",
                           composition_id, version.major, version.minor)};
         }
       }
@@ -401,7 +401,7 @@ Result<PublishedBlock> Engine::PublishBlock(BlockDraft draft,
   if (!existing.HasError()) {
     return Result<PublishedBlock>(
         Error{ErrorCode::DuplicateId,
-              std::format("Version {}.{} already exists",
+              fmt::format("Version {}.{} already exists",
                           explicit_version.major, explicit_version.minor)});
   }
 
