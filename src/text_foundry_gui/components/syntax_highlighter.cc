@@ -13,6 +13,7 @@
 #ifdef TEXTFOUNDRY_HAS_KSYNTAXHIGHLIGHTING
 #include <KSyntaxHighlighting/Repository>
 #include <KSyntaxHighlighting/SyntaxHighlighter>
+#include <KSyntaxHighlighting/Theme>
 #endif
 
 namespace tf::gui {
@@ -36,15 +37,23 @@ static void AddRepositorySearchPaths(KSyntaxHighlighting::Repository& repository
 #endif
   };
 
+  bool any_added = false;
   for (const QString& path : search_paths) {
     const QDir dir(path);
     if (!dir.exists()) {
+      qCDebug(kSyntaxHighlighterLog) << "Skipping non-existent search path:" << path;
       continue;
     }
 
     if (dir.exists(QStringLiteral("syntax")) || dir.exists(QStringLiteral("themes"))) {
+      qCInfo(kSyntaxHighlighterLog) << "Adding KSyntaxHighlighting search path:" << dir.absolutePath();
       repository.addCustomSearchPath(dir.absolutePath());
+      any_added = true;
     }
+  }
+
+  if (!any_added) {
+    qCWarning(kSyntaxHighlighterLog) << "No KSyntaxHighlighting data directories found!";
   }
 }
 
@@ -167,7 +176,11 @@ void SyntaxHighlighter::applySettings() {
     return;
   }
 
-  const QColor normal_text = ThemeColor(theme.textColor(KSyntaxHighlighting::Theme::Normal));
+  QColor normal_text = ThemeColor(theme.textColor(KSyntaxHighlighting::Theme::Normal));
+  if (!normal_text.isValid()) {
+    normal_text = dark_theme_ ? QColor(0xE0, 0xE0, 0xE0) : QColor(0x20, 0x20, 0x20);
+    qCWarning(kSyntaxHighlighterLog) << "Theme returned invalid normal text color, using fallback";
+  }
   const QColor selected_text =
       ThemeColor(theme.selectedTextColor(KSyntaxHighlighting::Theme::Normal));
   const QColor selection =
@@ -196,16 +209,6 @@ void SyntaxHighlighter::applySettings() {
   if (text_edit_ == nullptr) {
     qCWarning(kSyntaxHighlighterLog) << "Syntax highlighter has no target textEdit";
     return;
-  }
-
-  if (text_color_.isValid()) {
-    text_edit_->setProperty("color", normal_text);
-  }
-  if (selected_text_color_.isValid()) {
-    text_edit_->setProperty("selectedTextColor", selected_text_color_);
-  }
-  if (selection_color_.isValid()) {
-    text_edit_->setProperty("selectionColor", selection_color_);
   }
 #endif
 }
