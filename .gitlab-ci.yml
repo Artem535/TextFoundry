@@ -106,6 +106,8 @@ build_appimage:
     - cmake --build build-rel --verbose -j"$(nproc)"
     - rm -rf AppDir
     - DESTDIR="$PWD/AppDir" cmake --install build-rel --prefix /usr
+    - mkdir -p AppDir/usr/lib
+    - cp -av build-rel/_deps/objectbox-download-src/lib/libobjectbox.so AppDir/usr/lib/
     - mkdir -p AppDir/usr/plugins/platforms
     - cp -av "$QT_PREFIX/plugins/platforms/libqxcb.so" AppDir/usr/plugins/platforms/
     - cp -av "$QT_PREFIX/plugins/platforms/"libqwayland*.so AppDir/usr/plugins/platforms/ || true
