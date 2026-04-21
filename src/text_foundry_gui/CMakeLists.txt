@@ -1,5 +1,5 @@
 find_package(platform_folders CONFIG REQUIRED)
-find_package(Qt6 6.8 REQUIRED COMPONENTS Core Qml Quick QuickControls2 QuickEffects)
+find_package(Qt6 6.8 REQUIRED COMPONENTS Core Qml Quick QuickControls2 QuickEffects Svg)
 
 qt_standard_project_setup(REQUIRES 6.8)
 
@@ -59,7 +59,6 @@ qt_add_qml_module(textfoundry_gui
         qml/components/AppIcon.qml
         qml/components/DetailField.qml
         qml/components/IconToolButton.qml
-        qml/components/SvgIcon.qml
         qml/components/SvgToolButton.qml
         qml/components/TagChip.qml
         qml/components/CodePreview.qml
@@ -76,6 +75,8 @@ qt_add_qml_module(textfoundry_gui
         qml/pages/SettingsPage.qml
         qml/components/InfoCard.qml
     SOURCES
+        components/svg_icon.cc
+        components/svg_icon.h
         components/syntax_highlighter.cc
         components/syntax_highlighter.h
         app/session_view_model.cc
@@ -112,6 +113,7 @@ target_link_libraries(textfoundry_gui PRIVATE
     Qt6::Quick
     Qt6::QuickControls2
     Qt6::QuickEffects
+    Qt6::Svg
     textfoundry_core
     textfoundry_ai_openai
     qt6keychain
@@ -124,6 +126,16 @@ target_compile_definitions(textfoundry_gui PRIVATE
 
 if(TARGET KF6::SyntaxHighlighting)
     target_link_libraries(textfoundry_gui PRIVATE KF6::SyntaxHighlighting)
+    target_compile_definitions(textfoundry_gui PRIVATE
+        TEXTFOUNDRY_HAS_KSYNTAXHIGHLIGHTING=1
+    )
+    if(DEFINED syntax_highlighting_SOURCE_DIR)
+        target_compile_definitions(textfoundry_gui PRIVATE
+            TEXTFOUNDRY_KSYNTAX_DATA_DIR="${syntax_highlighting_SOURCE_DIR}/data"
+        )
+    endif()
+elseif(TARGET KF6SyntaxHighlighting)
+    target_link_libraries(textfoundry_gui PRIVATE KF6SyntaxHighlighting)
     target_compile_definitions(textfoundry_gui PRIVATE
         TEXTFOUNDRY_HAS_KSYNTAXHIGHLIGHTING=1
     )
