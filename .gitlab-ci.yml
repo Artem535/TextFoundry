@@ -65,6 +65,7 @@ build_appimage:
     CMAKE_DIR: "$CI_PROJECT_DIR/.cache/cmake"
     ECM_VERSION: "6.23.0"
     ECM_PREFIX: "$CI_PROJECT_DIR/.cache/ecm"
+    ECM_URL: "https://ftp.fau.de/kde/stable/frameworks/6.23/extra-cmake-modules-6.23.0.tar.xz"
     EXTRA_QT_PLUGINS: "platforms/libqxcb.so"
     EXTRA_QT_MODULES: "waylandclient"
   cache:
@@ -83,7 +84,7 @@ build_appimage:
       - build-rel/vcpkg_installed
   script:
     - apt-get update
-    - apt-get install -y build-essential clang cmake ninja-build git ccache extra-cmake-modules patchelf file wget curl xz-utils libfuse2 libgl1-mesa-dev libglx-mesa0 mesa-common-dev libx11-dev libxext-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev libwayland-client0 libwayland-cursor0 libwayland-egl1 libxkbcommon0 libdbus-1-3
+    - apt-get install -y build-essential clang cmake ninja-build git ccache ca-certificates extra-cmake-modules patchelf file wget curl xz-utils libfuse2 libgl1-mesa-dev libglx-mesa0 mesa-common-dev libx11-dev libxext-dev libxrender-dev libxi-dev libxkbcommon-dev libxkbcommon-x11-dev libwayland-client0 libwayland-cursor0 libwayland-egl1 libxkbcommon0 libdbus-1-3
     - mkdir -p "$VCPKG_DEFAULT_BINARY_CACHE" "$CCACHE_DIR"
     - mkdir -p "$CMAKE_DIR"
     - mkdir -p "$ECM_PREFIX"
@@ -92,7 +93,8 @@ build_appimage:
     - cmake --version
     - if [ ! -f "$ECM_PREFIX/share/ECM/cmake/ECMConfig.cmake" ]; then rm -rf /tmp/ecm-src /tmp/ecm-build; fi
     - if [ ! -f "$ECM_PREFIX/share/ECM/cmake/ECMConfig.cmake" ]; then mkdir -p /tmp/ecm-src /tmp/ecm-build; fi
-    - if [ ! -f "$ECM_PREFIX/share/ECM/cmake/ECMConfig.cmake" ]; then wget -q "https://ftp.fau.de/kde/stable/frameworks/${ECM_VERSION%.*}/extra-cmake-modules-${ECM_VERSION}.tar.xz" -O /tmp/ecm.tar.xz; fi
+    - if [ ! -f "$ECM_PREFIX/share/ECM/cmake/ECMConfig.cmake" ]; then echo "Downloading ECM from $ECM_URL"; fi
+    - if [ ! -f "$ECM_PREFIX/share/ECM/cmake/ECMConfig.cmake" ]; then curl -fL --retry 3 --retry-all-errors --show-error "$ECM_URL" -o /tmp/ecm.tar.xz; fi
     - if [ ! -f "$ECM_PREFIX/share/ECM/cmake/ECMConfig.cmake" ]; then tar -xJf /tmp/ecm.tar.xz -C /tmp/ecm-src --strip-components=1; fi
     - if [ ! -f "$ECM_PREFIX/share/ECM/cmake/ECMConfig.cmake" ]; then cmake -S /tmp/ecm-src -B /tmp/ecm-build -DCMAKE_INSTALL_PREFIX="$ECM_PREFIX"; fi
     - if [ ! -f "$ECM_PREFIX/share/ECM/cmake/ECMConfig.cmake" ]; then cmake --build /tmp/ecm-build -j"$(nproc)"; fi
