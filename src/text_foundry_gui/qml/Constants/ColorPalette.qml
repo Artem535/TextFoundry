@@ -1,56 +1,38 @@
 pragma Singleton
 import QtQuick
-import QtQuick.Window
 
 Item {
-    function luminance(c) {
-        return 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b
-    }
+    readonly property bool darkTheme: true
 
-    SystemPalette {
-        id: systemPalette
-        colorGroup: SystemPalette.Active
-    }
+    readonly property color primary: "#6f6bff"
+    readonly property color primaryDark: "#5a56ea"
+    readonly property color primaryLight: "#8a86ff"
+    readonly property color onPrimary: "#0f1020"
 
-    property bool darkTheme: luminance(systemPalette.window) < 0.5
+    readonly property color background: "#25262e"
+    readonly property color onBackground: "#f2f4ff"
 
-    property color primary: darkTheme ? Qt.lighter(systemPalette.highlight, 1.15)
-                                      : Qt.darker(systemPalette.highlight, 1.05)
-    property color primaryDark: Qt.darker(systemPalette.highlight, 1.2)
-    property color primaryLight: Qt.lighter(systemPalette.highlight, 1.15)
-    property color onPrimary: systemPalette.highlightedText
+    readonly property color surface: "#30313b"
+    readonly property color surfaceAlt: "#3a3b46"
+    readonly property color onSurface: "#f2f4ff"
+    readonly property color onSurfaceMuted: "#b6b9c9"
 
-    property color background: systemPalette.window
-    property color onBackground: systemPalette.windowText
+    readonly property color border: "#434553"
+    readonly property color borderStrong: "#56586a"
 
-    property color surface: darkTheme ? Qt.lighter(systemPalette.base, 1.08) : systemPalette.base
-    property color surfaceAlt: darkTheme ? Qt.lighter(systemPalette.alternateBase, 1.05) : systemPalette.alternateBase
-    property color onSurface: darkTheme ? Qt.lighter(systemPalette.windowText, 1.1)
-                                        : Qt.darker(systemPalette.windowText, 1.05)
-    property color onSurfaceMuted: darkTheme ? Qt.lighter(systemPalette.windowText, 0.72)
-                                             : Qt.lighter(systemPalette.windowText, 1.35)
+    readonly property color button: "#3a3b46"
+    readonly property color onButton: "#f2f4ff"
 
-    property color border: darkTheme ? Qt.lighter(systemPalette.mid, 1.05)
-                                     : systemPalette.midlight
-    property color borderStrong: darkTheme ? Qt.lighter(systemPalette.midlight, 1.35)
-                                           : systemPalette.mid
+    readonly property color selection: primary
+    readonly property color onSelection: "#0f1020"
+    readonly property color warning: "#d9a441"
+    readonly property color danger: "#e56a6a"
 
-    property color button: darkTheme ? Qt.lighter(systemPalette.button, 1.18)
-                                     : systemPalette.button
-    property color onButton: systemPalette.buttonText
-
-    property color selection: systemPalette.highlight
-    property color onSelection: systemPalette.highlightedText
-    property color warning: darkTheme ? "#d9a441" : "#9a5a00"
-    property color danger: darkTheme ? "#e56a6a" : "#b42318"
-
-    property color headerBackground: surface
-    property color footerBackground: surface
-    property color fieldBackground: darkTheme ? Qt.darker(surface, 1.18) : Qt.lighter(surface, 1.02)
-    property color fieldText: onSurface
-    property color placeholderText: onSurfaceMuted
-    property color textPrimary: systemPalette.text
-    property color textSecondary: darkTheme
-                                  ? Qt.lighter(systemPalette.text, 1.18)
-                                  : Qt.darker(systemPalette.mid, 1.05)
+    readonly property color headerBackground: surface
+    readonly property color footerBackground: surface
+    readonly property color fieldBackground: "#2a2b34"
+    readonly property color fieldText: onSurface
+    readonly property color placeholderText: "#8f93a5"
+    readonly property color textPrimary: onSurface
+    readonly property color textSecondary: onSurfaceMuted
 }
