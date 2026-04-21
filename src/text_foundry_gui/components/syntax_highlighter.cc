@@ -4,6 +4,7 @@
 
 #include <QCoreApplication>
 #include <QDir>
+#include <QColor>
 #include <QQuickTextDocument>
 #include <QTextDocument>
 #include <QVariant>
@@ -42,6 +43,13 @@ static void AddRepositorySearchPaths(KSyntaxHighlighting::Repository& repository
       repository.addCustomSearchPath(dir.absolutePath());
     }
   }
+}
+
+static QColor ThemeColor(QRgb rgb) {
+  if (rgb == 0) {
+    return {};
+  }
+  return QColor::fromRgba(rgb);
 }
 #endif
 
@@ -127,11 +135,35 @@ void SyntaxHighlighter::applySettings() {
     return;
   }
 
-  impl_->highlighter->setDefinition(
-      impl_->repository.definitionForName(definition_));
-  impl_->highlighter->setTheme(impl_->repository.defaultTheme(
+  const auto definition = impl_->repository.definitionForName(definition_);
+  const auto theme = impl_->repository.defaultTheme(
       dark_theme_ ? KSyntaxHighlighting::Repository::DarkTheme
-                  : KSyntaxHighlighting::Repository::LightTheme));
+                  : KSyntaxHighlighting::Repository::LightTheme);
+
+  impl_->highlighter->setDefinition(definition);
+  impl_->highlighter->setTheme(theme);
+
+  if (text_edit_ == nullptr || !theme.isValid()) {
+    return;
+  }
+
+  const QColor normal_text = ThemeColor(theme.textColor(KSyntaxHighlighting::Theme::Normal));
+  const QColor selected_text =
+      ThemeColor(theme.selectedTextColor(KSyntaxHighlighting::Theme::Normal));
+  const QColor selection =
+      ThemeColor(theme.editorColor(KSyntaxHighlighting::Theme::TextSelection));
+
+  if (normal_text.isValid()) {
+    text_edit_->setProperty("color", normal_text);
+  }
+  if (selected_text.isValid()) {
+    text_edit_->setProperty("selectedTextColor", selected_text);
+  } else if (normal_text.isValid()) {
+    text_edit_->setProperty("selectedTextColor", normal_text);
+  }
+  if (selection.isValid()) {
+    text_edit_->setProperty("selectionColor", selection);
+  }
 #endif
 }
 

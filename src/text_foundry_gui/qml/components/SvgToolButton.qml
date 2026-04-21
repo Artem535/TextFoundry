@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Controls
+import QtQuick.Layouts
 import TextFoundry
 
 ToolButton {
@@ -12,17 +13,34 @@ ToolButton {
     property color accentColor: ColorPalette.selection
 
     text: labelText
-    display: compact ? AbstractButton.IconOnly : AbstractButton.TextBesideIcon
     hoverEnabled: true
     spacing: General.spacingSmall
     leftPadding: compact ? 8 : 10
     rightPadding: compact ? 8 : 10
-    icon.width: 16
-    icon.height: 16
-    icon.source: control.iconSource
-    icon.color: control.enabled ? control.accentColor
-                                : Qt.alpha(control.accentColor, 0.45)
-    font.pixelSize: 15
+
+    contentItem: RowLayout {
+        spacing: General.spacingSmall
+
+        SvgIcon {
+            source: control.iconSource
+            color: control.enabled ? control.accentColor
+                                   : Qt.alpha(control.accentColor, 0.45)
+            iconWidth: 16
+            iconHeight: 16
+            Layout.alignment: Qt.AlignVCenter
+        }
+
+        Label {
+            visible: !control.compact
+            text: control.labelText
+            Layout.alignment: Qt.AlignVCenter
+            color: control.enabled ? control.accentColor
+                                   : Qt.alpha(control.accentColor, 0.45)
+            font.pixelSize: 15
+            elide: Text.ElideRight
+            verticalAlignment: Text.AlignVCenter
+        }
+    }
 
     ToolTip.visible: control.compact && control.hovered
                      && (control.toolTipText.length > 0 || control.labelText.length > 0)
