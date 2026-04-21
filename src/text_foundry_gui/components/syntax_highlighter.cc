@@ -1,11 +1,10 @@
 #include "components/syntax_highlighter.h"
 
-#include <memory>
-
 #include <QCoreApplication>
 #include <QDir>
 #include <QColor>
 #include <QLoggingCategory>
+#include <QPointer>
 #include <QQuickTextDocument>
 #include <QTextDocument>
 #include <QVariant>
@@ -24,7 +23,7 @@ Q_LOGGING_CATEGORY(kSyntaxHighlighterLog, "textfoundry.gui.syntaxhighlighter")
 class SyntaxHighlighter::Impl {
  public:
   KSyntaxHighlighting::Repository repository;
-  std::unique_ptr<KSyntaxHighlighting::SyntaxHighlighter> highlighter;
+  QPointer<KSyntaxHighlighting::SyntaxHighlighter> highlighter;
 };
 
 static void AddRepositorySearchPaths(KSyntaxHighlighting::Repository& repository) {
@@ -119,11 +118,13 @@ QColor SyntaxHighlighter::selectionColor() const { return selection_color_; }
 
 void SyntaxHighlighter::rebuildHighlighter() {
 #ifdef TEXTFOUNDRY_HAS_KSYNTAXHIGHLIGHTING
-  impl_->highlighter.reset();
+  if (impl_->highlighter != nullptr) {
+    impl_->highlighter->deleteLater();
+    impl_->highlighter = nullptr;
+  }
 
   if (auto* document = resolveDocument(text_edit_)) {
-    impl_->highlighter =
-        std::make_unique<KSyntaxHighlighting::SyntaxHighlighter>(document);
+    impl_->highlighter = new KSyntaxHighlighting::SyntaxHighlighter(document);
     applySettings();
   }
 #endif
