@@ -65,7 +65,7 @@ build_appimage:
     CMAKE_DIR: "$CI_PROJECT_DIR/.cache/cmake"
     ECM_VERSION: "6.23.0"
     ECM_PREFIX: "$CI_PROJECT_DIR/.cache/ecm"
-    ECM_URL: "https://ftp.fau.de/kde/stable/frameworks/6.23/extra-cmake-modules-6.23.0.tar.xz"
+    ECM_URL: "https://ftp.funet.fi/pub/mirrors/ftp.kde.org/pub/kde/stable/frameworks/6.23/extra-cmake-modules-6.23.0.tar.xz"
     EXTRA_QT_PLUGINS: "platforms/libqxcb.so"
     EXTRA_QT_MODULES: "waylandclient"
   cache:
