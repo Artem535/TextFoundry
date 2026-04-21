@@ -88,7 +88,7 @@ build_appimage:
     - cmake --version
     - test -d "$VCPKG_ROOT/.git" || git clone --depth 1 https://github.com/microsoft/vcpkg.git "$VCPKG_ROOT"
     - "$VCPKG_ROOT/bootstrap-vcpkg.sh"
-    - cmake --preset vcpkg-rel --log-level=VERBOSE -DCMAKE_PREFIX_PATH="$QT_PREFIX" -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+    - cmake --preset vcpkg-rel --log-level=VERBOSE -DCMAKE_PREFIX_PATH="$QT_PREFIX" -DCMAKE_INSTALL_PREFIX=/usr -DTEXTFOUNDRY_VENDORED_KSYNTAXHIGHLIGHTING=OFF -DCMAKE_C_COMPILER_LAUNCHER=ccache -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
     - cmake --build build-rel --verbose -j"$(nproc)"
     - rm -rf AppDir
     - DESTDIR="$PWD/AppDir" cmake --install build-rel --prefix /usr
