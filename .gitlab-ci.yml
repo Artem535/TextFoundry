@@ -109,6 +109,12 @@ build_appimage:
     - mkdir -p AppDir/usr/lib
     - cp -av build-rel/_deps/objectbox-download-src/lib/libobjectbox.so AppDir/usr/lib/
     - |
+      for syntax_lib in build-rel/bin/libKF6SyntaxHighlighting.so*; do
+        if [ -f "$syntax_lib" ]; then
+          cp -av "$syntax_lib" AppDir/usr/lib/
+        fi
+      done
+    - |
       if [ -d build-rel/_deps/syntax_highlighting-src/data/syntax ] || [ -d build-rel/_deps/syntax_highlighting-src/data/themes ]; then
         mkdir -p AppDir/usr/share/org.kde.syntax-highlighting
         if [ -d build-rel/_deps/syntax_highlighting-src/data/syntax ]; then
