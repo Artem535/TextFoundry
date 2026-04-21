@@ -24,18 +24,6 @@ ToolButton {
                                 : Qt.alpha(control.accentColor, 0.45)
     font.pixelSize: 15
 
-    contentItem: IconLabel {
-        spacing: control.spacing
-        mirrored: control.mirrored
-        display: control.display
-        alignment: Qt.AlignCenter
-        icon: control.icon
-        text: control.text
-        font: control.font
-        color: control.enabled ? control.accentColor
-                               : Qt.alpha(control.accentColor, 0.45)
-    }
-
     ToolTip.visible: control.compact && control.hovered
                      && (control.toolTipText.length > 0 || control.labelText.length > 0)
     ToolTip.text: control.toolTipText.length > 0 ? control.toolTipText : control.labelText
