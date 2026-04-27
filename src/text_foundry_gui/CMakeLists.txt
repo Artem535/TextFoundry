@@ -150,7 +150,10 @@ set_target_properties(textfoundry_gui PROPERTIES
     OUTPUT_NAME tf-gui
 )
 
-install(TARGETS textfoundry_gui RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(TARGETS textfoundry_gui
+    BUNDLE DESTINATION .
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+)
 
 if(UNIX AND NOT APPLE)
     configure_file(
