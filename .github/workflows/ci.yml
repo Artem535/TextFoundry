@@ -1,0 +1,338 @@
+name: CI
+
+on:
+  push:
+    branches: ["main", "devel", "devel-qt"]
+  pull_request:
+    branches: ["main", "devel", "devel-qt"]
+
+permissions:
+  contents: read
+
+env:
+  APPIMAGE_EXTRACT_AND_RUN: "1"
+  VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/.cache/vcpkg/archives
+  VCPKG_DOWNLOADS: ${{ github.workspace }}/.cache/vcpkg/downloads
+  VCPKG_INSTALL_OPTIONS: --debug
+  VCPKG_COMMIT: aa2d37682e3318d93aef87efa7b0e88e81cd3d59
+
+jobs:
+  build:
+    name: Build ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            qt_version: 6.10.2
+            qt_component: qt.qt6.6102.linux_gcc_64
+            qt_install_dir: gcc_64
+            artifact_name: textfoundry-linux
+            archive_name: textfoundry-linux.tar.gz
+          - os: macos-latest
+            qt_version: 6.10.2
+            qt_arch: clang_64
+            qt_host: mac
+            qt_target: desktop
+            artifact_name: textfoundry-macos
+            archive_name: textfoundry-macos.tar.gz
+          - os: windows-latest
+            qt_version: 6.10.2
+            qt_arch: win64_msvc2022_64
+            qt_host: windows
+            qt_target: desktop
+            artifact_name: textfoundry-windows
+            archive_name: textfoundry-windows.zip
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Linux build dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            cmake \
+            ninja-build \
+            curl \
+            git \
+            pkg-config \
+            libgl1-mesa-dev \
+            libglx-mesa0 \
+            mesa-common-dev \
+            libx11-dev \
+            libx11-xcb-dev \
+            libxext-dev \
+            libxrender-dev \
+            libxi-dev \
+            libxcb-cursor0 \
+            libxcb-icccm4 \
+            libxcb-image0 \
+            libxcb-keysyms1 \
+            libxcb-randr0 \
+            libxcb-render-util0 \
+            libxcb-shape0 \
+            libxcb-shm0 \
+            libxcb-sync1 \
+            libxcb-xfixes0 \
+            libxcb-xinerama0 \
+            libxcb-xkb1 \
+            libxkbcommon-dev \
+            libxkbcommon-x11-dev \
+            libwayland-client0 \
+            libwayland-cursor0 \
+            libwayland-egl1 \
+            libdbus-1-3
+
+      - name: Restore Qt cache (Linux)
+        if: runner.os == 'Linux'
+        id: cache-qt-linux
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ github.workspace }}/Qt/${{ matrix.qt_version }}/${{ matrix.qt_install_dir }}
+          key: ${{ runner.os }}-qt-${{ matrix.qt_version }}-${{ matrix.qt_install_dir }}
+
+      - name: Install Qt (Windows/macOS)
+        if: runner.os == 'Windows' || runner.os == 'macOS'
+        uses: jurplel/install-qt-action@v4
+        with:
+          aqtversion: '==3.3.*'
+          version: ${{ matrix.qt_version }}
+          host: ${{ matrix.qt_host }}
+          target: ${{ matrix.qt_target }}
+          arch: ${{ matrix.qt_arch }}
+          cache: true
+
+      - name: Setup MSVC environment
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Export Qt environment (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          echo "Qt6_DIR=${QT_ROOT_DIR}/lib/cmake/Qt6" >> "$GITHUB_ENV"
+          echo "CMAKE_PREFIX_PATH=${QT_ROOT_DIR}${CMAKE_PREFIX_PATH:+:$CMAKE_PREFIX_PATH}" >> "$GITHUB_ENV"
+          echo "${QT_ROOT_DIR}/bin" >> "$GITHUB_PATH"
+
+      - name: Install Qt (Linux official installer)
+        if: runner.os == 'Linux' && steps.cache-qt-linux.outputs.cache-hit != 'true'
+        env:
+          QT_EMAIL: ${{ secrets.QT_EMAIL }}
+          QT_PW: ${{ secrets.QT_PW }}
+        run: |
+          if [ -z "${QT_EMAIL:-}" ] || [ -z "${QT_PW:-}" ]; then
+            echo "QT_EMAIL or QT_PW secret is not configured" >&2
+            exit 1
+          fi
+          curl -L -O https://download.qt.io/official_releases/online_installers/qt-online-installer-linux-x64-online.run
+          chmod +x qt-online-installer-linux-x64-online.run
+          ./qt-online-installer-linux-x64-online.run \
+            --root "${{ github.workspace }}/Qt" \
+            --accept-licenses \
+            --accept-obligations \
+            --default-answer \
+            --confirm-command \
+            --email "$QT_EMAIL" \
+            --pw "$QT_PW" \
+            --auto-answer "OperationDoesNotExistError=Ignore,OverwriteTargetDirectory=No,stopProcessesForUpdates=Ignore,installationErrorWithCancel=Ignore,installationErrorWithIgnore=Ignore,AssociateCommonFiletypes=No,telemetry-question=No" \
+            install "${{ matrix.qt_component }}"
+
+      - name: Export Qt environment (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          echo "Qt6_DIR=${{ github.workspace }}/Qt/${{ matrix.qt_version }}/${{ matrix.qt_install_dir }}/lib/cmake/Qt6" >> "$GITHUB_ENV"
+          echo "CMAKE_PREFIX_PATH=${{ github.workspace }}/Qt/${{ matrix.qt_version }}/${{ matrix.qt_install_dir }}${CMAKE_PREFIX_PATH:+:$CMAKE_PREFIX_PATH}" >> "$GITHUB_ENV"
+          echo "${{ github.workspace }}/Qt/${{ matrix.qt_version }}/${{ matrix.qt_install_dir }}/bin" >> "$GITHUB_PATH"
+
+      - name: Save Qt cache (Linux)
+        if: runner.os == 'Linux' && steps.cache-qt-linux.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ github.workspace }}/Qt/${{ matrix.qt_version }}/${{ matrix.qt_install_dir }}
+          key: ${{ steps.cache-qt-linux.outputs.cache-primary-key }}
+
+      - name: Restore vcpkg binary cache
+        id: cache-vcpkg-binary
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+            ${{ env.VCPKG_DOWNLOADS }}
+          key: ${{ runner.os }}-vcpkg-bincache-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
+
+      - name: Restore vcpkg installed tree
+        id: cache-vcpkg-installed
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ github.workspace }}/build-rel/vcpkg_installed
+          key: ${{ runner.os }}-vcpkg-installed-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
+
+      - name: Prepare vcpkg cache directories
+        if: runner.os != 'Windows'
+        run: |
+          mkdir -p "${VCPKG_DEFAULT_BINARY_CACHE}"
+          mkdir -p "${VCPKG_DOWNLOADS}"
+
+      - name: Prepare vcpkg cache directories (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path $env:VCPKG_DEFAULT_BINARY_CACHE | Out-Null
+          New-Item -ItemType Directory -Force -Path $env:VCPKG_DOWNLOADS | Out-Null
+
+      - name: Bootstrap vcpkg (Unix)
+        if: runner.os != 'Windows'
+        run: |
+          if [ ! -d "${{ github.workspace }}/vcpkg/.git" ]; then
+            git clone https://github.com/microsoft/vcpkg "${{ github.workspace }}/vcpkg"
+          fi
+          git -C "${{ github.workspace }}/vcpkg" fetch --depth 1 origin "${VCPKG_COMMIT}"
+          git -C "${{ github.workspace }}/vcpkg" checkout --force "${VCPKG_COMMIT}"
+          "${{ github.workspace }}/vcpkg/bootstrap-vcpkg.sh" -disableMetrics
+          echo "VCPKG_ROOT=${{ github.workspace }}/vcpkg" >> "$GITHUB_ENV"
+
+      - name: Bootstrap vcpkg (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          if (!(Test-Path "${{ github.workspace }}/vcpkg/.git")) {
+            git clone https://github.com/microsoft/vcpkg "${{ github.workspace }}/vcpkg"
+          }
+          git -C "${{ github.workspace }}/vcpkg" fetch --depth 1 origin "$env:VCPKG_COMMIT"
+          git -C "${{ github.workspace }}/vcpkg" checkout --force "$env:VCPKG_COMMIT"
+          & "${{ github.workspace }}/vcpkg/bootstrap-vcpkg.bat" -disableMetrics
+          "VCPKG_ROOT=${{ github.workspace }}/vcpkg" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Configure
+        run: cmake --preset vcpkg-rel
+
+      - name: Save vcpkg binary cache
+        if: steps.cache-vcpkg-binary.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+            ${{ env.VCPKG_DOWNLOADS }}
+          key: ${{ steps.cache-vcpkg-binary.outputs.cache-primary-key }}
+
+      - name: Save vcpkg installed tree
+        if: steps.cache-vcpkg-installed.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ github.workspace }}/build-rel/vcpkg_installed
+          key: ${{ steps.cache-vcpkg-installed.outputs.cache-primary-key }}
+
+      - name: Build
+        run: cmake --build build-rel --parallel
+
+      - name: Test
+        run: ctest --test-dir build-rel --output-on-failure
+
+      - name: Install to staging
+        run: cmake --install build-rel --config Release --prefix "${{ github.workspace }}/stage"
+
+      - name: Deploy Windows Qt runtime
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $stageBin = Join-Path "${{ github.workspace }}\\stage" "bin"
+          $guiExe = Join-Path $stageBin "tf-gui.exe"
+          if (Test-Path $guiExe) {
+            & (Join-Path $env:QT_ROOT_DIR "bin\\windeployqt.exe") `
+              --release `
+              --qmldir "${{ github.workspace }}\\src\\text_foundry_gui\\qml" `
+              --no-translations `
+              $guiExe
+          }
+          Copy-Item `
+            -Path "${{ github.workspace }}\\build-rel\\vcpkg_installed\\x64-windows\\bin\\*.dll" `
+            -Destination $stageBin `
+            -Force `
+            -ErrorAction SilentlyContinue
+
+      - name: Archive artifact (Linux/macOS)
+        if: runner.os != 'Windows'
+        run: |
+          mkdir -p dist
+          tar -C stage -czf "dist/${{ matrix.archive_name }}" .
+
+      - name: Archive artifact (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+          Compress-Archive -Path stage\* -DestinationPath "dist\\${{ matrix.archive_name }}" -Force
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: dist/${{ matrix.archive_name }}
+          if-no-files-found: error
+
+  publish:
+    name: Publish Release
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Read app version
+        run: |
+          APP_VERSION="$(sed -n 's/.*project([^)]*VERSION \([0-9.]\+\).*/\1/p' CMakeLists.txt | head -n 1)"
+          if [ -z "$APP_VERSION" ]; then
+            echo "Failed to read app version from CMakeLists.txt" >&2
+            exit 1
+          fi
+          echo "APP_VERSION=$APP_VERSION" >> "$GITHUB_ENV"
+          echo "RELEASE_TAG=v$APP_VERSION" >> "$GITHUB_ENV"
+
+      - name: Download Linux artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: textfoundry-linux
+          path: release/linux
+
+      - name: Download macOS artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: textfoundry-macos
+          path: release/macos
+
+      - name: Download Windows artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: textfoundry-windows
+          path: release/windows
+
+      - name: Normalize release asset names
+        run: |
+          mkdir -p release/assets
+          cp release/linux/*.tar.gz "release/assets/textfoundry-${APP_VERSION}-linux.tar.gz"
+          cp release/macos/*.tar.gz "release/assets/textfoundry-${APP_VERSION}-macos.tar.gz"
+          cp release/windows/*.zip "release/assets/textfoundry-${APP_VERSION}-windows.zip"
+          ls -lah release/assets
+
+      - name: Create or update GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "$RELEASE_TAG" >/dev/null 2>&1 || \
+            gh release create "$RELEASE_TAG" \
+              --target "$GITHUB_SHA" \
+              --title "TextFoundry $APP_VERSION" \
+              --generate-notes
+          gh release upload "$RELEASE_TAG" release/assets/* --clobber
