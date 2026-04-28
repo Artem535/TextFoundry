@@ -471,7 +471,7 @@ jobs:
         run: |
           $match = Select-String `
             -Path "${{ github.workspace }}\\CMakeLists.txt" `
-            -Pattern 'project\\(TextFoundry VERSION ([0-9.]+)'
+            -Pattern 'project\(TextFoundry VERSION ([0-9.]+)\)'
           if (-not $match -or $match.Matches.Count -eq 0) {
             throw "Failed to read TextFoundry version from CMakeLists.txt"
           }
