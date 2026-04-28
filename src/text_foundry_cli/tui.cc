@@ -68,8 +68,12 @@ void Tui::Run() {
       force_terminal_output != nullptr &&
       std::string_view(force_terminal_output) == "1";
 
-  auto screen = use_terminal_output ? ftxui::ScreenInteractive::TerminalOutput()
-                                    : ftxui::ScreenInteractive::Fullscreen();
+  auto screen = [&] {
+    if (use_terminal_output) {
+      return ftxui::ScreenInteractive::TerminalOutput();
+    }
+    return ftxui::ScreenInteractive::Fullscreen();
+  }();
 
   auto root = MainLayout(screen);
   screen.PostEvent(ftxui::Event::Custom);
