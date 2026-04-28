@@ -8,6 +8,7 @@ target_link_libraries(core_tests textfoundry_core doctest::doctest)
 target_link_libraries(core_tests textfoundry_ai_openai)
 
 if(APPLE AND TARGET objectbox)
+  set_property(TARGET core_tests PROPERTY BUILD_WITH_INSTALL_RPATH OFF)
   set_property(TARGET core_tests APPEND PROPERTY
     BUILD_RPATH "$<TARGET_FILE_DIR:objectbox>"
   )
