@@ -314,8 +314,20 @@ jobs:
           ctest --test-dir build-rel --output-on-failure
 
       - name: Test
-        if: runner.os != 'Linux'
+        if: runner.os == 'macOS'
         run: ctest --test-dir build-rel --output-on-failure
+
+      - name: Test (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $env:PATH = @(
+            "${{ github.workspace }}\\build-rel\\_deps\\objectbox-download-src\\lib",
+            "${{ github.workspace }}\\build-rel\\bin",
+            "${{ github.workspace }}\\build-rel\\vcpkg_installed\\x64-windows\\bin",
+            $env:PATH
+          ) -join ';'
+          ctest --test-dir build-rel --output-on-failure
 
       - name: Install to staging (Linux)
         if: runner.os == 'Linux'
@@ -345,6 +357,15 @@ jobs:
           QT_PREFIX="${{ github.workspace }}/Qt/${{ matrix.qt_version }}/${{ matrix.qt_install_dir }}"
           export PATH="$QT_PREFIX/bin:$PATH"
           export LD_LIBRARY_PATH="$QT_PREFIX/lib:${LD_LIBRARY_PATH:-}"
+          mkdir -p build-rel/AppDir/usr/lib build-rel/AppDir/usr/share/org.kde.syntax-highlighting
+          cp -av build-rel/bin/libKF6SyntaxHighlighting.so* build-rel/AppDir/usr/lib/ || true
+          if [ -d build-rel/_deps/syntax_highlighting-src/data/syntax ]; then
+            cp -a build-rel/_deps/syntax_highlighting-src/data/syntax build-rel/AppDir/usr/share/org.kde.syntax-highlighting/
+          fi
+          if [ -d build-rel/_deps/syntax_highlighting-src/data/themes ]; then
+            cp -a build-rel/_deps/syntax_highlighting-src/data/themes build-rel/AppDir/usr/share/org.kde.syntax-highlighting/
+          fi
+          rm -f build-rel/AppDir/usr/bin/ksyntaxhighlighter6 build-rel/AppDir/usr/bin/katehighlightingindexer
           mkdir -p build-rel/AppDir/usr/plugins/platforms
           cp -av "$QT_PREFIX/plugins/platforms/libqwayland.so" build-rel/AppDir/usr/plugins/platforms/ || true
           cp -av "$QT_PREFIX/plugins/platforms/libqxcb.so" build-rel/AppDir/usr/plugins/platforms/ || true
