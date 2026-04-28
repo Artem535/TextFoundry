@@ -147,6 +147,7 @@ elseif(TARGET KF6SyntaxHighlighting)
 endif()
 
 set_target_properties(textfoundry_gui PROPERTIES
+    MACOSX_BUNDLE TRUE
     OUTPUT_NAME tf-gui
 )
 

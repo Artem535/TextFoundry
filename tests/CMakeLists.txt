@@ -15,3 +15,10 @@ if(UNIX AND TARGET objectbox)
 endif()
 
 add_test(NAME core_tests COMMAND core_tests)
+
+if(WIN32 AND TARGET objectbox)
+  set_tests_properties(core_tests PROPERTIES
+    ENVIRONMENT_MODIFICATION
+      "PATH=path_list_prepend:$<TARGET_FILE_DIR:objectbox>;PATH=path_list_prepend:${CMAKE_BINARY_DIR}/bin;PATH=path_list_prepend:${CMAKE_BINARY_DIR}/vcpkg_installed/x64-windows/bin"
+  )
+endif()
