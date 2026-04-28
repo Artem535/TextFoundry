@@ -369,7 +369,29 @@ jobs:
           mkdir -p build-rel/AppDir/usr/plugins/platforms
           cp -av "$QT_PREFIX/plugins/platforms/libqwayland.so" build-rel/AppDir/usr/plugins/platforms/ || true
           cp -av "$QT_PREFIX/plugins/platforms/libqxcb.so" build-rel/AppDir/usr/plugins/platforms/ || true
+          printf '%s\n' \
+            '#!/bin/sh' \
+            'HERE="$(dirname "$(readlink -f "$0")")"' \
+            'export QT_QPA_PLATFORM="${QT_QPA_PLATFORM:-xcb}"' \
+            'unset QT_STYLE_OVERRIDE' \
+            'export QT_QUICK_CONTROLS_STYLE="${QT_QUICK_CONTROLS_STYLE:-Material}"' \
+            'export QT_QUICK_CONTROLS_MATERIAL_THEME="${QT_QUICK_CONTROLS_MATERIAL_THEME:-Dark}"' \
+            'export QT_QUICK_CONTROLS_MATERIAL_VARIANT="${QT_QUICK_CONTROLS_MATERIAL_VARIANT:-Dense}"' \
+            'export QT_QPA_PLATFORMTHEME="${QT_QPA_PLATFORMTHEME:-}"' \
+            'export XDG_DATA_DIRS="$HERE/usr/share${XDG_DATA_DIRS:+:$XDG_DATA_DIRS}"' \
+            'QML_IMPORTS="$HERE/usr/qml"' \
+            'for dir in "$HERE/usr/lib/qt6/qml" "$HERE/usr/lib/x86_64-linux-gnu/qt6/qml" "$HERE/usr/lib64/qt6/qml"; do' \
+            '  if [ -d "$dir" ]; then' \
+            '    QML_IMPORTS="$QML_IMPORTS:$dir"' \
+            '  fi' \
+            'done' \
+            'export QML2_IMPORT_PATH="$QML_IMPORTS${QML2_IMPORT_PATH:+:$QML2_IMPORT_PATH}"' \
+            'exec "$HERE/usr/bin/tf-gui" "$@"' \
+            > build-rel/AppDir/AppRun
+          chmod +x build-rel/AppDir/AppRun
           export LD_LIBRARY_PATH="${{ github.workspace }}/build-rel/AppDir/usr/lib:$QT_PREFIX/lib:${LD_LIBRARY_PATH:-}"
+          export QML_SOURCES_PATHS="${{ github.workspace }}/src/text_foundry_gui/qml"
+          export QML2_IMPORT_PATH="$QT_PREFIX/qml:/usr/lib64/qt6/qml:/usr/lib/qt6/qml"
           build-rel/tools/linuxdeploy-x86_64.AppImage \
             --appdir build-rel/AppDir \
             --executable build-rel/AppDir/usr/bin/tf-gui \
