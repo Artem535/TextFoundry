@@ -491,13 +491,12 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          $match = Select-String `
-            -Path "${{ github.workspace }}\\CMakeLists.txt" `
-            -Pattern 'project\(TextFoundry VERSION ([0-9.]+)\)'
-          if (-not $match -or $match.Matches.Count -eq 0) {
+          $cmakeText = Get-Content "${{ github.workspace }}\\CMakeLists.txt" -Raw
+          $match = [regex]::Match($cmakeText, 'project\(TextFoundry VERSION ([0-9.]+)\)')
+          if (-not $match.Success) {
             throw "Failed to read TextFoundry version from CMakeLists.txt"
           }
-          $appVersion = $match.Matches[0].Groups[1].Value
+          $appVersion = $match.Groups[1].Value
           New-Item -ItemType Directory -Force -Path dist | Out-Null
           & "C:\\Program Files (x86)\\Inno Setup 6\\ISCC.exe" `
             "/DMyAppVersion=$appVersion" `
