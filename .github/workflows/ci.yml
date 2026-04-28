@@ -369,6 +369,7 @@ jobs:
           mkdir -p build-rel/AppDir/usr/plugins/platforms
           cp -av "$QT_PREFIX/plugins/platforms/libqwayland.so" build-rel/AppDir/usr/plugins/platforms/ || true
           cp -av "$QT_PREFIX/plugins/platforms/libqxcb.so" build-rel/AppDir/usr/plugins/platforms/ || true
+          export LD_LIBRARY_PATH="${{ github.workspace }}/build-rel/AppDir/usr/lib:$QT_PREFIX/lib:${LD_LIBRARY_PATH:-}"
           build-rel/tools/linuxdeploy-x86_64.AppImage \
             --appdir build-rel/AppDir \
             --executable build-rel/AppDir/usr/bin/tf-gui \
