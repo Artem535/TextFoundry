@@ -282,7 +282,7 @@ flowchart LR
 
 Наоборот, лучший первый Python use case выглядит так:
 
-* Python client вызывает `GET /compositions/{id}`;
+* Python client вызывает `GET /compositions/\{id\}`;
 * Python client вызывает `POST /resolve`;
 * Python client вызывает `POST /render`;
 * Python client получает published-only deterministic result.

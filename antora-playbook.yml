@@ -30,7 +30,7 @@ asciidoc:
     - asciidoctor-kroki
 
   attributes:
-    kroki-fetch-diagram: true
+    kroki-fetch-diagram: false
     page-pagination: ''
     sectanchors: ''
     toc: left
