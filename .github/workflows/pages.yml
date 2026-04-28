@@ -42,8 +42,11 @@ jobs:
       - name: Build docs
         run: |
           npm run docs:build
-          mkdir -p public/presentation
-          cp doc/modules/ROOT/assets/attachments/textfoundry-intro-onepager.html public/presentation/index.html
+          rm -rf site
+          mkdir -p site/docs site/presentation
+          cp -a public/. site/docs/
+          cp doc/modules/ROOT/assets/attachments/textfoundry-intro-onepager.html site/index.html
+          cp doc/modules/ROOT/assets/attachments/textfoundry-intro-onepager.html site/presentation/index.html
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
@@ -51,7 +54,7 @@ jobs:
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: public
+          path: site
 
   deploy:
     name: Deploy Docs
