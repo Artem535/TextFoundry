@@ -45,6 +45,7 @@ if(TEXTFOUNDRY_BUILD_GUI)
       set(TEXTFOUNDRY_SAVED_BUILD_TESTING "${BUILD_TESTING}")
       set(TEXTFOUNDRY_SAVED_KBUILD_TESTING "${KBUILD_TESTING}")
       set(TEXTFOUNDRY_SAVED_DISABLE_FIND_PACKAGE_PYTHON "${CMAKE_DISABLE_FIND_PACKAGE_Python}")
+      set(TEXTFOUNDRY_SAVED_BUILD_QCH "${BUILD_QCH}")
       set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
       set(KBUILD_TESTING OFF CACHE BOOL "" FORCE)
       set(BUILD_QCH OFF CACHE BOOL "" FORCE)
@@ -54,17 +55,10 @@ if(TEXTFOUNDRY_BUILD_GUI)
         GIT_REPOSITORY https://github.com/KDE/syntax-highlighting.git
         GIT_TAG v6.23.0
       )
-      FetchContent_GetProperties(syntax_highlighting)
-      if(NOT syntax_highlighting_POPULATED)
-        FetchContent_Populate(syntax_highlighting)
-        add_subdirectory(
-          ${syntax_highlighting_SOURCE_DIR}
-          ${syntax_highlighting_BINARY_DIR}
-          EXCLUDE_FROM_ALL
-        )
-      endif()
+      FetchContent_MakeAvailable(syntax_highlighting)
       set(BUILD_TESTING "${TEXTFOUNDRY_SAVED_BUILD_TESTING}" CACHE BOOL "" FORCE)
       set(KBUILD_TESTING "${TEXTFOUNDRY_SAVED_KBUILD_TESTING}" CACHE BOOL "" FORCE)
+      set(BUILD_QCH "${TEXTFOUNDRY_SAVED_BUILD_QCH}" CACHE BOOL "" FORCE)
       set(CMAKE_DISABLE_FIND_PACKAGE_Python "${TEXTFOUNDRY_SAVED_DISABLE_FIND_PACKAGE_PYTHON}")
     endif()
     if(NOT TARGET qt6keychain)
