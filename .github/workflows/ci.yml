@@ -389,6 +389,10 @@ jobs:
         run: |
           mkdir -p dist
           APP_BUNDLE="${{ github.workspace }}/stage/tf-gui.app"
+          if [ ! -d "$APP_BUNDLE" ]; then
+            APP_BUNDLE="$(find "${{ github.workspace }}/stage" -maxdepth 1 -type d -name '*.app' | head -n 1)"
+          fi
+          test -n "$APP_BUNDLE"
           test -d "$APP_BUNDLE"
           macdeployqt "$APP_BUNDLE" -qmldir="${{ github.workspace }}/src/text_foundry_gui/qml" -always-overwrite
           test -d "$APP_BUNDLE/Contents/Frameworks/QtCore.framework"
