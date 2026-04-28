@@ -156,6 +156,21 @@ install(TARGETS textfoundry_gui
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 )
 
+if(DEFINED syntax_highlighting_SOURCE_DIR)
+    if(EXISTS "${syntax_highlighting_SOURCE_DIR}/data/syntax")
+        install(
+            DIRECTORY "${syntax_highlighting_SOURCE_DIR}/data/syntax"
+            DESTINATION "${CMAKE_INSTALL_DATADIR}/org.kde.syntax-highlighting"
+        )
+    endif()
+    if(EXISTS "${syntax_highlighting_SOURCE_DIR}/data/themes")
+        install(
+            DIRECTORY "${syntax_highlighting_SOURCE_DIR}/data/themes"
+            DESTINATION "${CMAKE_INSTALL_DATADIR}/org.kde.syntax-highlighting"
+        )
+    endif()
+endif()
+
 if(UNIX AND NOT APPLE)
     configure_file(
         ${CMAKE_CURRENT_SOURCE_DIR}/dist/textfoundry.desktop.in
