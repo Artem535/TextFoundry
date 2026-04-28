@@ -295,13 +295,37 @@ jobs:
           path: ${{ github.workspace }}/build-rel/vcpkg_installed
           key: ${{ steps.cache-vcpkg-installed.outputs.cache-primary-key }}
 
+      - name: Build (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          QT_PREFIX="${{ github.workspace }}/Qt/${{ matrix.qt_version }}/${{ matrix.qt_install_dir }}"
+          export LD_LIBRARY_PATH="$QT_PREFIX/lib:${LD_LIBRARY_PATH:-}"
+          cmake --build build-rel --parallel
+
       - name: Build
+        if: runner.os != 'Linux'
         run: cmake --build build-rel --parallel
 
+      - name: Test (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          QT_PREFIX="${{ github.workspace }}/Qt/${{ matrix.qt_version }}/${{ matrix.qt_install_dir }}"
+          export LD_LIBRARY_PATH="$QT_PREFIX/lib:${LD_LIBRARY_PATH:-}"
+          ctest --test-dir build-rel --output-on-failure
+
       - name: Test
+        if: runner.os != 'Linux'
         run: ctest --test-dir build-rel --output-on-failure
 
+      - name: Install to staging (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          QT_PREFIX="${{ github.workspace }}/Qt/${{ matrix.qt_version }}/${{ matrix.qt_install_dir }}"
+          export LD_LIBRARY_PATH="$QT_PREFIX/lib:${LD_LIBRARY_PATH:-}"
+          cmake --install build-rel --config Release --prefix "${{ github.workspace }}/stage"
+
       - name: Install to staging
+        if: runner.os != 'Linux'
         run: cmake --install build-rel --config Release --prefix "${{ github.workspace }}/stage"
 
       - name: Download linuxdeploy tools
