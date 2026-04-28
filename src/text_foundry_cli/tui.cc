@@ -4,16 +4,29 @@
 
 #include "tui.h"
 
-#include <unistd.h>  // isatty, STDIN_FILENO, STDOUT_FILENO
-
 #include <cstdlib>
+#include <cstdio>
 #include <ftxui/component/component.hpp>
 #include <ftxui/component/screen_interactive.hpp>
 #include <iostream>
 #include <string_view>
 
+#if defined(_WIN32)
+#include <io.h>
+#else
+#include <unistd.h>
+#endif
+
 namespace tf {
 namespace {
+bool HasInteractiveTerminal() {
+#if defined(_WIN32)
+  return _isatty(_fileno(stdin)) && _isatty(_fileno(stdout));
+#else
+  return isatty(STDIN_FILENO) && isatty(STDOUT_FILENO);
+#endif
+}
+
 // Consider "user input" as any non-mouse, non-cursor, non-custom event.
 // This includes arrows, enter, function keys, etc.
 bool IsUserInputEvent(const ftxui::Event& e) {
@@ -37,7 +50,7 @@ Tui::Tui(Engine& engine) : engine_(engine), block_creator_(engine) {}
 
 void Tui::Run() {
   // Fullscreen mode needs a real interactive terminal.
-  if (!isatty(STDIN_FILENO) || !isatty(STDOUT_FILENO)) {
+  if (!HasInteractiveTerminal()) {
     std::cerr << "Error: TUI requires an interactive terminal (TTY).\n"
               << "Run: tf tui (from a real terminal emulator)\n";
     return;
