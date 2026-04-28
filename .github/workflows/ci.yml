@@ -424,9 +424,13 @@ jobs:
           test -f "$APP_BUNDLE/Contents/PlugIns/platforms/libqcocoa.dylib"
           codesign --force --deep --sign - "$APP_BUNDLE"
           codesign --verify --deep --strict --verbose=2 "$APP_BUNDLE"
+          DMG_SRC_DIR="${{ github.workspace }}/dist/dmg-root"
+          rm -rf "$DMG_SRC_DIR"
+          mkdir -p "$DMG_SRC_DIR"
+          cp -a "$APP_BUNDLE" "$DMG_SRC_DIR/"
           hdiutil create \
             -volname "TextFoundry" \
-            -srcfolder "$APP_BUNDLE" \
+            -srcfolder "$DMG_SRC_DIR" \
             -ov \
             -format UDZO \
             "dist/textfoundry-macos.dmg"
