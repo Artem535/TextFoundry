@@ -15,6 +15,7 @@ env:
   VCPKG_DOWNLOADS: ${{ github.workspace }}/.cache/vcpkg/downloads
   VCPKG_INSTALL_OPTIONS: --debug
   VCPKG_COMMIT: aa2d37682e3318d93aef87efa7b0e88e81cd3d59
+  ECM_VERSION: 6.23.0
 
 jobs:
   build:
@@ -214,8 +215,69 @@ jobs:
           & "${{ github.workspace }}/vcpkg/bootstrap-vcpkg.bat" -disableMetrics
           "VCPKG_ROOT=${{ github.workspace }}/vcpkg" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
 
+      - name: Install ECM (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          ECM_PREFIX="${{ github.workspace }}/.cache/ecm"
+          ECM_DIR="$ECM_PREFIX/share/ECM/cmake"
+          if [ ! -f "$ECM_DIR/ECMConfig.cmake" ]; then
+            curl -fL --retry 3 --retry-all-errors \
+              "https://github.com/KDE/extra-cmake-modules/archive/refs/tags/v${ECM_VERSION}.tar.gz" \
+              -o /tmp/ecm.tar.gz
+            rm -rf /tmp/ecm-src /tmp/ecm-build
+            mkdir -p /tmp/ecm-src /tmp/ecm-build "$ECM_PREFIX"
+            tar -xzf /tmp/ecm.tar.gz -C /tmp/ecm-src --strip-components=1
+            cmake -S /tmp/ecm-src -B /tmp/ecm-build -DCMAKE_INSTALL_PREFIX="$ECM_PREFIX"
+            cmake --build /tmp/ecm-build --parallel
+            cmake --install /tmp/ecm-build
+          fi
+          test -f "$ECM_DIR/ECMConfig.cmake"
+          echo "ECM_DIR=$ECM_DIR" >> "$GITHUB_ENV"
+
+      - name: Install ECM (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $ecmPrefix = Join-Path "${{ github.workspace }}" ".cache\\ecm"
+          $ecmDir = Join-Path $ecmPrefix "share\\ECM\\cmake"
+          $ecmConfig = Join-Path $ecmDir "ECMConfig.cmake"
+          if (!(Test-Path $ecmConfig)) {
+            $archive = Join-Path $env:RUNNER_TEMP "ecm.tar.gz"
+            $sourceRoot = Join-Path $env:RUNNER_TEMP "ecm-src"
+            $buildRoot = Join-Path $env:RUNNER_TEMP "ecm-build"
+            Remove-Item -Recurse -Force $sourceRoot, $buildRoot -ErrorAction SilentlyContinue
+            New-Item -ItemType Directory -Force -Path $sourceRoot, $buildRoot, $ecmPrefix | Out-Null
+            Invoke-WebRequest `
+              -Uri "https://github.com/KDE/extra-cmake-modules/archive/refs/tags/v$env:ECM_VERSION.tar.gz" `
+              -OutFile $archive
+            tar -xzf $archive -C $sourceRoot --strip-components=1
+            cmake -S $sourceRoot -B $buildRoot -DCMAKE_INSTALL_PREFIX="$ecmPrefix"
+            cmake --build $buildRoot --parallel
+            cmake --install $buildRoot
+          }
+          if (!(Test-Path $ecmConfig)) {
+            throw "ECMConfig.cmake not found at $ecmConfig"
+          }
+          "ECM_DIR=$ecmDir" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
       - name: Configure
-        run: cmake --preset vcpkg-rel
+        if: runner.os != 'Windows'
+        run: |
+          if [ -n "${ECM_DIR:-}" ]; then
+            cmake --preset vcpkg-rel -DECM_DIR="$ECM_DIR"
+          else
+            cmake --preset vcpkg-rel
+          fi
+
+      - name: Configure (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          if ($env:ECM_DIR) {
+            cmake --preset vcpkg-rel "-DECM_DIR=$env:ECM_DIR"
+          } else {
+            cmake --preset vcpkg-rel
+          }
 
       - name: Save vcpkg binary cache
         if: steps.cache-vcpkg-binary.outputs.cache-hit != 'true'
