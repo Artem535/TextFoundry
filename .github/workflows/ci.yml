@@ -492,7 +492,7 @@ jobs:
         shell: pwsh
         run: |
           $cmakeText = Get-Content "${{ github.workspace }}\\CMakeLists.txt" -Raw
-          $match = [regex]::Match($cmakeText, 'project\(TextFoundry VERSION ([0-9.]+)\)')
+          $match = [regex]::Match($cmakeText, 'project\(TextFoundry VERSION ([0-9.]+)\b')
           if (-not $match.Success) {
             throw "Failed to read TextFoundry version from CMakeLists.txt"
           }
