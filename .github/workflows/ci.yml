@@ -427,6 +427,12 @@ jobs:
           fi
           test -n "$APP_BUNDLE"
           test -d "$APP_BUNDLE"
+          KSYNTAX_LIB="$(find "${{ github.workspace }}/build-rel" -type f -name 'libKF6SyntaxHighlighting*.dylib' | head -n 1)"
+          if [ -n "$KSYNTAX_LIB" ]; then
+            mkdir -p "${{ github.workspace }}/.cache/ecm/lib"
+            ln -sf "$KSYNTAX_LIB" "${{ github.workspace }}/.cache/ecm/lib/$(basename "$KSYNTAX_LIB")"
+            ln -sf "$KSYNTAX_LIB" "${{ github.workspace }}/.cache/ecm/lib/libKF6SyntaxHighlighting.6.dylib"
+          fi
           macdeployqt "$APP_BUNDLE" -qmldir="${{ github.workspace }}/src/text_foundry_gui/qml" -always-overwrite
           test -d "$APP_BUNDLE/Contents/Frameworks/QtCore.framework"
           test -d "$APP_BUNDLE/Contents/Frameworks/QtGui.framework"
