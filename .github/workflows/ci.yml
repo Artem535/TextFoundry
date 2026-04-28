@@ -392,7 +392,23 @@ jobs:
         run: |
           $stageBin = Join-Path "${{ github.workspace }}\\stage" "bin"
           $guiExe = Join-Path $stageBin "tf-gui.exe"
+          Copy-Item `
+            -Path "${{ github.workspace }}\\build-rel\\bin\\*.dll" `
+            -Destination $stageBin `
+            -Force `
+            -ErrorAction SilentlyContinue
+          Copy-Item `
+            -Path "${{ github.workspace }}\\build-rel\\vcpkg_installed\\x64-windows\\bin\\*.dll" `
+            -Destination $stageBin `
+            -Force `
+            -ErrorAction SilentlyContinue
           if (Test-Path $guiExe) {
+            $env:PATH = @(
+              $stageBin,
+              "${{ github.workspace }}\\build-rel\\bin",
+              "${{ github.workspace }}\\build-rel\\vcpkg_installed\\x64-windows\\bin",
+              $env:PATH
+            ) -join ';'
             & (Join-Path $env:QT_ROOT_DIR "bin\\windeployqt.exe") `
               --release `
               --compiler-runtime `
@@ -400,11 +416,6 @@ jobs:
               --no-translations `
               $guiExe
           }
-          Copy-Item `
-            -Path "${{ github.workspace }}\\build-rel\\vcpkg_installed\\x64-windows\\bin\\*.dll" `
-            -Destination $stageBin `
-            -Force `
-            -ErrorAction SilentlyContinue
 
       - name: Build macOS DMG
         if: runner.os == 'macOS'
