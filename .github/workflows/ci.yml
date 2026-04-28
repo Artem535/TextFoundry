@@ -392,6 +392,10 @@ jobs:
         run: |
           $stageBin = Join-Path "${{ github.workspace }}\\stage" "bin"
           $guiExe = Join-Path $stageBin "tf-gui.exe"
+          $qtBin = Join-Path $env:QT_ROOT_DIR "bin"
+          $qtKeychainDll = Get-ChildItem `
+            -Path "${{ github.workspace }}\\build-rel\\bin\\qt6keychain.dll" `
+            -ErrorAction SilentlyContinue | Select-Object -First 1
           Copy-Item `
             -Path "${{ github.workspace }}\\build-rel\\bin\\*.dll" `
             -Destination $stageBin `
@@ -403,6 +407,9 @@ jobs:
             -Force `
             -ErrorAction SilentlyContinue
           if (Test-Path $guiExe) {
+            if ($qtKeychainDll) {
+              Copy-Item $qtKeychainDll.FullName -Destination $qtBin -Force
+            }
             $env:PATH = @(
               $stageBin,
               "${{ github.workspace }}\\build-rel\\bin",
