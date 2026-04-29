@@ -468,6 +468,19 @@ jobs:
             install_name_tool -id "@rpath/$(basename "$EMBEDDED_KSYNTAX_LIB")" "$EMBEDDED_KSYNTAX_LIB"
             install_name_tool -change "$CURRENT_KSYNTAX_REF" "@executable_path/../Frameworks/$(basename "$EMBEDDED_KSYNTAX_LIB")" "$APP_BINARY"
           fi
+          OBJECTBOX_LIB="$(find "${{ github.workspace }}/build-rel" -type f -name 'libobjectbox*.dylib' | head -n 1)"
+          if [ -n "$OBJECTBOX_LIB" ]; then
+            OBJECTBOX_LIB_DIR="$(dirname "$OBJECTBOX_LIB")"
+            mkdir -p "$APP_BUNDLE/Contents/Frameworks"
+            cp -a "$OBJECTBOX_LIB_DIR"/libobjectbox*.dylib "$APP_BUNDLE/Contents/Frameworks/" || true
+            APP_BINARY="$APP_BUNDLE/Contents/MacOS/$(basename "$APP_BUNDLE" .app)"
+            EMBEDDED_OBJECTBOX_LIB="$(find "$APP_BUNDLE/Contents/Frameworks" -maxdepth 1 -name 'libobjectbox*.dylib' | head -n 1)"
+            test -n "$EMBEDDED_OBJECTBOX_LIB"
+            CURRENT_OBJECTBOX_REF="$(otool -L "$APP_BINARY" | awk '/libobjectbox/ { print $1; exit }')"
+            test -n "$CURRENT_OBJECTBOX_REF"
+            install_name_tool -id "@rpath/$(basename "$EMBEDDED_OBJECTBOX_LIB")" "$EMBEDDED_OBJECTBOX_LIB"
+            install_name_tool -change "$CURRENT_OBJECTBOX_REF" "@executable_path/../Frameworks/$(basename "$EMBEDDED_OBJECTBOX_LIB")" "$APP_BINARY"
+          fi
           QTKEYCHAIN_LIB="$(find "${{ github.workspace }}" -type f -name 'libqt6keychain*.dylib' | head -n 1)"
           if [ -n "$QTKEYCHAIN_LIB" ]; then
             QTKEYCHAIN_LIB_DIR="$(dirname "$QTKEYCHAIN_LIB")"
@@ -480,6 +493,7 @@ jobs:
           test -d "$APP_BUNDLE/Contents/PlugIns/platforms"
           test -f "$APP_BUNDLE/Contents/PlugIns/platforms/libqcocoa.dylib"
           find "$APP_BUNDLE/Contents/Frameworks" -maxdepth 1 -name 'libKF6SyntaxHighlighting*.dylib' | grep -q .
+          find "$APP_BUNDLE/Contents/Frameworks" -maxdepth 1 -name 'libobjectbox*.dylib' | grep -q .
           find "$APP_BUNDLE/Contents/Frameworks" -maxdepth 1 -name 'libqt6keychain*.dylib' | grep -q .
           codesign --force --deep --sign - "$APP_BUNDLE"
           codesign --verify --deep --strict --verbose=2 "$APP_BUNDLE"
