@@ -151,6 +151,12 @@ set_target_properties(textfoundry_gui PROPERTIES
     OUTPUT_NAME tf-gui
 )
 
+if(WIN32)
+    set_target_properties(textfoundry_gui PROPERTIES
+        WIN32_EXECUTABLE TRUE
+    )
+endif()
+
 install(TARGETS textfoundry_gui
     BUNDLE DESTINATION .
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
