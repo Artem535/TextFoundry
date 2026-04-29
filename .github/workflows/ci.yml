@@ -463,11 +463,18 @@ jobs:
             ln -sf "$KSYNTAX_LIB" "${{ github.workspace }}/.cache/ecm/lib/libKF6SyntaxHighlighting.6.dylib"
           fi
           macdeployqt "$APP_BUNDLE" -qmldir="${{ github.workspace }}/src/text_foundry_gui/qml" -always-overwrite
+          QTKEYCHAIN_LIB="$(find "${{ github.workspace }}" -type f -name 'libqt6keychain*.dylib' | head -n 1)"
+          if [ -n "$QTKEYCHAIN_LIB" ]; then
+            QTKEYCHAIN_LIB_DIR="$(dirname "$QTKEYCHAIN_LIB")"
+            mkdir -p "$APP_BUNDLE/Contents/Frameworks"
+            cp -a "$QTKEYCHAIN_LIB_DIR"/libqt6keychain*.dylib "$APP_BUNDLE/Contents/Frameworks/" || true
+          fi
           test -d "$APP_BUNDLE/Contents/Frameworks/QtCore.framework"
           test -d "$APP_BUNDLE/Contents/Frameworks/QtGui.framework"
           test -d "$APP_BUNDLE/Contents/Frameworks/QtQml.framework"
           test -d "$APP_BUNDLE/Contents/PlugIns/platforms"
           test -f "$APP_BUNDLE/Contents/PlugIns/platforms/libqcocoa.dylib"
+          find "$APP_BUNDLE/Contents/Frameworks" -maxdepth 1 -name 'libqt6keychain*.dylib' | grep -q .
           codesign --force --deep --sign - "$APP_BUNDLE"
           codesign --verify --deep --strict --verbose=2 "$APP_BUNDLE"
           DMG_SRC_DIR="${{ github.workspace }}/dist/dmg-root"
