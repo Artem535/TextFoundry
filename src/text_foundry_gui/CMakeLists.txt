@@ -17,6 +17,12 @@ qt_add_executable(textfoundry_gui
     main.cc
 )
 
+if(WIN32)
+    target_sources(textfoundry_gui PRIVATE
+        resource/app/app.rc
+    )
+endif()
+
 set(TEXTFOUNDRY_GUI_RESOURCES
     "resource/app/textfoundry.svg"
     "resource/font/Font Awesome 7 Brands-Regular-400.otf"
