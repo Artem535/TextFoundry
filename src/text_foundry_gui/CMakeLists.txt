@@ -116,9 +116,14 @@ target_link_libraries(textfoundry_gui PRIVATE
     Qt6::Svg
     textfoundry_core
     textfoundry_ai_openai
-    qt6keychain
     sago::platform_folders
 )
+
+if(TEXTFOUNDRY_QTKEYCHAIN_TARGET)
+    target_link_libraries(textfoundry_gui PRIVATE
+        ${TEXTFOUNDRY_QTKEYCHAIN_TARGET}
+    )
+endif()
 
 target_compile_definitions(textfoundry_gui PRIVATE
     TEXTFOUNDRY_APP_VERSION="${PROJECT_VERSION}"
