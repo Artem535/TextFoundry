@@ -72,28 +72,32 @@ jobs:
 
       - name: Prepare vcpkg cache directories
         run: |
+          cd "$GITHUB_WORKSPACE"
           mkdir -p "${VCPKG_DEFAULT_BINARY_CACHE}"
           mkdir -p "${VCPKG_DOWNLOADS}"
 
       - name: Bootstrap vcpkg
         run: |
-          if [ ! -d "${{ github.workspace }}/vcpkg/.git" ]; then
-            git clone https://github.com/microsoft/vcpkg "${{ github.workspace }}/vcpkg"
+          cd "$GITHUB_WORKSPACE"
+          if [ ! -d "$GITHUB_WORKSPACE/vcpkg/.git" ]; then
+            git clone https://github.com/microsoft/vcpkg "$GITHUB_WORKSPACE/vcpkg"
           fi
-          git -C "${{ github.workspace }}/vcpkg" fetch --depth 1 origin "${VCPKG_COMMIT}"
-          git -C "${{ github.workspace }}/vcpkg" checkout --force "${VCPKG_COMMIT}"
-          "${{ github.workspace }}/vcpkg/bootstrap-vcpkg.sh" -disableMetrics
-          echo "VCPKG_ROOT=${{ github.workspace }}/vcpkg" >> "$GITHUB_ENV"
+          git -C "$GITHUB_WORKSPACE/vcpkg" fetch --depth 1 origin "${VCPKG_COMMIT}"
+          git -C "$GITHUB_WORKSPACE/vcpkg" checkout --force "${VCPKG_COMMIT}"
+          "$GITHUB_WORKSPACE/vcpkg/bootstrap-vcpkg.sh" -disableMetrics
+          echo "VCPKG_ROOT=$GITHUB_WORKSPACE/vcpkg" >> "$GITHUB_ENV"
 
       - name: Configure
         run: |
+          cd "$GITHUB_WORKSPACE"
           NINJA_BIN="$(command -v ninja || command -v ninja-build)"
           test -n "$NINJA_BIN"
-          cmake -S "${{ github.workspace }}" -B "${{ github.workspace }}/build-rel" \
+          test -f "$GITHUB_WORKSPACE/CMakeLists.txt"
+          cmake -S . -B build-rel \
             -G Ninja \
             -DCMAKE_MAKE_PROGRAM="$NINJA_BIN" \
             -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake" \
+            -DCMAKE_TOOLCHAIN_FILE="$GITHUB_WORKSPACE/vcpkg/scripts/buildsystems/vcpkg.cmake" \
             -DTEXTFOUNDRY_VENDORED_KSYNTAXHIGHLIGHTING=OFF
 
       - name: Save vcpkg binary cache
@@ -113,13 +117,18 @@ jobs:
           key: ${{ steps.cache-vcpkg-installed.outputs.cache-primary-key }}
 
       - name: Build
-        run: cmake --build build-rel --parallel
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          cmake --build build-rel --parallel
 
       - name: Test
-        run: ctest --test-dir build-rel --output-on-failure
+        run: |
+          cd "$GITHUB_WORKSPACE"
+          ctest --test-dir build-rel --output-on-failure
 
       - name: Build RPM
         run: |
+          cd "$GITHUB_WORKSPACE"
           mkdir -p dist
           cpack -G RPM --config build-rel/CPackConfig.cmake -B dist
 
