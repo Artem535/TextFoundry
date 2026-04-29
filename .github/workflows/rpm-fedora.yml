@@ -1,0 +1,125 @@
+name: Fedora RPM
+
+on:
+  push:
+    branches: ["main", "devel", "devel-qt"]
+  pull_request:
+    branches: ["main", "devel", "devel-qt"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  VCPKG_DEFAULT_BINARY_CACHE: ${{ github.workspace }}/.cache/vcpkg/archives
+  VCPKG_DOWNLOADS: ${{ github.workspace }}/.cache/vcpkg/downloads
+  VCPKG_INSTALL_OPTIONS: --debug
+  VCPKG_COMMIT: aa2d37682e3318d93aef87efa7b0e88e81cd3d59
+
+jobs:
+  build-rpm:
+    name: Build Fedora 42 RPM
+    runs-on: ubuntu-latest
+    container:
+      image: fedora:42
+
+    steps:
+      - name: Install build dependencies
+        run: |
+          dnf -y update
+          dnf -y install \
+            gcc-c++ \
+            cmake \
+            ninja-build \
+            git \
+            curl \
+            tar \
+            gzip \
+            unzip \
+            pkgconf-pkg-config \
+            rpm-build \
+            rpmdevtools \
+            make \
+            which \
+            qt6-qtbase-devel \
+            qt6-qtdeclarative-devel \
+            qt6-qtquickcontrols2-devel \
+            qt6-qtsvg-devel \
+            qt6-qttools-devel \
+            qtkeychain-qt6-devel \
+            kf6-syntax-highlighting-devel
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Restore vcpkg binary cache
+        id: cache-vcpkg-binary
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+            ${{ env.VCPKG_DOWNLOADS }}
+          key: fedora-42-vcpkg-bincache-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
+
+      - name: Restore vcpkg installed tree
+        id: cache-vcpkg-installed
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ github.workspace }}/build-rel/vcpkg_installed
+          key: fedora-42-vcpkg-installed-${{ hashFiles('vcpkg.json', 'vcpkg-configuration.json') }}
+
+      - name: Prepare vcpkg cache directories
+        run: |
+          mkdir -p "${VCPKG_DEFAULT_BINARY_CACHE}"
+          mkdir -p "${VCPKG_DOWNLOADS}"
+
+      - name: Bootstrap vcpkg
+        run: |
+          if [ ! -d "${{ github.workspace }}/vcpkg/.git" ]; then
+            git clone https://github.com/microsoft/vcpkg "${{ github.workspace }}/vcpkg"
+          fi
+          git -C "${{ github.workspace }}/vcpkg" fetch --depth 1 origin "${VCPKG_COMMIT}"
+          git -C "${{ github.workspace }}/vcpkg" checkout --force "${VCPKG_COMMIT}"
+          "${{ github.workspace }}/vcpkg/bootstrap-vcpkg.sh" -disableMetrics
+          echo "VCPKG_ROOT=${{ github.workspace }}/vcpkg" >> "$GITHUB_ENV"
+
+      - name: Configure
+        run: |
+          cmake --preset vcpkg-rel \
+            -DTEXTFOUNDRY_VENDORED_KSYNTAXHIGHLIGHTING=OFF
+
+      - name: Save vcpkg binary cache
+        if: steps.cache-vcpkg-binary.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ${{ env.VCPKG_DEFAULT_BINARY_CACHE }}
+            ${{ env.VCPKG_DOWNLOADS }}
+          key: ${{ steps.cache-vcpkg-binary.outputs.cache-primary-key }}
+
+      - name: Save vcpkg installed tree
+        if: steps.cache-vcpkg-installed.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ github.workspace }}/build-rel/vcpkg_installed
+          key: ${{ steps.cache-vcpkg-installed.outputs.cache-primary-key }}
+
+      - name: Build
+        run: cmake --build build-rel --parallel
+
+      - name: Test
+        run: ctest --test-dir build-rel --output-on-failure
+
+      - name: Build RPM
+        run: |
+          mkdir -p dist
+          cpack -G RPM --config build-rel/CPackConfig.cmake -B dist
+
+      - name: Upload Fedora RPM
+        uses: actions/upload-artifact@v4
+        with:
+          name: textfoundry-fedora-rpm
+          path: dist/*.rpm
+          if-no-files-found: error

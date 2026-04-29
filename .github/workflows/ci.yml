@@ -31,7 +31,6 @@ jobs:
             qt_component: qt.qt6.6102.linux_gcc_64
             qt_install_dir: gcc_64
             appimage_artifact_name: textfoundry-linux-appimage
-            rpm_artifact_name: textfoundry-linux-rpm
           - os: macos-latest
             qt_version: 6.10.2
             qt_arch: clang_64
@@ -402,12 +401,6 @@ jobs:
           mkdir -p dist
           find . -maxdepth 1 -type f -name '*.AppImage' ! -name 'linuxdeploy*.AppImage' -exec mv {} dist/ \;
 
-      - name: Build RPM
-        if: runner.os == 'Linux'
-        run: |
-          mkdir -p dist
-          cpack -G RPM --config build-rel/CPackConfig.cmake -B dist
-
       - name: Deploy Windows Qt runtime
         if: runner.os == 'Windows'
         shell: pwsh
@@ -532,14 +525,6 @@ jobs:
           path: dist/*.AppImage
           if-no-files-found: error
 
-      - name: Upload Linux RPM
-        if: runner.os == 'Linux'
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.rpm_artifact_name }}
-          path: dist/*.rpm
-          if-no-files-found: error
-
       - name: Upload macOS package
         if: runner.os == 'macOS'
         uses: actions/upload-artifact@v4
@@ -584,12 +569,6 @@ jobs:
           name: textfoundry-linux-appimage
           path: release/linux-appimage
 
-      - name: Download Linux RPM artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: textfoundry-linux-rpm
-          path: release/linux-rpm
-
       - name: Download macOS artifact
         uses: actions/download-artifact@v4
         with:
@@ -606,7 +585,6 @@ jobs:
         run: |
           mkdir -p release/assets
           cp release/linux-appimage/*.AppImage "release/assets/textfoundry-${APP_VERSION}-linux.AppImage"
-          cp release/linux-rpm/*.rpm "release/assets/textfoundry-${APP_VERSION}-linux.rpm"
           cp release/macos/*.dmg "release/assets/textfoundry-${APP_VERSION}-macos.dmg"
           cp release/windows/*.exe "release/assets/textfoundry-${APP_VERSION}-windows-setup.exe"
           ls -lah release/assets
