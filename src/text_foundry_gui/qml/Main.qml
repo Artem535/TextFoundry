@@ -30,9 +30,19 @@ ApplicationWindow {
     palette.text: ColorPalette.onSurface
     palette.button: ColorPalette.button
     palette.buttonText: ColorPalette.onButton
+    palette.brightText: ColorPalette.onPrimary
+    palette.light: Qt.lighter(ColorPalette.surface, 1.18)
+    palette.midlight: ColorPalette.borderStrong
+    palette.dark: Qt.darker(ColorPalette.surface, 1.22)
+    palette.mid: ColorPalette.border
+    palette.shadow: Qt.darker(ColorPalette.background, 1.35)
     palette.highlight: ColorPalette.primary
     palette.highlightedText: ColorPalette.onPrimary
     palette.placeholderText: ColorPalette.placeholderText
+    palette.link: ColorPalette.primaryLight
+    palette.linkVisited: ColorPalette.primary
+    palette.toolTipBase: ColorPalette.surfaceAlt
+    palette.toolTipText: ColorPalette.onSurface
 
     function hasDirtyEditor() {
         return (BlockEditorVm.open && BlockEditorVm.anyDirty)
