@@ -3,15 +3,9 @@
 #include <QDir>
 #include <QQmlApplicationEngine>
 #include <QLoggingCategory>
-#include <QQuickStyle>
 
 int main(int argc, char** argv) {
   QLoggingCategory::setFilterRules(QStringLiteral("textfoundry.gui.syntaxhighlighter=true"));
-
-#ifdef Q_OS_WIN
-  QQuickStyle::setStyle(QStringLiteral("Basic"));
-  QQuickStyle::setFallbackStyle(QStringLiteral("Basic"));
-#endif
 
   QGuiApplication app(argc, argv);
   app.setApplicationName("TextFoundry");

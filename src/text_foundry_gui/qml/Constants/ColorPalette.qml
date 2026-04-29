@@ -4,6 +4,7 @@ import QtQuick.Window
 
 Item {
     readonly property bool isWindows: Qt.platform.os === "windows"
+    readonly property bool forceDarkTheme: isWindows
 
     function luminance(c) {
         return 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b
@@ -18,12 +19,15 @@ Item {
         colorGroup: SystemPalette.Active
     }
 
-    readonly property bool useSystemPalette: !isWindows
+    readonly property bool useSystemPalette: !forceDarkTheme
                                            && contrastDelta(systemPalette.window, systemPalette.windowText) >= 0.45
                                            && contrastDelta(systemPalette.base, systemPalette.text) >= 0.35
                                            && contrastDelta(systemPalette.highlight, systemPalette.highlightedText) >= 0.30
 
-    readonly property bool darkTheme: useSystemPalette ? luminance(systemPalette.window) < 0.5 : true
+    readonly property bool useSystemAccent: contrastDelta(systemPalette.highlight, systemPalette.highlightedText) >= 0.30
+
+    readonly property bool darkTheme: forceDarkTheme
+                                      || (useSystemPalette ? luminance(systemPalette.window) < 0.5 : true)
 
     readonly property color fallbackPrimary: "#6f6bff"
     readonly property color fallbackPrimaryDark: "#5a56ea"
@@ -49,18 +53,19 @@ Item {
     readonly property color fallbackFieldBackground: "#2a2b34"
     readonly property color fallbackPlaceholderText: "#8f93a5"
 
-    readonly property color primary: useSystemPalette
+    readonly property color primary: (useSystemPalette || useSystemAccent)
                                      ? (darkTheme ? Qt.lighter(systemPalette.highlight, 1.15)
                                                   : Qt.darker(systemPalette.highlight, 1.05))
                                      : fallbackPrimary
-    readonly property color primaryDark: useSystemPalette
+    readonly property color primaryDark: (useSystemPalette || useSystemAccent)
                                          ? Qt.darker(systemPalette.highlight, 1.2)
                                          : fallbackPrimaryDark
-    readonly property color primaryLight: useSystemPalette
+    readonly property color primaryLight: (useSystemPalette || useSystemAccent)
                                           ? Qt.lighter(systemPalette.highlight, 1.15)
                                           : fallbackPrimaryLight
-    readonly property color onPrimary: useSystemPalette ? systemPalette.highlightedText
-                                                         : fallbackOnPrimary
+    readonly property color onPrimary: (useSystemPalette || useSystemAccent)
+                                       ? systemPalette.highlightedText
+                                       : fallbackOnPrimary
 
     readonly property color background: useSystemPalette ? systemPalette.window
                                                           : fallbackBackground
@@ -100,10 +105,10 @@ Item {
     readonly property color onButton: useSystemPalette ? systemPalette.buttonText
                                                         : fallbackOnButton
 
-    readonly property color selection: useSystemPalette ? systemPalette.highlight
-                                                         : primary
-    readonly property color onSelection: useSystemPalette ? systemPalette.highlightedText
-                                                           : fallbackOnPrimary
+    readonly property color selection: (useSystemPalette || useSystemAccent) ? systemPalette.highlight
+                                                                              : primary
+    readonly property color onSelection: (useSystemPalette || useSystemAccent) ? systemPalette.highlightedText
+                                                                                : fallbackOnPrimary
     readonly property color warning: useSystemPalette ? (darkTheme ? "#d9a441" : "#9a5a00")
                                                        : fallbackWarning
     readonly property color danger: useSystemPalette ? (darkTheme ? "#e56a6a" : "#b42318")
