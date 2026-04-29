@@ -232,9 +232,6 @@ ApplicationWindow {
                                         Label {
                                             text: modelData.title
                                             Layout.alignment: Qt.AlignVCenter
-                                            color: root.currentTab === index
-                                                   ? ColorPalette.onPrimary
-                                                   : ColorPalette.textPrimary
                                             font.pixelSize: 18
                                             font.bold: true
                                         }
@@ -242,9 +239,6 @@ ApplicationWindow {
 
                                     Label {
                                         text: modelData.subtitle
-                                        color: root.currentTab === index
-                                               ? ColorPalette.onPrimary
-                                               : ColorPalette.onSurfaceMuted
                                         font.pixelSize: 14
                                         elide: Text.ElideRight
                                     }
