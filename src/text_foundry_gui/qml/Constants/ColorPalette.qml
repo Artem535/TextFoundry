@@ -3,6 +3,8 @@ import QtQuick
 import QtQuick.Window
 
 Item {
+    readonly property bool isWindows: Qt.platform.os === "windows"
+
     function luminance(c) {
         return 0.2126 * c.r + 0.7152 * c.g + 0.0722 * c.b
     }
@@ -16,7 +18,8 @@ Item {
         colorGroup: SystemPalette.Active
     }
 
-    readonly property bool useSystemPalette: contrastDelta(systemPalette.window, systemPalette.windowText) >= 0.45
+    readonly property bool useSystemPalette: !isWindows
+                                           && contrastDelta(systemPalette.window, systemPalette.windowText) >= 0.45
                                            && contrastDelta(systemPalette.base, systemPalette.text) >= 0.35
                                            && contrastDelta(systemPalette.highlight, systemPalette.highlightedText) >= 0.30
 
