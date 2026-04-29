@@ -87,7 +87,13 @@ jobs:
 
       - name: Configure
         run: |
-          cmake --preset vcpkg-rel \
+          NINJA_BIN="$(command -v ninja || command -v ninja-build)"
+          test -n "$NINJA_BIN"
+          cmake -S "${{ github.workspace }}" -B "${{ github.workspace }}/build-rel" \
+            -G Ninja \
+            -DCMAKE_MAKE_PROGRAM="$NINJA_BIN" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_TOOLCHAIN_FILE="${{ github.workspace }}/vcpkg/scripts/buildsystems/vcpkg.cmake" \
             -DTEXTFOUNDRY_VENDORED_KSYNTAXHIGHLIGHTING=OFF
 
       - name: Save vcpkg binary cache
