@@ -181,7 +181,7 @@ ApplicationWindow {
                         anchors.topMargin: General.paddingLarge
                         spacing: General.spacingSmall
 
-                        Text {
+                        Label {
                             text: "Navigation"
                             color: ColorPalette.onSurfaceMuted
                             font.pixelSize: 14
@@ -229,7 +229,7 @@ ApplicationWindow {
                                             iconHeight: 14
                                         }
 
-                                        Text {
+                                        Label {
                                             text: modelData.title
                                             Layout.alignment: Qt.AlignVCenter
                                             color: root.currentTab === index
@@ -240,7 +240,7 @@ ApplicationWindow {
                                         }
                                     }
 
-                                    Text {
+                                    Label {
                                         text: modelData.subtitle
                                         color: root.currentTab === index
                                                ? ColorPalette.onPrimary
