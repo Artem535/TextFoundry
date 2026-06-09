@@ -32,43 +32,73 @@ add_subdirectory(src/textfoundry_engine)
 set(OBJECTBOX_LICENSE_FILE "${objectbox_SOURCE_DIR}/LICENSE.txt")
 add_subdirectory(src/textfoundry_ai)
 add_subdirectory(src/text_foundry_cli)
+
 option(TEXTFOUNDRY_BUILD_GUI "Build Qt/QML GUI frontend" ON)
 option(TEXTFOUNDRY_VENDORED_KSYNTAXHIGHLIGHTING
   "Build KSyntaxHighlighting from source instead of using a system package"
   ON
 )
+
 set(TEXTFOUNDRY_QTKEYCHAIN_TARGET "" CACHE INTERNAL "Resolved QtKeychain target")
+
 if(TEXTFOUNDRY_BUILD_GUI)
   set(CMAKE_MAP_IMPORTED_CONFIG_MINSIZEREL "Release;RelWithDebInfo")
   find_package(Qt6 6.8 QUIET COMPONENTS Core Qml Quick QuickControls2)
+
   if(Qt6_FOUND)
-    if(TEXTFOUNDRY_VENDORED_KSYNTAXHIGHLIGHTING AND NOT TARGET KF6::SyntaxHighlighting)
-      set(TEXTFOUNDRY_SAVED_BUILD_TESTING "${BUILD_TESTING}")
-      set(TEXTFOUNDRY_SAVED_KBUILD_TESTING "${KBUILD_TESTING}")
-      set(TEXTFOUNDRY_SAVED_DISABLE_FIND_PACKAGE_PYTHON "${CMAKE_DISABLE_FIND_PACKAGE_Python}")
-      set(TEXTFOUNDRY_SAVED_BUILD_QCH "${BUILD_QCH}")
-      set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
-      set(KBUILD_TESTING OFF CACHE BOOL "" FORCE)
-      set(BUILD_QCH OFF CACHE BOOL "" FORCE)
-      set(CMAKE_DISABLE_FIND_PACKAGE_Python ON)
-      FetchContent_Declare(
-        syntax_highlighting
-        GIT_REPOSITORY https://github.com/KDE/syntax-highlighting.git
-        GIT_TAG v6.23.0
-      )
-      FetchContent_MakeAvailable(syntax_highlighting)
-      set(BUILD_TESTING "${TEXTFOUNDRY_SAVED_BUILD_TESTING}" CACHE BOOL "" FORCE)
-      set(KBUILD_TESTING "${TEXTFOUNDRY_SAVED_KBUILD_TESTING}" CACHE BOOL "" FORCE)
-      set(BUILD_QCH "${TEXTFOUNDRY_SAVED_BUILD_QCH}" CACHE BOOL "" FORCE)
-      set(CMAKE_DISABLE_FIND_PACKAGE_Python "${TEXTFOUNDRY_SAVED_DISABLE_FIND_PACKAGE_PYTHON}")
+    # ===== KSyntaxHighlighting: vendored build or system package =====
+    if(NOT TARGET KF6::SyntaxHighlighting)
+      if(TEXTFOUNDRY_VENDORED_KSYNTAXHIGHLIGHTING)
+        message(STATUS "Building KSyntaxHighlighting from source (v6.23.0)")
+
+        # Save current variable values
+        set(TEXTFOUNDRY_SAVED_BUILD_TESTING "${BUILD_TESTING}")
+        set(TEXTFOUNDRY_SAVED_KBUILD_TESTING "${KBUILD_TESTING}")
+        set(TEXTFOUNDRY_SAVED_DISABLE_FIND_PACKAGE_PYTHON "${CMAKE_DISABLE_FIND_PACKAGE_Python}")
+        set(TEXTFOUNDRY_SAVED_BUILD_QCH "${BUILD_QCH}")
+
+        # Disable unnecessary components to speed up the build
+        set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
+        set(KBUILD_TESTING OFF CACHE BOOL "" FORCE)
+        set(BUILD_QCH OFF CACHE BOOL "" FORCE)
+        set(CMAKE_DISABLE_FIND_PACKAGE_Python ON)
+
+        FetchContent_Declare(
+          syntax_highlighting
+          GIT_REPOSITORY https://github.com/KDE/syntax-highlighting.git
+          GIT_TAG v6.23.0
+        )
+        FetchContent_MakeAvailable(syntax_highlighting)
+
+        # Restore variable values
+        set(BUILD_TESTING "${TEXTFOUNDRY_SAVED_BUILD_TESTING}" CACHE BOOL "" FORCE)
+        set(KBUILD_TESTING "${TEXTFOUNDRY_SAVED_KBUILD_TESTING}" CACHE BOOL "" FORCE)
+        set(BUILD_QCH "${TEXTFOUNDRY_SAVED_BUILD_QCH}" CACHE BOOL "" FORCE)
+        set(CMAKE_DISABLE_FIND_PACKAGE_Python "${TEXTFOUNDRY_SAVED_DISABLE_FIND_PACKAGE_PYTHON}")
+      else()
+        message(STATUS "Using system KSyntaxHighlighting package")
+        find_package(KF6SyntaxHighlighting CONFIG REQUIRED)
+        
+        if(NOT TARGET KF6::SyntaxHighlighting)
+          message(FATAL_ERROR 
+            "KF6SyntaxHighlighting not found. Either install the system package "
+            "(e.g., kf6-syntax-highlighting-devel on Fedora) or enable "
+            "TEXTFOUNDRY_VENDORED_KSYNTAXHIGHLIGHTING=ON to build from source."
+          )
+        endif()
+      endif()
     endif()
+
+    # ===== QtKeychain: find or build from source =====
     if(TARGET qt6keychain)
       set(TEXTFOUNDRY_QTKEYCHAIN_TARGET qt6keychain CACHE INTERNAL "" FORCE)
     elseif(TARGET Qt6Keychain::Qt6Keychain)
       set(TEXTFOUNDRY_QTKEYCHAIN_TARGET Qt6Keychain::Qt6Keychain CACHE INTERNAL "" FORCE)
     endif()
+
     if(NOT TEXTFOUNDRY_QTKEYCHAIN_TARGET)
       find_package(Qt6Keychain CONFIG QUIET)
+      
       if(TARGET qt6keychain)
         set_property(TARGET qt6keychain PROPERTY MAP_IMPORTED_CONFIG_MINSIZEREL Release)
         set(TEXTFOUNDRY_QTKEYCHAIN_TARGET qt6keychain CACHE INTERNAL "" FORCE)
@@ -76,17 +106,21 @@ if(TEXTFOUNDRY_BUILD_GUI)
         set_property(TARGET Qt6Keychain::Qt6Keychain PROPERTY MAP_IMPORTED_CONFIG_MINSIZEREL Release)
         set(TEXTFOUNDRY_QTKEYCHAIN_TARGET Qt6Keychain::Qt6Keychain CACHE INTERNAL "" FORCE)
       endif()
+
       if(NOT TEXTFOUNDRY_QTKEYCHAIN_TARGET)
+        message(STATUS "QtKeychain not found, building from source (v0.15.0)")
         set(BUILD_WITH_QT6 ON CACHE BOOL "" FORCE)
         set(BUILD_TEST_APPLICATION OFF CACHE BOOL "" FORCE)
         set(BUILD_TRANSLATIONS OFF CACHE BOOL "" FORCE)
         set(LIBSECRET_SUPPORT OFF CACHE BOOL "" FORCE)
+
         FetchContent_Declare(
           qtkeychain
           URL https://github.com/frankosterfeld/qtkeychain/archive/refs/tags/0.15.0.tar.gz
           DOWNLOAD_EXTRACT_TIMESTAMP FALSE
         )
         FetchContent_MakeAvailable(qtkeychain)
+
         if(TARGET qt6keychain)
           set(TEXTFOUNDRY_QTKEYCHAIN_TARGET qt6keychain CACHE INTERNAL "" FORCE)
         elseif(TARGET Qt6Keychain::Qt6Keychain)
@@ -94,16 +128,19 @@ if(TEXTFOUNDRY_BUILD_GUI)
         endif()
       endif()
     endif()
+
     add_subdirectory(src/text_foundry_gui)
   else()
     message(STATUS "Qt6 not found: skipping text_foundry_gui target")
   endif()
 endif()
+
 add_subdirectory(examples)
 
 enable_testing()
 add_subdirectory(tests)
 
+# ===== Installation and packaging =====
 write_basic_package_version_file(
     "${CMAKE_CURRENT_BINARY_DIR}/TextFoundryConfigVersion.cmake"
     VERSION ${PROJECT_VERSION}
@@ -130,6 +167,7 @@ install(
     DESTINATION "${TEXTFOUNDRY_INSTALL_CMAKEDIR}"
 )
 
+# ObjectBox runtime library
 if(WIN32)
   set(TEXTFOUNDRY_OBJECTBOX_INSTALL_DIR "${CMAKE_INSTALL_BINDIR}")
 else()
@@ -149,6 +187,7 @@ if(EXISTS "${OBJECTBOX_LICENSE_FILE}")
   )
 endif()
 
+# ===== CPack configuration for RPM =====
 set(CPACK_PACKAGE_NAME "textfoundry")
 set(CPACK_PACKAGE_VENDOR "TextFoundry")
 set(CPACK_PACKAGE_CONTACT "TextFoundry Maintainers")
