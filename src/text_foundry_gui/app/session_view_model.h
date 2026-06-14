@@ -24,6 +24,7 @@ class SessionViewModel : public QObject {
   Q_PROPERTY(QString aiModel READ aiModel WRITE setAiModel NOTIFY aiModelChanged)
   Q_PROPERTY(QString aiApiKey READ aiApiKey WRITE setAiApiKey NOTIFY aiApiKeyChanged)
   Q_PROPERTY(int aiHttpTimeoutSeconds READ aiHttpTimeoutSeconds WRITE setAiHttpTimeoutSeconds NOTIFY aiHttpTimeoutSecondsChanged)
+  Q_PROPERTY(bool aiHttp2Allowed READ aiHttp2Allowed WRITE setAiHttp2Allowed NOTIFY aiHttp2AllowedChanged)
   Q_PROPERTY(bool aiGenerationEnabled READ aiGenerationEnabled NOTIFY engineReset)
   Q_PROPERTY(QString statusText READ statusText NOTIFY statusTextChanged)
 
@@ -40,6 +41,7 @@ class SessionViewModel : public QObject {
   QString aiModel() const;
   QString aiApiKey() const;
   int aiHttpTimeoutSeconds() const;
+  bool aiHttp2Allowed() const;
   bool aiGenerationEnabled() const;
   QString statusText() const;
 
@@ -52,6 +54,7 @@ class SessionViewModel : public QObject {
   void setAiModel(const QString& value);
   void setAiApiKey(const QString& value);
   void setAiHttpTimeoutSeconds(int value);
+  void setAiHttp2Allowed(bool value);
 
   Q_INVOKABLE void reload();
   Q_INVOKABLE void publishStatus(const QString& value);
@@ -69,6 +72,7 @@ class SessionViewModel : public QObject {
   void aiModelChanged();
   void aiApiKeyChanged();
   void aiHttpTimeoutSecondsChanged();
+  void aiHttp2AllowedChanged();
   void statusTextChanged();
   void engineReset();
 
@@ -87,6 +91,7 @@ class SessionViewModel : public QObject {
   QString ai_model_ = QStringLiteral("gpt-4.1-mini");
   QString ai_api_key_;
   int ai_http_timeout_seconds_ = 30;
+  bool ai_http2_allowed_ = true;
   QString status_text_;
   std::unique_ptr<tf::Engine> engine_;
 };

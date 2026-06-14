@@ -32,6 +32,7 @@ namespace {
 constexpr char kAiBaseUrlKey[] = "ai/base_url";
 constexpr char kAiModelKey[] = "ai/model";
 constexpr char kAiTimeoutSecondsKey[] = "ai/http_timeout_seconds";
+constexpr char kAiHttp2AllowedKey[] = "ai/http2_allowed";
 constexpr char kSecretService[] = "TextFoundry";
 constexpr char kSecretKey[] = "ai_api_key";
 
@@ -147,6 +148,8 @@ int SessionViewModel::aiHttpTimeoutSeconds() const {
   return ai_http_timeout_seconds_;
 }
 
+bool SessionViewModel::aiHttp2Allowed() const { return ai_http2_allowed_; }
+
 bool SessionViewModel::aiGenerationEnabled() const {
   return engine_ != nullptr && engine_->HasBlockGenerator();
 }
@@ -165,6 +168,10 @@ void SessionViewModel::loadPersistentSettings() {
                             ai_http_timeout_seconds_)
                      .toInt(),
                  5, 300);
+  ai_http2_allowed_ =
+      settings.value(QString::fromLatin1(kAiHttp2AllowedKey),
+                     ai_http2_allowed_)
+          .toBool();
 
   const SecretToolResult secret =
       LookupSecret(QString::fromLatin1(kSecretService),
@@ -254,6 +261,15 @@ void SessionViewModel::setAiHttpTimeoutSeconds(const int value) {
   rebuildEngine();
 }
 
+void SessionViewModel::setAiHttp2Allowed(const bool value) {
+  if (ai_http2_allowed_ == value) return;
+  ai_http2_allowed_ = value;
+  QSettings().setValue(QString::fromLatin1(kAiHttp2AllowedKey),
+                       ai_http2_allowed_);
+  emit aiHttp2AllowedChanged();
+  rebuildEngine();
+}
+
 void SessionViewModel::reload() { rebuildEngine(); }
 
 void SessionViewModel::publishStatus(const QString& value) {
@@ -277,7 +293,7 @@ void SessionViewModel::rebuildEngine() {
   if (!ai_base_url_.trimmed().isEmpty() && !ai_model_.trimmed().isEmpty() &&
       !ai_api_key_.trimmed().isEmpty()) {
     auto transport = std::make_shared<tf::ai::QtHttpTransport>(
-        std::chrono::seconds(ai_http_timeout_seconds_));
+        std::chrono::seconds(ai_http_timeout_seconds_), ai_http2_allowed_);
     auto generator = std::make_shared<tf::ai::OpenAiCompatibleBlockGenerator>(
         tf::ai::OpenAiCompatibleConfig{
             .base_url = ai_base_url_.trimmed().toStdString(),

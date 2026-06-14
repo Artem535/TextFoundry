@@ -11,8 +11,9 @@
 
 namespace tf::ai {
 
-QtHttpTransport::QtHttpTransport(const std::chrono::milliseconds timeout)
-    : timeout_(timeout) {}
+QtHttpTransport::QtHttpTransport(const std::chrono::milliseconds timeout,
+                                 const bool http2_allowed)
+    : timeout_(timeout), http2_allowed_(http2_allowed) {}
 
 Result<HttpResponse> QtHttpTransport::PostJson(
     const HttpRequest& request) const {
@@ -28,6 +29,8 @@ Result<HttpResponse> QtHttpTransport::PostJson(
   }
 
   QNetworkRequest network_request(url);
+  network_request.setAttribute(QNetworkRequest::Http2AllowedAttribute,
+                               http2_allowed_);
   for (const auto& [key, value] : request.headers) {
     network_request.setRawHeader(QByteArray::fromStdString(key),
                                  QByteArray::fromStdString(value));

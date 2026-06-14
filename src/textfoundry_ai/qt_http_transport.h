@@ -9,13 +9,15 @@ namespace tf::ai {
 class QtHttpTransport final : public IHttpTransport {
  public:
   explicit QtHttpTransport(
-      std::chrono::milliseconds timeout = std::chrono::seconds(30));
+      std::chrono::milliseconds timeout = std::chrono::seconds(30),
+      bool http2_allowed = true);
 
   [[nodiscard]] Result<HttpResponse> PostJson(
       const HttpRequest& request) const override;
 
  private:
   std::chrono::milliseconds timeout_;
+  bool http2_allowed_;
 };
 
 }  // namespace tf::ai

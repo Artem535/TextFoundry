@@ -141,6 +141,12 @@ Page {
                         }
                     }
 
+                    CheckBox {
+                        text: "Allow HTTP/2"
+                        checked: SessionVm.aiHttp2Allowed
+                        onToggled: SessionVm.aiHttp2Allowed = checked
+                    }
+
                     Label {
                         Layout.fillWidth: true
                         text: SessionVm.aiGenerationEnabled
