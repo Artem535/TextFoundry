@@ -18,10 +18,10 @@ env:
 
 jobs:
   build-rpm:
-    name: Build Fedora 42 RPM
+    name: Build Fedora 44 RPM
     runs-on: ubuntu-latest
     container:
-      image: fedora:42
+      image: fedora:44
 
     steps:
       - name: Install build dependencies
