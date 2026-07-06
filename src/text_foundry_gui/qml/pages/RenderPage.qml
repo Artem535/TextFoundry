@@ -244,6 +244,12 @@ Page {
                     }
                 }
 
+                ProgressBar {
+                    Layout.fillWidth: true
+                    indeterminate: true
+                    visible: RenderVm.normalizing
+                }
+
                 GridLayout {
                     Layout.fillWidth: true
                     Layout.fillHeight: true
@@ -252,6 +258,7 @@ Page {
                     columnSpacing: General.spacingMedium
 
                     Rectangle {
+                        id: renderMetaPane
                         Layout.fillWidth: true
                         Layout.fillHeight: true
                         Layout.preferredWidth: root.detailsStacked ? -1 : 420
@@ -266,6 +273,7 @@ Page {
                             anchors.fill: parent
                             anchors.margins: General.paddingMedium
                             clip: true
+                            contentWidth: availableWidth
                             ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
                             ColumnLayout {
@@ -287,6 +295,7 @@ Page {
 
                                     ColumnLayout {
                                         Layout.fillWidth: true
+                                        Layout.minimumWidth: 0
                                         Layout.horizontalStretchFactor: 1
                                         spacing: 4
 
@@ -297,6 +306,7 @@ Page {
 
                                         TextField {
                                             Layout.fillWidth: true
+                                            Layout.minimumWidth: 0
                                             text: RenderVm.versionText
                                             placeholderText: "latest"
                                             onTextEdited: RenderVm.versionText = text
@@ -305,6 +315,7 @@ Page {
 
                                     ColumnLayout {
                                         Layout.fillWidth: true
+                                        Layout.minimumWidth: 0
                                         Layout.horizontalStretchFactor: 1
                                         spacing: 4
 
@@ -315,6 +326,7 @@ Page {
 
                                         ComboBox {
                                             Layout.fillWidth: true
+                                            Layout.minimumWidth: 0
                                             model: RenderVm.previewModes
                                             currentIndex: Math.max(0, RenderVm.previewModes.indexOf(RenderVm.previewMode))
                                             onActivated: RenderVm.previewMode = currentText
@@ -341,230 +353,29 @@ Page {
                                     }
                                 }
 
-                                GridLayout {
+                                NormalizationStyleForm {
                                     Layout.fillWidth: true
-                                    columns: 2
-                                    rowSpacing: General.spacingMedium
-                                    columnSpacing: General.spacingLarge
-
-                                    ColumnLayout {
-                                        Layout.fillWidth: true
-                                        Layout.horizontalStretchFactor: 1
-                                        spacing: 4
-
-                                        Label {
-                                            text: "Tone"
-                                            font.bold: true
-                                        }
-
-                                        TextField {
-                                            Layout.fillWidth: true
-                                            text: RenderVm.tone
-                                            placeholderText: "formal"
-                                            onTextEdited: RenderVm.tone = text
-                                        }
-
-                                        Label {
-                                            Layout.fillWidth: true
-                                            text: "How the text should sound: formal, warm, neutral, direct."
-                                            wrapMode: Text.WordWrap
-                                            opacity: 0.72
-                                        }
-                                    }
-
-                                    ColumnLayout {
-                                        Layout.fillWidth: true
-                                        Layout.horizontalStretchFactor: 1
-                                        spacing: 4
-
-                                        Label {
-                                            text: "Tense"
-                                            font.bold: true
-                                        }
-
-                                        TextField {
-                                            Layout.fillWidth: true
-                                            text: RenderVm.tense
-                                            placeholderText: "present"
-                                            onTextEdited: RenderVm.tense = text
-                                        }
-
-                                        Label {
-                                            Layout.fillWidth: true
-                                            text: "Verb tense to prefer: present, past, or future."
-                                            wrapMode: Text.WordWrap
-                                            opacity: 0.72
-                                        }
-                                    }
-
-                                    ColumnLayout {
-                                        Layout.fillWidth: true
-                                        Layout.horizontalStretchFactor: 1
-                                        spacing: 4
-
-                                        Label {
-                                            text: "Target Language"
-                                            font.bold: true
-                                        }
-
-                                        TextField {
-                                            Layout.fillWidth: true
-                                            text: RenderVm.targetLanguage
-                                            placeholderText: "en"
-                                            onTextEdited: RenderVm.targetLanguage = text
-                                        }
-
-                                        Label {
-                                            Layout.fillWidth: true
-                                            text: "Language for the rewritten text, for example en or ru."
-                                            wrapMode: Text.WordWrap
-                                            opacity: 0.72
-                                        }
-                                    }
-
-                                    ColumnLayout {
-                                        Layout.fillWidth: true
-                                        Layout.horizontalStretchFactor: 1
-                                        spacing: 4
-
-                                        Label {
-                                            text: "Person"
-                                            font.bold: true
-                                        }
-
-                                        TextField {
-                                            Layout.fillWidth: true
-                                            text: RenderVm.person
-                                            placeholderText: "second"
-                                            onTextEdited: RenderVm.person = text
-                                        }
-
-                                        Label {
-                                            Layout.fillWidth: true
-                                            text: "Point of view to use: first, second, or third person."
-                                            wrapMode: Text.WordWrap
-                                            opacity: 0.72
-                                        }
-                                    }
-
-                                    ColumnLayout {
-                                        Layout.fillWidth: true
-                                        Layout.horizontalStretchFactor: 1
-                                        spacing: 4
-
-                                        Label {
-                                            text: "Rewrite Strength"
-                                            font.bold: true
-                                        }
-
-                                        ComboBox {
-                                            Layout.fillWidth: true
-                                            model: ["light", "medium", "strong"]
-                                            currentIndex: Math.max(0, model.indexOf(RenderVm.rewriteStrength))
-                                            onActivated: RenderVm.rewriteStrength = currentText
-                                        }
-
-                                        Label {
-                                            Layout.fillWidth: true
-                                            text: "How far the rewrite may go. Cosmetic cleanup should usually stay on light."
-                                            wrapMode: Text.WordWrap
-                                            opacity: 0.72
-                                        }
-                                    }
-
-                                    ColumnLayout {
-                                        Layout.fillWidth: true
-                                        Layout.horizontalStretchFactor: 1
-                                        spacing: 4
-
-                                        Label {
-                                            text: "Audience"
-                                            font.bold: true
-                                        }
-
-                                        TextField {
-                                            Layout.fillWidth: true
-                                            text: RenderVm.audience
-                                            placeholderText: "end-user"
-                                            onTextEdited: RenderVm.audience = text
-                                        }
-
-                                        Label {
-                                            Layout.fillWidth: true
-                                            text: "Who the rewritten text is for: end-user, developer, executive."
-                                            wrapMode: Text.WordWrap
-                                            opacity: 0.72
-                                        }
-                                    }
-
-                                    ColumnLayout {
-                                        Layout.fillWidth: true
-                                        Layout.horizontalStretchFactor: 1
-                                        spacing: 4
-
-                                        Label {
-                                            text: "Locale"
-                                            font.bold: true
-                                        }
-
-                                        TextField {
-                                            Layout.fillWidth: true
-                                            text: RenderVm.locale
-                                            placeholderText: "en-US"
-                                            onTextEdited: RenderVm.locale = text
-                                        }
-
-                                        Label {
-                                            Layout.fillWidth: true
-                                            text: "Regional preference such as en-US, en-GB, or ru-RU."
-                                            wrapMode: Text.WordWrap
-                                            opacity: 0.72
-                                        }
-                                    }
-
-                                    ColumnLayout {
-                                        Layout.fillWidth: true
-                                        Layout.horizontalStretchFactor: 1
-                                        spacing: 4
-
-                                        Label {
-                                            text: "Terminology"
-                                            font.bold: true
-                                        }
-
-                                        ComboBox {
-                                            Layout.fillWidth: true
-                                            model: ["strict", "balanced", "flexible"]
-                                            currentIndex: Math.max(0, model.indexOf(RenderVm.terminologyRigidity))
-                                            onActivated: RenderVm.terminologyRigidity = currentText
-                                        }
-
-                                        Label {
-                                            Layout.fillWidth: true
-                                            text: "How strictly key terms and names should be preserved."
-                                            wrapMode: Text.WordWrap
-                                            opacity: 0.72
-                                        }
-                                    }
-                                }
-
-                                GridLayout {
-                                    Layout.fillWidth: true
-                                    columns: 2
-                                    rowSpacing: General.spacingMedium
-                                    columnSpacing: General.spacingLarge
-
-                                    CheckBox {
-                                        text: "Preserve Formatting"
-                                        checked: RenderVm.preserveFormatting
-                                        onToggled: RenderVm.preserveFormatting = checked
-                                    }
-
-                                    CheckBox {
-                                        text: "Preserve Examples"
-                                        checked: RenderVm.preserveExamples
-                                        onToggled: RenderVm.preserveExamples = checked
-                                    }
+                                    gridColumns: renderMetaPane.width < 430 ? 1 : 2
+                                    tone: RenderVm.tone
+                                    tense: RenderVm.tense
+                                    targetLanguage: RenderVm.targetLanguage
+                                    person: RenderVm.person
+                                    rewriteStrength: RenderVm.rewriteStrength
+                                    audience: RenderVm.audience
+                                    locale: RenderVm.locale
+                                    terminologyRigidity: RenderVm.terminologyRigidity
+                                    preserveFormatting: RenderVm.preserveFormatting
+                                    preserveExamples: RenderVm.preserveExamples
+                                    onToneEdited: function(value) { RenderVm.tone = value }
+                                    onTenseEdited: function(value) { RenderVm.tense = value }
+                                    onTargetLanguageEdited: function(value) { RenderVm.targetLanguage = value }
+                                    onPersonEdited: function(value) { RenderVm.person = value }
+                                    onRewriteStrengthEdited: function(value) { RenderVm.rewriteStrength = value }
+                                    onAudienceEdited: function(value) { RenderVm.audience = value }
+                                    onLocaleEdited: function(value) { RenderVm.locale = value }
+                                    onTerminologyRigidityEdited: function(value) { RenderVm.terminologyRigidity = value }
+                                    onPreserveFormattingEdited: function(value) { RenderVm.preserveFormatting = value }
+                                    onPreserveExamplesEdited: function(value) { RenderVm.preserveExamples = value }
                                 }
 
                             }

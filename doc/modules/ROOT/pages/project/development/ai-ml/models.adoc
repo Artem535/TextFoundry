@@ -1,10 +1,75 @@
 = 4.1.1. Модели
 
-Раздел предназначен для описания model strategy:
+== Текущая стратегия
 
-* поддерживаемые providers и adapters
-* назначение моделей по сценариям
-* ограничения, fallback и routing policy
+`TextFoundry` использует OpenAI-compatible adapter, поэтому приложение не
+должно жёстко ограничивать список model ids на уровне UI. Один и тот же adapter
+может указывать на OpenAI, локальный gateway, корпоративный proxy или совместимый
+provider с собственными именами моделей.
 
-Для `TextFoundry` здесь стоит документировать, какие AI adapters уже есть и как
-они соотносятся с задачами генерации, rewrite и normalization.
+Выбор модели должен быть строгим на уровне рекомендаций и validation checklist:
+для production-сценариев нельзя использовать модель только потому, что она
+отвечает на обычные chat-запросы.
+
+== Рекомендованный профиль модели
+
+Для `AI Block Generation`, `AI Slice`, `AI Rewrite`, `Rewrite Blocks` и
+`Normalize` нужна модель, которая стабильно:
+
+* следует JSON/schema contract и не добавляет markdown fences или пояснения;
+* сохраняет placeholders вида `{{name}}` без переименования и удаления;
+* не схлопывает структурированные prompt sections в краткое summary;
+* сохраняет исходный язык секции, включая mixed RU/EN prompts;
+* корректно работает с русскими section names и tags;
+* возвращает повторяемые block ids в lowercase dot-separated формате;
+* поддерживает достаточно большой context window для полного prompt/composition.
+
+Если модель не проходит хотя бы один из этих пунктов, её нельзя считать
+рекомендованной для TextFoundry workflows.
+
+== Практическое правило выбора
+
+Для генерации и slicing предпочтительны instruction/chat модели среднего или
+старшего класса с сильным structured-output поведением. Малые или дешёвые модели
+можно использовать только после проверки на benchmark prompts, потому что они
+чаще:
+
+* переводят русские секции без запроса пользователя;
+* меняют `{{placeholders}}`;
+* возвращают неполный JSON;
+* объединяют несколько prompt blocks в один generic block;
+* создают нестабильные ids вроде `section_2` или `block_3`.
+
+== Минимальный acceptance checklist
+
+Перед тем как рекомендовать конкретный model id, нужно прогнать один и тот же
+набор prompts через все AI workflows:
+
+* English prompt with XML-like tags.
+* Russian prompt with XML-like tags, например `<Роль>`, `<Правила>`,
+  `<Примеры>`.
+* Mixed RU/EN prompt with placeholders.
+* Long structured prompt with safety, style, examples, and response flow.
+* Existing composition rewrite where block ids and order must be preserved.
+
+Модель считается допустимой, если:
+
+* structured response parses without repair;
+* block ids are valid and stable;
+* Russian section names are preserved semantically;
+* placeholders are byte-for-byte identical;
+* generated blocks are detailed enough for human review;
+* composition rewrite does not add, remove, or rename blocks.
+
+== Fallback policy
+
+Если выбранная модель нестабильно обрабатывает slicing, пользователь должен:
+
+* использовать deterministic tagged-section fast path там, где source prompt уже
+  размечен тегами;
+* повысить класс модели для generation/rewrite workflows;
+* уменьшить prompt size или разбить миграцию на несколько проходов;
+* оставить `rewriteStrength=light` для prompt-preserving операций.
+
+Жёсткий allow-list model ids можно добавить позднее, только после накопления
+benchmark results по конкретным providers.

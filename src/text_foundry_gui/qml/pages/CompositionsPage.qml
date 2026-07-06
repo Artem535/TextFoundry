@@ -311,6 +311,7 @@ Page {
                             anchors.fill: parent
                             anchors.margins: General.paddingMedium
                             clip: true
+                            contentWidth: availableWidth
                             ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
                             ColumnLayout {
@@ -361,309 +362,70 @@ Page {
                                     placeholder: "No revision comment"
                                 }
 
-                                ColumnLayout {
+                                NormalizationStyleForm {
                                     Layout.fillWidth: true
-                                    spacing: General.spacingSmall
-
-                                    Label {
-                                        text: "Normalization Presets"
-                                        font.bold: true
+                                    showPresets: true
+                                    gridColumns: detailsMetaPane.width < 430 ? 1 : 2
+                                    tone: CompositionsVm.tone
+                                    tense: CompositionsVm.tense
+                                    targetLanguage: CompositionsVm.targetLanguage
+                                    person: CompositionsVm.person
+                                    rewriteStrength: CompositionsVm.rewriteStrength
+                                    audience: CompositionsVm.audience
+                                    locale: CompositionsVm.locale
+                                    terminologyRigidity: CompositionsVm.terminologyRigidity
+                                    preserveFormatting: CompositionsVm.preserveFormatting
+                                    preserveExamples: CompositionsVm.preserveExamples
+                                    onToneEdited: function(value) { CompositionsVm.tone = value }
+                                    onTenseEdited: function(value) { CompositionsVm.tense = value }
+                                    onTargetLanguageEdited: function(value) { CompositionsVm.targetLanguage = value }
+                                    onPersonEdited: function(value) { CompositionsVm.person = value }
+                                    onRewriteStrengthEdited: function(value) { CompositionsVm.rewriteStrength = value }
+                                    onAudienceEdited: function(value) { CompositionsVm.audience = value }
+                                    onLocaleEdited: function(value) { CompositionsVm.locale = value }
+                                    onTerminologyRigidityEdited: function(value) { CompositionsVm.terminologyRigidity = value }
+                                    onPreserveFormattingEdited: function(value) { CompositionsVm.preserveFormatting = value }
+                                    onPreserveExamplesEdited: function(value) { CompositionsVm.preserveExamples = value }
+                                    onFormalEnglishPresetRequested: {
+                                        CompositionsVm.tone = "formal"
+                                        CompositionsVm.tense = "present"
+                                        CompositionsVm.targetLanguage = "en"
+                                        CompositionsVm.person = "second"
+                                        CompositionsVm.rewriteStrength = "light"
+                                        CompositionsVm.terminologyRigidity = "strict"
+                                        CompositionsVm.preserveFormatting = true
+                                        CompositionsVm.preserveExamples = true
                                     }
-
-                                    Flow {
-                                        Layout.fillWidth: true
-                                        spacing: General.spacingSmall
-
-                                        SvgToolButton {
-                                            compact: true
-                                            iconSource: Icons.aiAssistSvg
-                                            labelText: "Formal EN"
-                                            onClicked: {
-                                                CompositionsVm.tone = "formal"
-                                                CompositionsVm.tense = "present"
-                                                CompositionsVm.targetLanguage = "en"
-                                                CompositionsVm.person = "second"
-                                                CompositionsVm.rewriteStrength = "light"
-                                                CompositionsVm.terminologyRigidity = "strict"
-                                                CompositionsVm.preserveFormatting = true
-                                                CompositionsVm.preserveExamples = true
-                                            }
-                                        }
-
-                                        SvgToolButton {
-                                            compact: true
-                                            iconSource: Icons.aiAssistSvg
-                                            labelText: "Warm RU"
-                                            onClicked: {
-                                                CompositionsVm.tone = "warm"
-                                                CompositionsVm.tense = "present"
-                                                CompositionsVm.targetLanguage = "ru"
-                                                CompositionsVm.person = "second"
-                                                CompositionsVm.rewriteStrength = "light"
-                                                CompositionsVm.terminologyRigidity = "strict"
-                                                CompositionsVm.preserveFormatting = true
-                                                CompositionsVm.preserveExamples = true
-                                            }
-                                        }
-
-                                        SvgToolButton {
-                                            compact: true
-                                            iconSource: Icons.aiAssistSvg
-                                            labelText: "Neutral 3rd"
-                                            onClicked: {
-                                                CompositionsVm.tone = "neutral"
-                                                CompositionsVm.tense = "present"
-                                                CompositionsVm.person = "third"
-                                                CompositionsVm.rewriteStrength = "light"
-                                                CompositionsVm.terminologyRigidity = "strict"
-                                                CompositionsVm.preserveFormatting = true
-                                                CompositionsVm.preserveExamples = true
-                                            }
-                                        }
-
-                                        SvgToolButton {
-                                            compact: true
-                                            iconSource: Icons.clearSvg
-                                            labelText: "Clear Style"
-                                            onClicked: {
-                                                CompositionsVm.tone = ""
-                                                CompositionsVm.tense = ""
-                                                CompositionsVm.targetLanguage = ""
-                                                CompositionsVm.person = ""
-                                                CompositionsVm.rewriteStrength = "light"
-                                                CompositionsVm.audience = ""
-                                                CompositionsVm.locale = ""
-                                                CompositionsVm.terminologyRigidity = "strict"
-                                                CompositionsVm.preserveFormatting = true
-                                                CompositionsVm.preserveExamples = true
-                                            }
-                                        }
+                                    onWarmRussianPresetRequested: {
+                                        CompositionsVm.tone = "warm"
+                                        CompositionsVm.tense = "present"
+                                        CompositionsVm.targetLanguage = "ru"
+                                        CompositionsVm.person = "second"
+                                        CompositionsVm.rewriteStrength = "light"
+                                        CompositionsVm.terminologyRigidity = "strict"
+                                        CompositionsVm.preserveFormatting = true
+                                        CompositionsVm.preserveExamples = true
                                     }
-                                }
-
-                                GridLayout {
-                                    Layout.fillWidth: true
-                                    columns: 2
-                                    rowSpacing: General.spacingMedium
-                                    columnSpacing: General.spacingLarge
-
-                                    ColumnLayout {
-                                        Layout.fillWidth: true
-                                        Layout.horizontalStretchFactor: 1
-                                        spacing: 4
-
-                                        Label {
-                                            text: "Tone"
-                                            font.bold: true
-                                        }
-
-                                        TextField {
-                                            Layout.fillWidth: true
-                                            text: CompositionsVm.tone
-                                            placeholderText: "formal"
-                                            onTextEdited: CompositionsVm.tone = text
-                                        }
-
-                                        Label {
-                                            Layout.fillWidth: true
-                                            text: "How the text should sound: formal, warm, neutral, direct."
-                                            wrapMode: Text.WordWrap
-                                            opacity: 0.72
-                                        }
+                                    onNeutralThirdPresetRequested: {
+                                        CompositionsVm.tone = "neutral"
+                                        CompositionsVm.tense = "present"
+                                        CompositionsVm.person = "third"
+                                        CompositionsVm.rewriteStrength = "light"
+                                        CompositionsVm.terminologyRigidity = "strict"
+                                        CompositionsVm.preserveFormatting = true
+                                        CompositionsVm.preserveExamples = true
                                     }
-
-                                    ColumnLayout {
-                                        Layout.fillWidth: true
-                                        Layout.horizontalStretchFactor: 1
-                                        spacing: 4
-
-                                        Label {
-                                            text: "Tense"
-                                            font.bold: true
-                                        }
-
-                                        TextField {
-                                            Layout.fillWidth: true
-                                            text: CompositionsVm.tense
-                                            placeholderText: "present"
-                                            onTextEdited: CompositionsVm.tense = text
-                                        }
-
-                                        Label {
-                                            Layout.fillWidth: true
-                                            text: "Verb tense to prefer: present, past, or future."
-                                            wrapMode: Text.WordWrap
-                                            opacity: 0.72
-                                        }
-                                    }
-
-                                    ColumnLayout {
-                                        Layout.fillWidth: true
-                                        Layout.horizontalStretchFactor: 1
-                                        spacing: 4
-
-                                        Label {
-                                            text: "Target Language"
-                                            font.bold: true
-                                        }
-
-                                        TextField {
-                                            Layout.fillWidth: true
-                                            text: CompositionsVm.targetLanguage
-                                            placeholderText: "en"
-                                            onTextEdited: CompositionsVm.targetLanguage = text
-                                        }
-
-                                        Label {
-                                            Layout.fillWidth: true
-                                            text: "Language for the derived normalized composition, for example en or ru."
-                                            wrapMode: Text.WordWrap
-                                            opacity: 0.72
-                                        }
-                                    }
-
-                                    ColumnLayout {
-                                        Layout.fillWidth: true
-                                        Layout.horizontalStretchFactor: 1
-                                        spacing: 4
-
-                                        Label {
-                                            text: "Person"
-                                            font.bold: true
-                                        }
-
-                                        TextField {
-                                            Layout.fillWidth: true
-                                            text: CompositionsVm.person
-                                            placeholderText: "second"
-                                            onTextEdited: CompositionsVm.person = text
-                                        }
-
-                                        Label {
-                                            Layout.fillWidth: true
-                                            text: "Point of view to use: first, second, or third person."
-                                            wrapMode: Text.WordWrap
-                                            opacity: 0.72
-                                        }
-                                    }
-
-                                    ColumnLayout {
-                                        Layout.fillWidth: true
-                                        Layout.horizontalStretchFactor: 1
-                                        spacing: 4
-
-                                        Label {
-                                            text: "Rewrite Strength"
-                                            font.bold: true
-                                        }
-
-                                        ComboBox {
-                                            Layout.fillWidth: true
-                                            model: ["light", "medium", "strong"]
-                                            currentIndex: Math.max(0, model.indexOf(CompositionsVm.rewriteStrength))
-                                            onActivated: CompositionsVm.rewriteStrength = currentText
-                                        }
-
-                                        Label {
-                                            Layout.fillWidth: true
-                                            text: "How far the rewrite may go. For prompts this should usually stay on light."
-                                            wrapMode: Text.WordWrap
-                                            opacity: 0.72
-                                        }
-                                    }
-
-                                    ColumnLayout {
-                                        Layout.fillWidth: true
-                                        Layout.horizontalStretchFactor: 1
-                                        spacing: 4
-
-                                        Label {
-                                            text: "Audience"
-                                            font.bold: true
-                                        }
-
-                                        TextField {
-                                            Layout.fillWidth: true
-                                            text: CompositionsVm.audience
-                                            placeholderText: "end-user"
-                                            onTextEdited: CompositionsVm.audience = text
-                                        }
-
-                                        Label {
-                                            Layout.fillWidth: true
-                                            text: "Who the text is written for: end-user, developer, executive."
-                                            wrapMode: Text.WordWrap
-                                            opacity: 0.72
-                                        }
-                                    }
-
-                                    ColumnLayout {
-                                        Layout.fillWidth: true
-                                        Layout.horizontalStretchFactor: 1
-                                        spacing: 4
-
-                                        Label {
-                                            text: "Locale"
-                                            font.bold: true
-                                        }
-
-                                        TextField {
-                                            Layout.fillWidth: true
-                                            text: CompositionsVm.locale
-                                            placeholderText: "en-US"
-                                            onTextEdited: CompositionsVm.locale = text
-                                        }
-
-                                        Label {
-                                            Layout.fillWidth: true
-                                            text: "Regional preference such as en-US, en-GB, or ru-RU."
-                                            wrapMode: Text.WordWrap
-                                            opacity: 0.72
-                                        }
-                                    }
-
-                                    ColumnLayout {
-                                        Layout.fillWidth: true
-                                        Layout.horizontalStretchFactor: 1
-                                        spacing: 4
-
-                                        Label {
-                                            text: "Terminology"
-                                            font.bold: true
-                                        }
-
-                                        ComboBox {
-                                            Layout.fillWidth: true
-                                            model: ["strict", "balanced", "flexible"]
-                                            currentIndex: Math.max(0, model.indexOf(CompositionsVm.terminologyRigidity))
-                                            onActivated: CompositionsVm.terminologyRigidity = currentText
-                                        }
-
-                                        Label {
-                                            Layout.fillWidth: true
-                                            text: "How strictly key terms and names should be preserved."
-                                            wrapMode: Text.WordWrap
-                                            opacity: 0.72
-                                        }
-                                    }
-                                }
-
-                                GridLayout {
-                                    Layout.fillWidth: true
-                                    columns: 2
-                                    rowSpacing: General.spacingMedium
-                                    columnSpacing: General.spacingLarge
-
-                                    CheckBox {
-                                        text: "Preserve Formatting"
-                                        checked: CompositionsVm.preserveFormatting
-                                        onToggled: CompositionsVm.preserveFormatting = checked
-                                    }
-
-                                    CheckBox {
-                                        text: "Preserve Examples"
-                                        checked: CompositionsVm.preserveExamples
-                                        onToggled: CompositionsVm.preserveExamples = checked
+                                    onClearStyleRequested: {
+                                        CompositionsVm.tone = ""
+                                        CompositionsVm.tense = ""
+                                        CompositionsVm.targetLanguage = ""
+                                        CompositionsVm.person = ""
+                                        CompositionsVm.rewriteStrength = "light"
+                                        CompositionsVm.audience = ""
+                                        CompositionsVm.locale = ""
+                                        CompositionsVm.terminologyRigidity = "strict"
+                                        CompositionsVm.preserveFormatting = true
+                                        CompositionsVm.preserveExamples = true
                                     }
                                 }
 
@@ -693,21 +455,13 @@ Page {
                                     }
                                 }
 
-                                Label {
+                                ProgressBar {
                                     Layout.fillWidth: true
-                                    text: CompositionsVm.normalizationStatusText
-                                    wrapMode: Text.WordWrap
-                                    opacity: 0.72
-                                    visible: false
+                                    indeterminate: true
+                                    visible: CompositionsVm.previewingNormalization
+                                             || CompositionsVm.normalizing
                                 }
 
-                                Label {
-                                    text: CompositionsVm.statusText
-                                    Layout.fillWidth: true
-                                    wrapMode: Text.WordWrap
-                                    opacity: 0.72
-                                    visible: false
-                                }
                             }
                         }
                     }
@@ -854,56 +608,15 @@ Page {
         }
     }
 
-    Dialog {
+    ConfirmDialog {
         id: deleteConfirmDialog
-        parent: Overlay.overlay
-        x: Math.round((parent.width - width) / 2)
-        y: Math.round((parent.height - height) / 2)
         width: Math.min(parent.width - 64, 440)
-        modal: true
-        dim: true
         title: root.pendingDeleteTitle
-        standardButtons: Dialog.NoButton
-
-        background: Rectangle {
-            radius: General.radiusMedium
-            color: ColorPalette.surface
-            border.color: ColorPalette.border
-        }
-
-        contentItem: ColumnLayout {
-            spacing: General.spacingMedium
-
-            Label {
-                Layout.fillWidth: true
-                text: root.pendingDeleteMessage
-                wrapMode: Text.WordWrap
-            }
-
-            RowLayout {
-                Layout.fillWidth: true
-
-                Item {
-                    Layout.fillWidth: true
-                }
-
-                SvgToolButton {
-                    iconSource: Icons.closeSvg
-                    labelText: "Cancel"
-                    onClicked: deleteConfirmDialog.close()
-                }
-
-                SvgToolButton {
-                    iconSource: Icons.removeSvg
-                    labelText: "Delete"
-                    accentColor: ColorPalette.danger
-                    onClicked: {
-                        deleteConfirmDialog.close()
-                        CompositionsVm.deleteSelected()
-                    }
-                }
-            }
-        }
+        messageText: root.pendingDeleteMessage
+        confirmText: "Delete"
+        confirmIconSource: Icons.removeSvg
+        confirmAccentColor: ColorPalette.danger
+        onConfirmed: CompositionsVm.deleteSelected()
     }
 
     Dialog {
@@ -926,64 +639,61 @@ Page {
             border.color: ColorPalette.border
         }
 
-        contentItem: Item {
+        contentItem: ColumnLayout {
             implicitWidth: compareDialog.availableWidth
             implicitHeight: compareDialog.availableHeight
+            spacing: General.spacingMedium
 
-            ColumnLayout {
-                anchors.fill: parent
+            Label {
+                Layout.fillWidth: true
+                text: CompositionsVm.compareSummary
+                wrapMode: Text.WordWrap
+                opacity: 0.78
+            }
+
+            RowLayout {
+                Layout.fillWidth: true
                 spacing: General.spacingMedium
 
                 Label {
                     Layout.fillWidth: true
-                    text: CompositionsVm.compareSummary
-                    wrapMode: Text.WordWrap
-                    opacity: 0.78
+                    text: CompositionsVm.compareLeftTitle
+                    font.bold: true
                 }
 
-                RowLayout {
+                Label {
                     Layout.fillWidth: true
-                    spacing: General.spacingMedium
+                    text: CompositionsVm.compareRightTitle
+                    font.bold: true
+                }
+            }
 
-                    Label {
-                        Layout.fillWidth: true
-                        text: CompositionsVm.compareLeftTitle
-                        font.bold: true
-                    }
-
-                    Label {
-                        Layout.fillWidth: true
-                        text: CompositionsVm.compareRightTitle
-                        font.bold: true
-                    }
+            Frame {
+                Layout.fillWidth: true
+                Layout.fillHeight: true
+                padding: 0
+                background: Rectangle {
+                    radius: General.radiusMedium
+                    color: ColorPalette.fieldBackground
+                    border.color: ColorPalette.border
                 }
 
-                Frame {
-                    Layout.fillWidth: true
-                    Layout.fillHeight: true
-                    padding: 0
-                    background: Rectangle {
-                        radius: General.radiusMedium
-                        color: ColorPalette.fieldBackground
-                        border.color: ColorPalette.border
+                ListView {
+                    id: compareRowsView
+                    anchors.fill: parent
+                    anchors.margins: General.paddingMedium
+                    clip: true
+                    spacing: General.spacingSmall
+                    model: CompositionsVm.compareRows
+
+                    ScrollBar.horizontal: ScrollBar {
+                        policy: ScrollBar.AlwaysOff
+                    }
+                    ScrollBar.vertical: ScrollBar {
+                        policy: ScrollBar.AsNeeded
                     }
 
-                    ListView {
-                        id: compareRowsView
-                        anchors.fill: parent
-                        anchors.margins: General.paddingMedium
-                        clip: true
-                        spacing: General.spacingSmall
-                        model: CompositionsVm.compareRows
-
-                        ScrollBar.horizontal: ScrollBar {
-                            policy: ScrollBar.AlwaysOff
-                        }
-                        ScrollBar.vertical: ScrollBar {
-                            policy: ScrollBar.AsNeeded
-                        }
-
-                        delegate: Item {
+                    delegate: Item {
                         required property var modelData
 
                         function diffBackground(kind) {
@@ -1071,11 +781,10 @@ Page {
                                         wrapMode: Text.WrapAtWordBoundaryOrAnywhere
                                         font.family: General.monospaceFamily
                                         verticalAlignment: Text.AlignTop
+                                    }
+                                }
+                            }
                         }
-                    }
-                }
-            }
-        }
                     }
                 }
             }

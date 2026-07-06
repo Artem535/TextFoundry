@@ -699,56 +699,15 @@ Page {
         }
     }
 
-    Dialog {
+    ConfirmDialog {
         id: deleteConfirmDialog
-        parent: Overlay.overlay
-        x: Math.round((parent.width - width) / 2)
-        y: Math.round((parent.height - height) / 2)
         width: Math.min(parent.width - 64, 440)
-        modal: true
-        dim: true
         title: root.pendingDeleteTitle
-        standardButtons: Dialog.NoButton
-
-        background: Rectangle {
-            radius: General.radiusMedium
-            color: ColorPalette.surface
-            border.color: ColorPalette.border
-        }
-
-        contentItem: ColumnLayout {
-            spacing: General.spacingMedium
-
-            Label {
-                Layout.fillWidth: true
-                text: root.pendingDeleteMessage
-                wrapMode: Text.WordWrap
-            }
-
-            RowLayout {
-                Layout.fillWidth: true
-
-                Item {
-                    Layout.fillWidth: true
-                }
-
-                SvgToolButton {
-                    iconSource: Icons.closeSvg
-                    labelText: "Cancel"
-                    onClicked: deleteConfirmDialog.close()
-                }
-
-                SvgToolButton {
-                    iconSource: Icons.removeSvg
-                    labelText: "Delete"
-                    accentColor: ColorPalette.danger
-                    onClicked: {
-                        deleteConfirmDialog.close()
-                        BlocksModel.deleteSelected()
-                    }
-                }
-            }
-        }
+        messageText: root.pendingDeleteMessage
+        confirmText: "Delete"
+        confirmIconSource: Icons.removeSvg
+        confirmAccentColor: ColorPalette.danger
+        onConfirmed: BlocksModel.deleteSelected()
     }
 
     Connections {

@@ -128,6 +128,7 @@ ApplicationWindow {
                 color: ColorPalette.onSurfaceMuted
                 font.pixelSize: General.fontSmall
                 font.bold: true
+                rightPadding: General.paddingMedium
             }
         }
     }
@@ -389,61 +390,19 @@ ApplicationWindow {
         }
     }
 
-    Dialog {
+    ConfirmDialog {
         id: discardChangesDialog
-        parent: Overlay.overlay
-        x: Math.round((parent.width - width) / 2)
-        y: Math.round((parent.height - height) / 2)
-        width: Math.min(parent.width - 64, 460)
-        modal: true
-        dim: true
         title: "Discard Changes"
-        standardButtons: Dialog.NoButton
-
-        background: Rectangle {
-            color: ColorPalette.surface
-            border.color: ColorPalette.border
-            radius: General.radiusMedium
+        messageText: "You have unsaved editor changes. Continue and discard them?"
+        confirmText: "Discard"
+        confirmIconSource: Icons.removeSvg
+        confirmAccentColor: ColorPalette.danger
+        onCancelled: {
+            pendingNavigationTab = -1
+            pendingCloseBlockEditor = false
+            pendingCloseBlockTabIndex = -1
         }
-
-        contentItem: ColumnLayout {
-            spacing: General.spacingMedium
-
-            Label {
-                Layout.fillWidth: true
-                text: "You have unsaved editor changes. Continue and discard them?"
-                wrapMode: Text.WordWrap
-            }
-
-            RowLayout {
-                Layout.fillWidth: true
-
-                Item {
-                    Layout.fillWidth: true
-                }
-
-                        SvgToolButton {
-                            iconSource: Icons.closeSvg
-                            labelText: "Cancel"
-                            onClicked: {
-                                pendingNavigationTab = -1
-                                pendingCloseBlockEditor = false
-                                pendingCloseBlockTabIndex = -1
-                                discardChangesDialog.close()
-                            }
-                        }
-
-                SvgToolButton {
-                    iconSource: Icons.removeSvg
-                    labelText: "Discard"
-                    accentColor: ColorPalette.danger
-                    onClicked: {
-                        discardChangesDialog.close()
-                        root.applyPendingDiscardAction()
-                    }
-                }
-            }
-        }
+        onConfirmed: root.applyPendingDiscardAction()
     }
 
     Connections {

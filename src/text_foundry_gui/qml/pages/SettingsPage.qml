@@ -105,7 +105,7 @@ Page {
                     TextField {
                         Layout.fillWidth: true
                         text: SessionVm.aiModel
-                        placeholderText: "Model"
+                        placeholderText: "Model with strong JSON/schema and RU/EN support"
                         onEditingFinished: SessionVm.aiModel = text
                     }
 
@@ -152,6 +152,13 @@ Page {
                         text: SessionVm.aiGenerationEnabled
                               ? "AI generator configured"
                               : "AI generator disabled until base URL, model, and API key are set"
+                        opacity: 0.72
+                        wrapMode: Text.WordWrap
+                    }
+
+                    Label {
+                        Layout.fillWidth: true
+                        text: "Use a model that reliably follows structured output, preserves {{placeholders}}, and handles Russian and English prompt sections."
                         opacity: 0.72
                         wrapMode: Text.WordWrap
                     }

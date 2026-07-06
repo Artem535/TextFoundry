@@ -76,6 +76,12 @@ Item {
             }
         }
 
+        ProgressBar {
+            Layout.fillWidth: true
+            indeterminate: true
+            visible: BlockSliceVm.generating || BlockSliceVm.publishing
+        }
+
         RowLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true

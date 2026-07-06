@@ -27,27 +27,34 @@ QString Slugify(QString value) {
   value.replace(QRegularExpression(QStringLiteral("[^a-z0-9]+")),
                 QStringLiteral("_"));
   value.remove(QRegularExpression(QStringLiteral("^_+|_+$")));
-  return value.isEmpty() ? QStringLiteral("section") : value;
+  return value;
+}
+
+bool MatchesAny(const QString& key, std::initializer_list<const char*> aliases) {
+  return std::ranges::any_of(aliases, [&key](const char* alias) {
+    return key == QString::fromLatin1(alias);
+  });
 }
 
 BlockType GuessSectionType(const QString& section_name) {
   const QString key = Slugify(section_name);
-  if (key == QStringLiteral("system")) return BlockType::System;
-  if (key == QStringLiteral("mission") || key == QStringLiteral("goals") ||
-      key == QStringLiteral("objective") ||
-      key == QStringLiteral("objectives")) {
+  if (MatchesAny(key, {"system"})) {
+    return BlockType::System;
+  }
+  if (MatchesAny(key, {"mission", "goals", "objective", "objectives"})) {
     return BlockType::Mission;
   }
-  if (key == QStringLiteral("safety") || key == QStringLiteral("guardrails")) {
+  if (MatchesAny(key, {"safety", "guardrails"})) {
     return BlockType::Safety;
   }
-  if (key == QStringLiteral("behavior") || key == QStringLiteral("style") ||
-      key == QStringLiteral("response_flow") ||
-      key == QStringLiteral("depth_guidelines")) {
+  if (MatchesAny(key, {"behavior", "style", "response_flow",
+                       "depth_guidelines"})) {
     return BlockType::Style;
   }
-  if (key == QStringLiteral("final_instructions")) return BlockType::Constraint;
-  if (key == QStringLiteral("history") || key == QStringLiteral("examples")) {
+  if (MatchesAny(key, {"final_instructions"})) {
+    return BlockType::Constraint;
+  }
+  if (MatchesAny(key, {"history", "examples"})) {
     return BlockType::Meta;
   }
   return BlockType::Domain;
@@ -55,16 +62,16 @@ BlockType GuessSectionType(const QString& section_name) {
 
 QString BuildSectionDescription(const QString& section_name) {
   const QString key = Slugify(section_name);
-  if (key == QStringLiteral("system")) {
+  if (MatchesAny(key, {"system"})) {
     return QStringLiteral("System-level framing and operating instructions.");
   }
-  if (key == QStringLiteral("mission")) {
+  if (MatchesAny(key, {"mission"})) {
     return QStringLiteral("Mission goals and intended responsibilities.");
   }
-  if (key == QStringLiteral("safety")) {
+  if (MatchesAny(key, {"safety"})) {
     return QStringLiteral("Safety rules, prohibitions, and escalation guidance.");
   }
-  if (key == QStringLiteral("behavior")) {
+  if (MatchesAny(key, {"behavior"})) {
     return QStringLiteral("Behavioral principles for interaction.");
   }
   if (key == QStringLiteral("response_flow")) {
@@ -73,16 +80,16 @@ QString BuildSectionDescription(const QString& section_name) {
   if (key == QStringLiteral("depth_guidelines")) {
     return QStringLiteral("Guidance for response length and level of detail.");
   }
-  if (key == QStringLiteral("style")) {
+  if (MatchesAny(key, {"style"})) {
     return QStringLiteral("Tone and expression guidelines.");
   }
-  if (key == QStringLiteral("examples")) {
+  if (MatchesAny(key, {"examples"})) {
     return QStringLiteral("In-context examples to preserve behavior.");
   }
-  if (key == QStringLiteral("history")) {
+  if (MatchesAny(key, {"history"})) {
     return QStringLiteral("Conversation history placeholder.");
   }
-  if (key == QStringLiteral("final_instructions")) {
+  if (MatchesAny(key, {"final_instructions"})) {
     return QStringLiteral("Final hard constraints for every response.");
   }
   return QStringLiteral("Extracted from the %1 section.").arg(section_name);
@@ -156,7 +163,8 @@ std::optional<std::vector<GeneratedBlockData>> ParseTaggedSections(
     const QString& namespace_prefix, const std::vector<BlockId>& existing_ids,
     const std::vector<BlockId>& reusable_ids = {}) {
   static const QRegularExpression kSectionPattern(
-      QStringLiteral("<([A-Za-z_][A-Za-z0-9_]*)>\\s*([\\s\\S]*?)\\s*</\\1>"));
+      QStringLiteral("<([\\p{L}_][\\p{L}\\p{N}_-]*)>\\s*([\\s\\S]*?)\\s*</\\1>"),
+      QRegularExpression::UseUnicodePropertiesOption);
 
   std::unordered_set<std::string> used_ids(existing_ids.begin(), existing_ids.end());
   for (const auto& id : reusable_ids) {
@@ -164,13 +172,18 @@ std::optional<std::vector<GeneratedBlockData>> ParseTaggedSections(
   }
   std::vector<GeneratedBlockData> blocks;
   auto it = kSectionPattern.globalMatch(source_text);
+  int section_number = 1;
   while (it.hasNext()) {
     const auto match = it.next();
     const QString section_name = match.captured(1).trimmed();
     const QString section_body = match.captured(2).trimmed();
     if (section_name.isEmpty() || section_body.isEmpty()) continue;
 
-    const QString base_name = Slugify(section_name);
+    QString base_name = Slugify(section_name);
+    if (base_name.isEmpty()) {
+      base_name = QStringLiteral("section_%1").arg(section_number);
+    }
+    ++section_number;
     QString reusable_id;
     const QString preferred_reusable_id = namespace_prefix.trimmed().isEmpty()
                                               ? QString()

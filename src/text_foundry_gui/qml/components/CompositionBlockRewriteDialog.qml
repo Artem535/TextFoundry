@@ -74,6 +74,12 @@ Item {
             }
         }
 
+        ProgressBar {
+            Layout.fillWidth: true
+            indeterminate: true
+            visible: CompositionBlockRewriteVm.previewing || CompositionBlockRewriteVm.applying
+        }
+
         RowLayout {
             Layout.fillWidth: true
             Layout.fillHeight: true

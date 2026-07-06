@@ -68,6 +68,8 @@ qt_add_qml_module(textfoundry_gui
         qml/components/SvgToolButton.qml
         qml/components/TagChip.qml
         qml/components/CodePreview.qml
+        qml/components/ConfirmDialog.qml
+        qml/components/NormalizationStyleForm.qml
         qml/components/BlockSliceDialog.qml
         qml/components/BlockEditorWorkspace.qml
         qml/components/CompositionBlockRewriteDialog.qml
