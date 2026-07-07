@@ -118,6 +118,7 @@ Item {
                     anchors.fill: parent
                     anchors.margins: General.paddingMedium
                     clip: true
+                    contentWidth: availableWidth
                     ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
                     Column {
@@ -135,7 +136,8 @@ Item {
                             }
 
                             TextField {
-                                width: parent.width
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: 0
                                 text: BlockEditorVm.blockId
                                 placeholderText: "namespace.block_id"
                                 onTextEdited: BlockEditorVm.blockId = text
@@ -166,8 +168,9 @@ Item {
                             }
 
                             TextArea {
-                                width: parent.width
-                                height: 84
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: 0
+                                Layout.preferredHeight: 84
                                 text: BlockEditorVm.revisionComment
                                 placeholderText: BlockEditorVm.createMode
                                                  ? "Optional note for the first published version"
@@ -185,6 +188,7 @@ Item {
 
                             ColumnLayout {
                                 Layout.fillWidth: true
+                                Layout.minimumWidth: 0
                                 spacing: 4
 
                                 Label {
@@ -194,6 +198,7 @@ Item {
 
                                 ComboBox {
                                     Layout.fillWidth: true
+                                    Layout.minimumWidth: 0
                                     model: BlockEditorVm.typeOptions
                                     currentIndex: Math.max(0, BlockEditorVm.typeOptions.indexOf(BlockEditorVm.type))
                                     onActivated: BlockEditorVm.type = currentText
@@ -202,6 +207,7 @@ Item {
 
                             ColumnLayout {
                                 Layout.fillWidth: true
+                                Layout.minimumWidth: 0
                                 spacing: 4
 
                                 Label {
@@ -211,6 +217,7 @@ Item {
 
                                 ComboBox {
                                     Layout.fillWidth: true
+                                    Layout.minimumWidth: 0
                                     model: BlockEditorVm.bumpOptions
                                     currentIndex: Math.max(0, BlockEditorVm.bumpOptions.indexOf(BlockEditorVm.bumpMode))
                                     onActivated: BlockEditorVm.bumpMode = currentText
@@ -219,6 +226,7 @@ Item {
 
                             ColumnLayout {
                                 Layout.fillWidth: true
+                                Layout.minimumWidth: 0
                                 spacing: 4
 
                                 Label {
@@ -228,6 +236,7 @@ Item {
 
                                 TextField {
                                     Layout.fillWidth: true
+                                    Layout.minimumWidth: 0
                                     text: BlockEditorVm.language
                                     onTextEdited: BlockEditorVm.language = text
                                 }
@@ -244,8 +253,9 @@ Item {
                             }
 
                             TextArea {
-                                width: parent.width
-                                height: 84
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: 0
+                                Layout.preferredHeight: 84
                                 text: BlockEditorVm.description
                                 wrapMode: TextEdit.Wrap
                                 onTextChanged: if (text !== BlockEditorVm.description) BlockEditorVm.description = text
@@ -262,8 +272,9 @@ Item {
                             }
 
                             TextArea {
-                                width: parent.width
-                                height: 144
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: 0
+                                Layout.preferredHeight: 144
                                 text: BlockEditorVm.aiPromptText
                                 placeholderText: BlockEditorVm.createMode
                                                  ? "Describe the block you want to generate"
@@ -283,8 +294,9 @@ Item {
                             }
 
                             TextArea {
-                                width: parent.width
-                                height: 120
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: 0
+                                Layout.preferredHeight: 120
                                 text: BlockEditorVm.tagsText
                                 placeholderText: "one tag per line"
                                 wrapMode: TextEdit.Wrap
@@ -302,8 +314,9 @@ Item {
                             }
 
                             TextArea {
-                                width: parent.width
-                                height: 120
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: 0
+                                Layout.preferredHeight: 120
                                 text: BlockEditorVm.defaultsText
                                 placeholderText: "key=value"
                                 wrapMode: TextEdit.Wrap

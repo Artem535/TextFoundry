@@ -101,6 +101,7 @@ Item {
                     anchors.fill: parent
                     anchors.margins: General.paddingMedium
                     clip: true
+                    contentWidth: availableWidth
                     ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
                     Column {
@@ -131,7 +132,8 @@ Item {
                             }
 
                             TextField {
-                                width: parent.width
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: 0
                                 text: BlockSliceVm.namespacePrefix
                                 placeholderText: "team.prompt"
                                 onTextEdited: BlockSliceVm.namespacePrefix = text
@@ -148,7 +150,8 @@ Item {
                             }
 
                             TextField {
-                                width: parent.width
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: 0
                                 text: BlockSliceVm.language
                                 placeholderText: "en"
                                 onTextEdited: BlockSliceVm.language = text
@@ -166,7 +169,8 @@ Item {
                             }
 
                             SpinBox {
-                                width: parent.width
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: 0
                                 from: 10
                                 to: 100
                                 stepSize: 5
@@ -193,8 +197,9 @@ Item {
                             }
 
                             TextArea {
-                                width: parent.width
-                                height: 84
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: 0
+                                Layout.preferredHeight: 84
                                 text: BlockSliceVm.revisionComment
                                 placeholderText: BlockSliceVm.updateMode
                                                  ? "What changed in this prompt update?"
@@ -214,8 +219,9 @@ Item {
                             }
 
                             TextArea {
-                                width: parent.width
-                                height: 420
+                                Layout.fillWidth: true
+                                Layout.minimumWidth: 0
+                                Layout.preferredHeight: 420
                                 text: BlockSliceVm.sourcePromptText
                                 placeholderText: BlockSliceVm.updateMode
                                                  ? "Paste or edit the updated prompt text"

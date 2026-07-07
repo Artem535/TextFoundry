@@ -366,6 +366,8 @@ Page {
                                     Layout.fillWidth: true
                                     showPresets: true
                                     gridColumns: detailsMetaPane.width < 430 ? 1 : 2
+                                    headingText: "Asset Normalization"
+                                    hintText: "Preview block-level changes, then create a normalized composition version from the selected asset."
                                     tone: CompositionsVm.tone
                                     tense: CompositionsVm.tense
                                     targetLanguage: CompositionsVm.targetLanguage
@@ -435,8 +437,8 @@ Page {
 
                                     SvgToolButton {
                                         iconSource: Icons.aiAssistSvg
-                                        labelText: CompositionsVm.previewingNormalization ? "Previewing..." : "Preview Normalize"
-                                        toolTipText: "Preserve structure and adjust style settings such as tone, tense, audience, and locale."
+                                        labelText: CompositionsVm.previewingNormalization ? "Previewing..." : "Preview Asset Rewrite"
+                                        toolTipText: "Preview block-level normalization while preserving composition structure and block ids."
                                         enabled: !CompositionsVm.previewingNormalization
                                                  && !CompositionsVm.normalizing
                                                  && CompositionsVm.normalizationAvailable
@@ -446,8 +448,8 @@ Page {
 
                                     SvgToolButton {
                                         iconSource: Icons.saveSvg
-                                        labelText: CompositionsVm.normalizing ? "Applying..." : "Apply Normalize"
-                                        toolTipText: "Create the derived normalized composition from the current preview settings."
+                                        labelText: CompositionsVm.normalizing ? "Creating..." : "Create Normalized Version"
+                                        toolTipText: "Publish the preview as a normalized composition version with derived block changes."
                                         enabled: !CompositionsVm.previewingNormalization
                                                  && !CompositionsVm.normalizing
                                                  && CompositionsVm.hasNormalizationPreview

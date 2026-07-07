@@ -8,6 +8,8 @@ ColumnLayout {
 
     property bool showPresets: false
     property int gridColumns: width < 360 ? 1 : 2
+    property string headingText: ""
+    property string hintText: ""
     property string tone: ""
     property string tense: ""
     property string targetLanguage: ""
@@ -35,6 +37,27 @@ ColumnLayout {
     signal clearStyleRequested()
 
     spacing: General.spacingMedium
+
+    ColumnLayout {
+        Layout.fillWidth: true
+        spacing: 4
+        visible: control.headingText.length > 0 || control.hintText.length > 0
+
+        Label {
+            Layout.fillWidth: true
+            text: control.headingText
+            font.bold: true
+            visible: control.headingText.length > 0
+        }
+
+        Label {
+            Layout.fillWidth: true
+            text: control.hintText
+            wrapMode: Text.WordWrap
+            opacity: 0.72
+            visible: control.hintText.length > 0
+        }
+    }
 
     ColumnLayout {
         Layout.fillWidth: true

@@ -17,6 +17,7 @@ Frame {
         anchors.fill: parent
         clip: true
         padding: General.paddingMedium
+        contentWidth: availableWidth
         ScrollBar.horizontal.policy: ScrollBar.AlwaysOff
 
         Item {
@@ -46,6 +47,7 @@ Frame {
 
                     TextField {
                         Layout.fillWidth: true
+                        Layout.minimumWidth: 0
                         text: CompositionEditorVm.compositionId
                         readOnly: !CompositionEditorVm.createMode
                         placeholderText: "namespace.composition_id"
@@ -81,6 +83,7 @@ Frame {
 
                     TextArea {
                         Layout.fillWidth: true
+                        Layout.minimumWidth: 0
                         Layout.preferredHeight: 84
                         text: CompositionEditorVm.revisionComment
                         placeholderText: CompositionEditorVm.createMode
@@ -103,6 +106,7 @@ Frame {
 
                     ComboBox {
                         Layout.fillWidth: true
+                        Layout.minimumWidth: 0
                         model: CompositionEditorVm.bumpOptions
                         currentIndex: Math.max(0, CompositionEditorVm.bumpOptions.indexOf(CompositionEditorVm.bumpMode))
                         onActivated: CompositionEditorVm.bumpMode = currentText
@@ -121,7 +125,8 @@ Frame {
 
                     TextArea {
                         Layout.fillWidth: true
-                        height: 96
+                        Layout.minimumWidth: 0
+                        Layout.preferredHeight: 96
                         text: CompositionEditorVm.description
                         wrapMode: TextEdit.Wrap
                         onTextChanged: if (text !== CompositionEditorVm.description) CompositionEditorVm.description = text
@@ -235,6 +240,7 @@ Frame {
 
                             TextField {
                                 Layout.fillWidth: true
+                                Layout.minimumWidth: 0
                                 text: CompositionEditorVm.blockSearchText
                                 placeholderText: "Search block id"
                                 onTextEdited: CompositionEditorVm.blockSearchText = text
@@ -242,6 +248,7 @@ Frame {
 
                             TextField {
                                 Layout.fillWidth: true
+                                Layout.minimumWidth: 0
                                 readOnly: true
                                 text: CompositionEditorVm.blockRefBlockId
                                 placeholderText: "Selected block id"
@@ -276,6 +283,7 @@ Frame {
 
                             TextField {
                                 Layout.fillWidth: true
+                                Layout.minimumWidth: 0
                                 text: CompositionEditorVm.blockRefVersion
                                 placeholderText: "1.0"
                                 onTextEdited: CompositionEditorVm.blockRefVersion = text
@@ -283,6 +291,7 @@ Frame {
 
                             TextArea {
                                 Layout.fillWidth: true
+                                Layout.minimumWidth: 0
                                 Layout.preferredHeight: 120
                                 text: CompositionEditorVm.blockRefParams
                                 placeholderText: "name=value, lang=en"
@@ -300,6 +309,7 @@ Frame {
 
                             TextArea {
                                 Layout.fillWidth: true
+                                Layout.minimumWidth: 0
                                 Layout.preferredHeight: 220
                                 text: CompositionEditorVm.staticText
                                 placeholderText: "Static text block"

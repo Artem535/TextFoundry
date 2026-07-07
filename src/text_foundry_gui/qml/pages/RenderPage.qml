@@ -202,7 +202,8 @@ Page {
                     SvgToolButton {
                         compact: true
                         iconSource: Icons.aiAssistSvg
-                        labelText: RenderVm.normalizing ? "Normalizing..." : "Normalize"
+                        labelText: RenderVm.normalizing ? "Rewriting..." : "Rewrite Snapshot"
+                        toolTipText: "Create a temporary rewritten preview of the current raw snapshot. This does not save blocks or compositions."
                         enabled: !RenderVm.normalizing && RenderVm.normalizationAvailable
                         onClicked: RenderVm.normalize()
                     }
@@ -210,7 +211,8 @@ Page {
                     SvgToolButton {
                         compact: true
                         iconSource: Icons.aiAssistSvg
-                        labelText: "Re-normalize"
+                        labelText: "Refresh Rewrite"
+                        toolTipText: "Force-refresh the temporary rewritten preview using the current style settings."
                         enabled: !RenderVm.normalizing && RenderVm.normalizationAvailable
                         onClicked: RenderVm.renormalize()
                     }
@@ -356,6 +358,8 @@ Page {
                                 NormalizationStyleForm {
                                     Layout.fillWidth: true
                                     gridColumns: renderMetaPane.width < 430 ? 1 : 2
+                                    headingText: "Snapshot Rewrite"
+                                    hintText: "Preview-only rewrite of the current rendered text. It does not publish or modify prompt assets."
                                     tone: RenderVm.tone
                                     tense: RenderVm.tense
                                     targetLanguage: RenderVm.targetLanguage
