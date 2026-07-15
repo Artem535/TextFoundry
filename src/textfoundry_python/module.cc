@@ -561,8 +561,11 @@ NB_MODULE(textfoundry, m) {
           ) {
             std::shared_ptr<IHttpTransport> transport;
 #ifdef TEXTFOUNDRY_BUILD_TESTING
-            if (!fake.is_none())
-              transport = nb::cast<std::shared_ptr<FakeTransport>>(fake);
+            if (!fake.is_none()) {
+              auto& fake_transport = nb::cast<FakeTransport&>(fake);
+              transport = std::shared_ptr<IHttpTransport>(
+                  &fake_transport, [](IHttpTransport*) {});
+            }
 #endif
             if (!transport)
               transport = std::make_shared<QtHttpTransport>(
@@ -587,8 +590,7 @@ NB_MODULE(textfoundry, m) {
       );
 #ifdef TEXTFOUNDRY_BUILD_TESTING
   auto testing = m.def_submodule("_testing");
-  nb::class_<FakeTransport, std::shared_ptr<FakeTransport>>(testing,
-                                                            "FakeTransport")
+  nb::class_<FakeTransport>(testing, "FakeTransport")
       .def(nb::init<>())
       .def_rw("response", &FakeTransport::response)
       .def_prop_ro("last_url",
