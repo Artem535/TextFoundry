@@ -29,7 +29,10 @@ target_link_libraries(textfoundry_ai_openai
         Qt6::Network
 )
 
-set_target_properties(textfoundry_ai_openai PROPERTIES EXPORT_NAME AiOpenAI)
+set_target_properties(textfoundry_ai_openai PROPERTIES
+    EXPORT_NAME AiOpenAI
+    POSITION_INDEPENDENT_CODE ON
+)
 
 install(
     TARGETS textfoundry_ai_openai
