@@ -20,6 +20,10 @@ if(TARGET textfoundry)
     COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/python/test_core_api.py)
   set_tests_properties(python_core_api PROPERTIES
     ENVIRONMENT "PYTHONPATH=$<TARGET_FILE_DIR:textfoundry>")
+  add_test(NAME python_ai_api
+    COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/python/test_ai_api.py)
+  set_tests_properties(python_ai_api PROPERTIES
+    ENVIRONMENT "PYTHONPATH=$<TARGET_FILE_DIR:textfoundry>")
 endif()
 
 if(WIN32 AND TARGET objectbox)

@@ -4,8 +4,13 @@
 #include <nanobind/stl/unordered_map.h>
 #include <nanobind/stl/vector.h>
 
+#include <chrono>
 #include <new>
 
+#include "openai_compatible_block_generator.h"
+#include "openai_compatible_composition_block_rewriter.h"
+#include "openai_compatible_normalizer.h"
+#include "qt_http_transport.h"
 #include "tf/block.h"
 #include "tf/block_type.hpp"
 #include "tf/composition.h"
@@ -198,6 +203,16 @@ NB_MODULE(textfoundry, m) {
            nb::arg("params") = Params{}, nb::rv_policy::reference_internal)
       .def("build", &CompositionDraftBuilder::build);
   nb::class_<BlockDraft>(m, "BlockDraft");
+  nb::class_<Block>(m, "Block")
+      .def(nb::init<BlockId>())
+      .def_prop_ro("id", &Block::Id)
+      .def_prop_ro("type", &Block::type)
+      .def_prop_ro("state", &Block::state)
+      .def_prop_ro("version", &Block::version)
+      .def_prop_ro("templ", &Block::templ)
+      .def_prop_ro("defaults", &Block::defaults)
+      .def_prop_ro("language", &Block::language)
+      .def_prop_ro("description", &Block::description);
   nb::class_<CompositionDraft>(m, "CompositionDraft");
 
   nb::class_<EngineConfig>(m, "EngineConfig")
@@ -212,6 +227,102 @@ NB_MODULE(textfoundry, m) {
       .def_rw("composition_version", &RenderResult::compositionVersion)
       .def_rw("blocks_used", &RenderResult::blocksUsed)
       .def("is_empty", &RenderResult::isEmpty);
+
+  using namespace tf::ai;
+  nb::class_<OpenAiCompatibleConfig>(m, "OpenAiCompatibleConfig")
+      .def(nb::init<>())
+      .def_rw("base_url", &OpenAiCompatibleConfig::base_url)
+      .def_rw("model", &OpenAiCompatibleConfig::model)
+      .def_rw("api_key", &OpenAiCompatibleConfig::api_key)
+      .def_rw("organization", &OpenAiCompatibleConfig::organization)
+      .def_rw("endpoint_path", &OpenAiCompatibleConfig::endpoint_path)
+      .def("__repr__", [](const OpenAiCompatibleConfig& c) {
+        return "OpenAiCompatibleConfig(base_url='" + c.base_url + "', model='" +
+               c.model + "', api_key='***', endpoint_path='" + c.endpoint_path +
+               "')";
+      });
+
+  nb::class_<BlockGenerationRequest>(m, "BlockGenerationRequest")
+      .def(nb::init<>())
+      .def_rw("prompt", &BlockGenerationRequest::prompt)
+      .def_rw("preferred_id", &BlockGenerationRequest::preferred_id)
+      .def_rw("preferred_type", &BlockGenerationRequest::preferred_type)
+      .def_rw("preferred_language", &BlockGenerationRequest::preferred_language)
+      .def_rw("existing_block_ids", &BlockGenerationRequest::existing_block_ids)
+      .def_rw("allow_id_collision",
+              &BlockGenerationRequest::allow_id_collision);
+  nb::class_<PromptSlicingRequest>(m, "PromptSlicingRequest")
+      .def(nb::init<>())
+      .def_rw("source_text", &PromptSlicingRequest::source_text)
+      .def_rw("preferred_language", &PromptSlicingRequest::preferred_language)
+      .def_rw("namespace_prefix", &PromptSlicingRequest::namespace_prefix)
+      .def_rw("existing_block_ids", &PromptSlicingRequest::existing_block_ids)
+      .def_rw("reusable_block_ids", &PromptSlicingRequest::reusable_block_ids)
+      .def_rw("reusable_block_summaries",
+              &PromptSlicingRequest::reusable_block_summaries)
+      .def_rw("preserve_reuse_percent",
+              &PromptSlicingRequest::preserve_reuse_percent)
+      .def_rw("preserve_order", &PromptSlicingRequest::preserve_order)
+      .def_rw("allow_id_collision", &PromptSlicingRequest::allow_id_collision);
+  nb::class_<GeneratedBlockData>(m, "GeneratedBlockData")
+      .def(nb::init<>())
+      .def_rw("id", &GeneratedBlockData::id)
+      .def_rw("type", &GeneratedBlockData::type)
+      .def_rw("language", &GeneratedBlockData::language)
+      .def_rw("description", &GeneratedBlockData::description)
+      .def_rw("templ", &GeneratedBlockData::templ)
+      .def_rw("defaults", &GeneratedBlockData::defaults)
+      .def_rw("tags", &GeneratedBlockData::tags);
+  nb::class_<GeneratedBlockBatch>(m, "GeneratedBlockBatch")
+      .def(nb::init<>())
+      .def_rw("blocks", &GeneratedBlockBatch::blocks);
+  nb::class_<BlockNormalizationRequest>(m, "BlockNormalizationRequest")
+      .def(nb::init<>())
+      .def_rw("source_block", &BlockNormalizationRequest::source_block)
+      .def_rw("style", &BlockNormalizationRequest::style);
+  nb::class_<NormalizedBlockData>(m, "NormalizedBlockData")
+      .def(nb::init<>())
+      .def_rw("templ", &NormalizedBlockData::templ)
+      .def_rw("description", &NormalizedBlockData::description)
+      .def_rw("language", &NormalizedBlockData::language);
+  nb::class_<CompositionNormalizationRequest>(m,
+                                              "CompositionNormalizationRequest")
+      .def(nb::init<>())
+      .def_rw("source_composition_id",
+              &CompositionNormalizationRequest::source_composition_id)
+      .def_rw("source_version",
+              &CompositionNormalizationRequest::source_version)
+      .def_rw("style", &CompositionNormalizationRequest::style)
+      .def_rw("target_composition_id",
+              &CompositionNormalizationRequest::target_composition_id)
+      .def_rw("normalize_static_text",
+              &CompositionNormalizationRequest::normalize_static_text)
+      .def_rw("reuse_cached_blocks",
+              &CompositionNormalizationRequest::reuse_cached_blocks);
+  nb::class_<NormalizedCompositionResult>(m, "NormalizedCompositionResult")
+      .def(nb::init<>())
+      .def_rw("composition_id", &NormalizedCompositionResult::composition_id)
+      .def_rw("composition_version",
+              &NormalizedCompositionResult::composition_version)
+      .def_rw("rewritten_blocks",
+              &NormalizedCompositionResult::rewritten_blocks);
+  nb::class_<NormalizedCompositionPreview>(m, "NormalizedCompositionPreview")
+      .def(nb::init<>())
+      .def_rw("composition_id", &NormalizedCompositionPreview::composition_id)
+      .def_rw("preview_text", &NormalizedCompositionPreview::preview_text)
+      .def_rw("rewritten_blocks",
+              &NormalizedCompositionPreview::rewritten_blocks);
+  nb::class_<CompositionBlockRewriteRequest>(m,
+                                             "CompositionBlockRewriteRequest")
+      .def(nb::init<>())
+      .def_rw("source_composition_id",
+              &CompositionBlockRewriteRequest::source_composition_id)
+      .def_rw("source_version", &CompositionBlockRewriteRequest::source_version)
+      .def_rw("instruction", &CompositionBlockRewriteRequest::instruction)
+      .def_rw("preserve_language",
+              &CompositionBlockRewriteRequest::preserve_language)
+      .def_rw("preserve_placeholders",
+              &CompositionBlockRewriteRequest::preserve_placeholders);
 
   auto context_from_object = [](nb::handle obj) {
     if (obj.is_none()) return RenderContext{};
@@ -339,7 +450,44 @@ NB_MODULE(textfoundry, m) {
            [](Engine& e, const BlockId& id) {
              raise_error(e.ValidateBlock(id));
            })
-      .def("validate_composition", [](Engine& e, const CompositionId& id) {
-        raise_error(e.ValidateComposition(id));
-      });
+      .def("validate_composition",
+           [](Engine& e, const CompositionId& id) {
+             raise_error(e.ValidateComposition(id));
+           })
+      .def("generate_block_data",
+           [](Engine& e, const BlockGenerationRequest& r) {
+             return unwrap(e.GenerateBlockData(r));
+           })
+      .def("generate_block_batch_data",
+           [](Engine& e, const PromptSlicingRequest& r) {
+             return unwrap(e.GenerateBlockBatchData(r));
+           })
+      .def("normalize",
+           [](Engine& e, const std::string& text, const SemanticStyle& style) {
+             return unwrap(e.Normalize(text, style));
+           })
+      .def("has_normalizer", &Engine::HasNormalizer)
+      .def("has_block_normalizer", &Engine::HasBlockNormalizer)
+      .def("has_block_generator", &Engine::HasBlockGenerator)
+      .def("has_composition_block_rewriter",
+           &Engine::HasCompositionBlockRewriter)
+      .def(
+          "configure_openai",
+          [](Engine& e, OpenAiCompatibleConfig config, int timeout_ms,
+             bool http2_allowed) {
+            auto transport = std::make_shared<QtHttpTransport>(
+                std::chrono::milliseconds(timeout_ms), http2_allowed);
+            e.SetBlockGenerator(
+                std::make_shared<OpenAiCompatibleBlockGenerator>(config,
+                                                                 transport));
+            e.SetNormalizer(std::make_shared<OpenAiCompatibleNormalizer>(
+                config, transport));
+            e.SetBlockNormalizer(std::make_shared<OpenAiCompatibleNormalizer>(
+                config, transport));
+            e.SetCompositionBlockRewriter(
+                std::make_shared<OpenAiCompatibleCompositionBlockRewriter>(
+                    config, transport));
+          },
+          nb::arg("config"), nb::arg("timeout_ms") = 30000,
+          nb::arg("http2_allowed") = true);
 }
