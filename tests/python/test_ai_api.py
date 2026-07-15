@@ -14,6 +14,18 @@ def test_openai_configuration_is_explicit_and_deterministic():
     assert engine.has_block_normalizer()
     assert engine.has_composition_block_rewriter()
 
+    block = (tf.BlockDraftBuilder("role.greeting")
+             .with_type(tf.BlockType.Role)
+             .with_template(tf.Template("Hello, {{name}}!"))
+             .build())
+    published = engine.publish_block(block)
+    composition = (tf.CompositionDraftBuilder("demo")
+                   .add_block_ref("role.greeting", published.version.major,
+                                  published.version.minor)
+                   .build())
+    engine.publish_composition(composition)
+    assert engine.render("demo", {"name": "Ada"}).text == "Hello, Ada!"
+
 
 def test_fake_transport_captures_generator_request_and_errors_offline():
     if not hasattr(tf, "_testing"):
