@@ -323,6 +323,52 @@ NB_MODULE(textfoundry, m) {
               &CompositionBlockRewriteRequest::preserve_language)
       .def_rw("preserve_placeholders",
               &CompositionBlockRewriteRequest::preserve_placeholders);
+  nb::class_<CompositionRewriteContextBlock>(m,
+                                             "CompositionRewriteContextBlock")
+      .def(nb::init<>())
+      .def_rw("block_id", &CompositionRewriteContextBlock::block_id)
+      .def_rw("type", &CompositionRewriteContextBlock::type)
+      .def_rw("language", &CompositionRewriteContextBlock::language)
+      .def_rw("description", &CompositionRewriteContextBlock::description)
+      .def_rw("defaults", &CompositionRewriteContextBlock::defaults)
+      .def_rw("tags", &CompositionRewriteContextBlock::tags)
+      .def_rw("templ", &CompositionRewriteContextBlock::templ);
+  nb::class_<CompositionBlockRewriteContext>(m,
+                                             "CompositionBlockRewriteContext")
+      .def(nb::init<>())
+      .def_rw("source_composition_id",
+              &CompositionBlockRewriteContext::source_composition_id)
+      .def_rw("source_version", &CompositionBlockRewriteContext::source_version)
+      .def_rw("instruction", &CompositionBlockRewriteContext::instruction)
+      .def_rw("preserve_language",
+              &CompositionBlockRewriteContext::preserve_language)
+      .def_rw("preserve_placeholders",
+              &CompositionBlockRewriteContext::preserve_placeholders)
+      .def_rw("blocks", &CompositionBlockRewriteContext::blocks);
+  nb::class_<BlockRewritePatch>(m, "BlockRewritePatch")
+      .def(nb::init<>())
+      .def_rw("block_id", &BlockRewritePatch::block_id)
+      .def_rw("description", &BlockRewritePatch::description)
+      .def_rw("templ", &BlockRewritePatch::templ)
+      .def_rw("defaults", &BlockRewritePatch::defaults)
+      .def_rw("tags", &BlockRewritePatch::tags)
+      .def_rw("rationale", &BlockRewritePatch::rationale);
+  nb::class_<CompositionBlockRewritePreview>(m,
+                                             "CompositionBlockRewritePreview")
+      .def(nb::init<>())
+      .def_rw("source_composition_id",
+              &CompositionBlockRewritePreview::source_composition_id)
+      .def_rw("source_version", &CompositionBlockRewritePreview::source_version)
+      .def_rw("patches", &CompositionBlockRewritePreview::patches);
+  nb::class_<AppliedCompositionBlockRewriteResult>(
+      m, "AppliedCompositionBlockRewriteResult")
+      .def(nb::init<>())
+      .def_rw("composition_id",
+              &AppliedCompositionBlockRewriteResult::composition_id)
+      .def_rw("composition_version",
+              &AppliedCompositionBlockRewriteResult::composition_version)
+      .def_rw("rewritten_blocks",
+              &AppliedCompositionBlockRewriteResult::rewritten_blocks);
 
   auto context_from_object = [](nb::handle obj) {
     if (obj.is_none()) return RenderContext{};
