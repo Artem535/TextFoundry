@@ -553,7 +553,12 @@ NB_MODULE(textfoundry, m) {
       .def(
           "configure_openai",
           [](Engine& e, OpenAiCompatibleConfig config, int timeout_ms,
-             bool http2_allowed, nb::object fake) {
+             bool http2_allowed
+#ifdef TEXTFOUNDRY_BUILD_TESTING
+             ,
+             nb::object fake
+#endif
+          ) {
             std::shared_ptr<IHttpTransport> transport;
 #ifdef TEXTFOUNDRY_BUILD_TESTING
             if (!fake.is_none())
@@ -574,7 +579,12 @@ NB_MODULE(textfoundry, m) {
                     config, transport));
           },
           nb::arg("config"), nb::arg("timeout_ms") = 30000,
-          nb::arg("http2_allowed") = true, nb::arg("fake") = nb::none());
+          nb::arg("http2_allowed") = true
+#ifdef TEXTFOUNDRY_BUILD_TESTING
+          ,
+          nb::arg("fake") = nb::none()
+#endif
+      );
 #ifdef TEXTFOUNDRY_BUILD_TESTING
   auto testing = m.def_submodule("_testing");
   nb::class_<FakeTransport, std::shared_ptr<FakeTransport>>(testing,
