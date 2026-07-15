@@ -22,7 +22,7 @@ def test_fake_transport_captures_generator_request_and_errors_offline():
     fake.response = tf.HttpResponse(
         status_code=200,
         body=(
-            '{"choices":[{"message":{"content":"{'
+            '{"choices":[{"message":{"role":"assistant","content":"{'
             '\\"id\\":\\"role.x\\",\\"type\\":\\"role\\",'
             '\\"language\\":\\"en\\",\\"description\\":\\"d\\",'
             '\\"templ\\":\\"Hi\\",\\"defaults\\":{},\\"tags\\":[]}"}}]}'
