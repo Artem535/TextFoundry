@@ -20,6 +20,19 @@
 #include "tf/types.h"
 #include "tf/version.h"
 
+#ifdef TEXTFOUNDRY_BUILD_TESTING
+class FakeTransport final : public tf::ai::IHttpTransport {
+ public:
+  tf::ai::HttpResponse response;
+  mutable tf::ai::HttpRequest last_request;
+  tf::Result<tf::ai::HttpResponse> PostJson(
+      const tf::ai::HttpRequest& request) const override {
+    last_request = request;
+    return tf::Result<tf::ai::HttpResponse>(response);
+  }
+};
+#endif
+
 namespace nb = nanobind;
 using namespace tf;
 
@@ -229,6 +242,10 @@ NB_MODULE(textfoundry, m) {
       .def("is_empty", &RenderResult::isEmpty);
 
   using namespace tf::ai;
+  nb::class_<HttpResponse>(m, "HttpResponse")
+      .def(nb::init<>())
+      .def_rw("status_code", &HttpResponse::status_code)
+      .def_rw("body", &HttpResponse::body);
   nb::class_<OpenAiCompatibleConfig>(m, "OpenAiCompatibleConfig")
       .def(nb::init<>())
       .def_rw("base_url", &OpenAiCompatibleConfig::base_url)
@@ -512,6 +529,22 @@ NB_MODULE(textfoundry, m) {
            [](Engine& e, const std::string& text, const SemanticStyle& style) {
              return unwrap(e.Normalize(text, style));
            })
+      .def("preview_normalize_composition",
+           [](Engine& e, const CompositionNormalizationRequest& r) {
+             return unwrap(e.PreviewNormalizeComposition(r));
+           })
+      .def("normalize_composition",
+           [](Engine& e, const CompositionNormalizationRequest& r) {
+             return unwrap(e.NormalizeComposition(r));
+           })
+      .def("preview_composition_block_rewrite",
+           [](Engine& e, const CompositionBlockRewriteRequest& r) {
+             return unwrap(e.PreviewCompositionBlockRewrite(r));
+           })
+      .def("apply_composition_block_rewrite",
+           [](Engine& e, const CompositionBlockRewritePreview& p) {
+             return unwrap(e.ApplyCompositionBlockRewrite(p));
+           })
       .def("has_normalizer", &Engine::HasNormalizer)
       .def("has_block_normalizer", &Engine::HasBlockNormalizer)
       .def("has_block_generator", &Engine::HasBlockGenerator)
@@ -520,20 +553,37 @@ NB_MODULE(textfoundry, m) {
       .def(
           "configure_openai",
           [](Engine& e, OpenAiCompatibleConfig config, int timeout_ms,
-             bool http2_allowed) {
-            auto transport = std::make_shared<QtHttpTransport>(
-                std::chrono::milliseconds(timeout_ms), http2_allowed);
+             bool http2_allowed, nb::object fake) {
+            std::shared_ptr<IHttpTransport> transport;
+#ifdef TEXTFOUNDRY_BUILD_TESTING
+            if (!fake.is_none())
+              transport = nb::cast<std::shared_ptr<FakeTransport>>(fake);
+#endif
+            if (!transport)
+              transport = std::make_shared<QtHttpTransport>(
+                  std::chrono::milliseconds(timeout_ms), http2_allowed);
+            auto normalizer =
+                std::make_shared<OpenAiCompatibleNormalizer>(config, transport);
             e.SetBlockGenerator(
                 std::make_shared<OpenAiCompatibleBlockGenerator>(config,
                                                                  transport));
-            e.SetNormalizer(std::make_shared<OpenAiCompatibleNormalizer>(
-                config, transport));
-            e.SetBlockNormalizer(std::make_shared<OpenAiCompatibleNormalizer>(
-                config, transport));
+            e.SetNormalizer(normalizer);
+            e.SetBlockNormalizer(normalizer);
             e.SetCompositionBlockRewriter(
                 std::make_shared<OpenAiCompatibleCompositionBlockRewriter>(
                     config, transport));
           },
           nb::arg("config"), nb::arg("timeout_ms") = 30000,
-          nb::arg("http2_allowed") = true);
+          nb::arg("http2_allowed") = true, nb::arg("fake") = nb::none());
+#ifdef TEXTFOUNDRY_BUILD_TESTING
+  auto testing = m.def_submodule("_testing");
+  nb::class_<FakeTransport, std::shared_ptr<FakeTransport>>(testing,
+                                                            "FakeTransport")
+      .def(nb::init<>())
+      .def_rw("response", &FakeTransport::response)
+      .def_prop_ro("last_url",
+                   [](const FakeTransport& t) { return t.last_request.url; })
+      .def_prop_ro("last_body",
+                   [](const FakeTransport& t) { return t.last_request.body; });
+#endif
 }
