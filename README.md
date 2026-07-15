@@ -172,6 +172,20 @@ render) without duplicating C++ domain logic. AI adapters are explicit: call
 `Engine.configure_openai(...)` before using generation, normalization, or
 rewrite methods. A normal `Engine.render(...)` call never performs network I/O.
 
+The AI workflow can be exercised entirely offline with the testing transport.
+It demonstrates block generation, prompt slicing, semantic normalization, and
+composition rewrite while printing each result:
+
+```bash
+PYTHONPATH=build-rel/python "$PYTHON" examples/python_ai_example.py
+```
+
+`examples/python_ai_example.py` uses `textfoundry._testing.FakeTransport` and
+fixture responses; it never contacts the configured example URL and does not
+require a real API key. The `_testing` module is available in testing builds
+(`-DBUILD_TESTING=ON`), while production applications should provide their own
+OpenAI-compatible service configuration.
+
 ### Build Notes
 
 - The default configure preset is `vcpkg-rel`.
