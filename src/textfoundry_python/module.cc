@@ -4,10 +4,14 @@
 #include <nanobind/stl/unordered_map.h>
 #include <nanobind/stl/vector.h>
 
+#include <new>
+
 #include "tf/block.h"
 #include "tf/block_type.hpp"
 #include "tf/composition.h"
+#include "tf/engine.h"
 #include "tf/error.h"
+#include "tf/renderer.h"
 #include "tf/types.h"
 #include "tf/version.h"
 
@@ -195,4 +199,100 @@ NB_MODULE(textfoundry, m) {
       .def("build", &CompositionDraftBuilder::build);
   nb::class_<BlockDraft>(m, "BlockDraft");
   nb::class_<CompositionDraft>(m, "CompositionDraft");
+
+  nb::class_<EngineConfig>(m, "EngineConfig")
+      .def(nb::init<>())
+      .def_rw("project_key", &EngineConfig::ProjectKey)
+      .def_rw("strict_mode", &EngineConfig::strict_mode)
+      .def_rw("default_data_path", &EngineConfig::default_data_path);
+
+  nb::class_<RenderResult>(m, "RenderResult")
+      .def_rw("text", &RenderResult::text)
+      .def_rw("composition_id", &RenderResult::compositionId)
+      .def_rw("composition_version", &RenderResult::compositionVersion)
+      .def_rw("blocks_used", &RenderResult::blocksUsed)
+      .def("is_empty", &RenderResult::isEmpty);
+
+  auto context_from_object = [](nb::handle obj) {
+    if (obj.is_none()) return RenderContext{};
+    if (nb::isinstance<RenderContext>(obj)) return nb::cast<RenderContext>(obj);
+    RenderContext context;
+    context.params = nb::cast<Params>(obj);
+    return context;
+  };
+
+  nb::class_<Engine>(m, "Engine")
+      .def("__init__", [](Engine* self, std::string data_path) {
+             EngineConfig config;
+             config.default_data_path = std::move(data_path);
+             new (self) Engine(std::move(config));
+             self->FullInit();
+           },
+           nb::arg("data_path") = "memory:tf")
+      .def("__init__", [](Engine* self, EngineConfig config) {
+             new (self) Engine(std::move(config));
+             self->FullInit();
+           })
+      .def("publish_block",
+           [](Engine& e, BlockDraft&& draft, std::optional<Version> version) {
+             if (version) return unwrap(e.PublishBlock(std::move(draft), *version));
+             return unwrap(e.PublishBlock(std::move(draft), Engine::VersionBump::Minor));
+           }, nb::arg("draft"), nb::arg("version") = nb::none())
+      .def("update_block",
+           [](Engine& e, BlockDraft&& draft, std::optional<Version> version) {
+             if (version) return unwrap(e.PublishBlock(std::move(draft), *version));
+             return unwrap(e.UpdateBlock(std::move(draft), Engine::VersionBump::Minor));
+           }, nb::arg("draft"), nb::arg("version") = nb::none())
+      .def("load_block", [](Engine& e, const BlockId& id,
+                             std::optional<Version> version) {
+             return version ? unwrap(e.LoadBlock(id, *version))
+                            : unwrap(e.LoadBlock(id));
+           }, nb::arg("id"), nb::arg("version") = nb::none())
+      .def("get_latest_block_version", &Engine::GetLatestBlockVersion)
+      .def("list_block_versions", &Engine::ListBlockVersions)
+      .def("list_blocks", [](Engine& e) { return e.ListBlocks(); })
+      .def("delete_block", [](Engine& e, const BlockId& id) {
+        raise_error(e.DeleteBlock(id));
+      })
+      .def("deprecate_block", [](Engine& e, const BlockId& id, Version version) {
+        raise_error(e.DeprecateBlock(id, version));
+      })
+      .def("publish_composition",
+           [](Engine& e, CompositionDraft&& draft, std::optional<Version> version) {
+             if (version) return unwrap(e.PublishComposition(std::move(draft), *version));
+             return unwrap(e.PublishComposition(std::move(draft), Engine::VersionBump::Minor));
+           }, nb::arg("draft"), nb::arg("version") = nb::none())
+      .def("update_composition",
+           [](Engine& e, CompositionDraft&& draft, std::optional<Version> version) {
+             if (version) return unwrap(e.PublishComposition(std::move(draft), *version));
+             return unwrap(e.UpdateComposition(std::move(draft), Engine::VersionBump::Minor));
+           }, nb::arg("draft"), nb::arg("version") = nb::none())
+      .def("load_composition", [](Engine& e, const CompositionId& id,
+                                   std::optional<Version> version) {
+             return version ? unwrap(e.LoadComposition(id, *version))
+                            : unwrap(e.LoadComposition(id));
+           }, nb::arg("id"), nb::arg("version") = nb::none())
+      .def("get_latest_composition_version", &Engine::GetLatestCompositionVersion)
+      .def("list_composition_versions", &Engine::ListCompositionVersions)
+      .def("list_compositions", &Engine::ListCompositions)
+      .def("delete_composition", [](Engine& e, const CompositionId& id) {
+        raise_error(e.DeleteComposition(id));
+      })
+      .def("deprecate_composition", [](Engine& e, const CompositionId& id, Version version) {
+        raise_error(e.DeprecateComposition(id, version));
+      })
+      .def("render", [context_from_object](Engine& e, const CompositionId& id,
+                                            nb::object context) {
+        return unwrap(e.Render(id, context_from_object(context))); },
+           nb::arg("id"), nb::arg("context") = nb::none())
+      .def("render_block", [context_from_object](Engine& e, const BlockId& id,
+                                                  nb::object context) {
+        return unwrap(e.RenderBlock(id, context_from_object(context))); },
+           nb::arg("id"), nb::arg("context") = nb::none())
+      .def("validate_block", [](Engine& e, const BlockId& id) {
+        raise_error(e.ValidateBlock(id));
+      })
+      .def("validate_composition", [](Engine& e, const CompositionId& id) {
+        raise_error(e.ValidateComposition(id));
+      });
 }

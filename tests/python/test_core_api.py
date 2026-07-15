@@ -30,6 +30,33 @@ def test_composition_builder():
     assert tf.PublishedComposition.__module__ == "textfoundry"
 
 
+def test_engine_render_workflow():
+    engine = tf.Engine(data_path="memory:python-core")
+    block = (tf.BlockDraftBuilder("role.greeting")
+             .with_type(tf.BlockType.Role)
+             .with_template(tf.Template("Hello, {{name}}!"))
+             .build())
+    published_block = engine.publish_block(block)
+    composition = (tf.CompositionDraftBuilder("demo")
+                   .add_block_ref("role.greeting",
+                                  published_block.version.major,
+                                  published_block.version.minor)
+                   .build())
+    engine.publish_composition(composition)
+    result = engine.render("demo", {"name": "Ada"})
+    assert result.text == "Hello, Ada!"
+
+
+def test_render_block_missing_error():
+    engine = tf.Engine(data_path="memory:python-core-missing")
+    try:
+        engine.render_block("missing")
+    except tf.Error as exc:
+        assert exc.code is tf.ErrorCode.BlockNotFound
+    else:
+        raise AssertionError("expected textfoundry.Error")
+
+
 if __name__ == "__main__":
     test_version()
     test_block_builder_fluent()
