@@ -244,6 +244,8 @@ NB_MODULE(textfoundry, m) {
   using namespace tf::ai;
   nb::class_<HttpResponse>(m, "HttpResponse")
       .def(nb::init<>())
+      .def(nb::init<int, std::string>(), nb::arg("status_code"),
+           nb::arg("body"))
       .def_rw("status_code", &HttpResponse::status_code)
       .def_rw("body", &HttpResponse::body);
   nb::class_<OpenAiCompatibleConfig>(m, "OpenAiCompatibleConfig")
