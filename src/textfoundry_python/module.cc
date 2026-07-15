@@ -263,6 +263,7 @@ NB_MODULE(textfoundry, m) {
 
   nb::class_<BlockGenerationRequest>(m, "BlockGenerationRequest")
       .def(nb::init<>())
+      .def(nb::init<std::string>(), nb::arg("prompt"))
       .def_rw("prompt", &BlockGenerationRequest::prompt)
       .def_rw("preferred_id", &BlockGenerationRequest::preferred_id)
       .def_rw("preferred_type", &BlockGenerationRequest::preferred_type)
@@ -272,6 +273,7 @@ NB_MODULE(textfoundry, m) {
               &BlockGenerationRequest::allow_id_collision);
   nb::class_<PromptSlicingRequest>(m, "PromptSlicingRequest")
       .def(nb::init<>())
+      .def(nb::init<std::string>(), nb::arg("source_text"))
       .def_rw("source_text", &PromptSlicingRequest::source_text)
       .def_rw("preferred_language", &PromptSlicingRequest::preferred_language)
       .def_rw("namespace_prefix", &PromptSlicingRequest::namespace_prefix)
