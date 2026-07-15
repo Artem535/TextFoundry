@@ -33,6 +33,7 @@ NB_MODULE(textfoundry, m) {
   nb::object error = nb::module_::import_("builtins").attr("type")(
       "Error", nb::make_tuple(nb::module_::import_("builtins").attr("Exception")), nb::dict());
   m.attr("Error") = error;
+  error.attr("__module__") = "textfoundry";
   nb::register_exception_translator([](const std::exception_ptr &p, void *) {
     try { if (p) std::rethrow_exception(p); }
     catch (const PyError &e) {
@@ -96,6 +97,9 @@ NB_MODULE(textfoundry, m) {
       .def("with_revision_comment", &BlockDraftBuilder::WithRevisionComment, nb::rv_policy::reference_internal)
       .def("build", &BlockDraftBuilder::build);
   nb::class_<PublishedBlock>(m, "PublishedBlock").def_prop_ro("id", &PublishedBlock::id).def_prop_ro("version", &PublishedBlock::version);
+  nb::class_<PublishedComposition>(m, "PublishedComposition")
+      .def_prop_ro("id", &PublishedComposition::id)
+      .def_prop_ro("version", &PublishedComposition::version);
   nb::class_<CompositionDraftBuilder>(m, "CompositionDraftBuilder")
       .def(nb::init<>()).def(nb::init<CompositionId>())
       .def("with_id", &CompositionDraftBuilder::WithId, nb::rv_policy::reference_internal)

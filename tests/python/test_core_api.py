@@ -22,7 +22,16 @@ def test_error_boundary():
         raise AssertionError("expected textfoundry.Error")
 
 
+def test_composition_builder():
+    draft = (tf.CompositionDraftBuilder("demo")
+             .add_static_text("hello")
+             .build())
+    assert isinstance(draft, tf.CompositionDraft)
+    assert tf.PublishedComposition.__module__ == "textfoundry"
+
+
 if __name__ == "__main__":
     test_version()
     test_block_builder_fluent()
     test_error_boundary()
+    test_composition_builder()
