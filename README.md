@@ -153,13 +153,19 @@ rtk cmake --build build-rel --parallel
 rtk ctest --test-dir build-rel --output-on-failure
 ```
 
-The extension is written to `build-rel/python`. Import it, or run the included
-example, by setting `PYTHONPATH`:
+The extension is written to `build-rel/python`. Use the same interpreter that
+CMake selected for `Python3_EXECUTABLE` (check `build-rel/CMakeCache.txt`); the
+interpreter and extension Python versions must match. With the vcpkg Python on
+Linux, for example:
 
 ```bash
-PYTHONPATH=build-rel/python python3 -c 'import textfoundry; print(textfoundry.__version__)'
-PYTHONPATH=build-rel/python python3 examples/python_api_example.py
+PYTHON=build-rel/vcpkg_installed/x64-linux/tools/python3/python3.12
+PYTHONPATH=build-rel/python "$PYTHON" -c 'import textfoundry; print(textfoundry.__version__)'
+PYTHONPATH=build-rel/python "$PYTHON" examples/python_api_example.py
 ```
+
+Replace `PYTHON` with the `Python3_EXECUTABLE` path from your CMake cache on
+other platforms or when using a system Python development package.
 
 Python exposes the deterministic engine workflow (publish, compose, and
 render) without duplicating C++ domain logic. AI adapters are explicit: call
