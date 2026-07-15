@@ -112,9 +112,9 @@ The project uses CMake and vcpkg for the C++ dependency set.
 Basic release configure/build:
 
 ```bash
-cmake --preset vcpkg-rel
-cmake --build build-rel --parallel
-ctest --test-dir build-rel --output-on-failure
+rtk cmake --preset vcpkg-rel
+rtk cmake --build build-rel --parallel
+rtk ctest --test-dir build-rel --output-on-failure
 ```
 
 Notes:
@@ -139,6 +139,32 @@ The repository currently depends on:
 
 Some GUI-side dependencies are resolved either from the system or through
 vendored/fetched builds, depending on the platform and workflow.
+
+### Python API (nanobind)
+
+The optional `textfoundry` Python extension is built by default when CMake can
+find nanobind and Python's development module. Install the Python development
+package for the selected interpreter first (for example, `python3-dev` on
+Debian/Ubuntu), then configure and build:
+
+```bash
+rtk cmake --preset vcpkg-rel
+rtk cmake --build build-rel --parallel
+rtk ctest --test-dir build-rel --output-on-failure
+```
+
+The extension is written to `build-rel/python`. Import it, or run the included
+example, by setting `PYTHONPATH`:
+
+```bash
+PYTHONPATH=build-rel/python python3 -c 'import textfoundry; print(textfoundry.__version__)'
+PYTHONPATH=build-rel/python python3 examples/python_api_example.py
+```
+
+Python exposes the deterministic engine workflow (publish, compose, and
+render) without duplicating C++ domain logic. AI adapters are explicit: call
+`Engine.configure_openai(...)` before using generation, normalization, or
+rewrite methods. A normal `Engine.render(...)` call never performs network I/O.
 
 ### Build Notes
 
