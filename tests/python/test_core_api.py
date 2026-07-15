@@ -52,7 +52,7 @@ def test_render_block_missing_error():
     try:
         engine.render_block("missing")
     except tf.Error as exc:
-        assert exc.code is tf.ErrorCode.BlockNotFound
+        assert exc.code == tf.ErrorCode.BlockNotFound
     else:
         raise AssertionError("expected textfoundry.Error")
 
@@ -62,3 +62,5 @@ if __name__ == "__main__":
     test_block_builder_fluent()
     test_error_boundary()
     test_composition_builder()
+    test_engine_render_workflow()
+    test_render_block_missing_error()
