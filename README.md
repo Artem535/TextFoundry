@@ -160,6 +160,7 @@ Linux, for example:
 
 ```bash
 PYTHON=build-rel/vcpkg_installed/x64-linux/tools/python3/python3.12
+export PYTHON
 PYTHONPATH=build-rel/python "$PYTHON" -c 'import textfoundry; print(textfoundry.__version__)'
 PYTHONPATH=build-rel/python "$PYTHON" examples/python_api_example.py
 ```
@@ -177,6 +178,8 @@ It demonstrates block generation, prompt slicing, semantic normalization, and
 composition rewrite while printing each result:
 
 ```bash
+PYTHON=build-rel/vcpkg_installed/x64-linux/tools/python3/python3.12
+export PYTHON
 PYTHONPATH=build-rel/python "$PYTHON" examples/python_ai_example.py
 ```
 
