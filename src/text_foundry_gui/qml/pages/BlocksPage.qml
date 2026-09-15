@@ -62,7 +62,6 @@ Page {
 
                     Label {
                         text: "Blocks"
-                        color: ColorPalette.primary
                         font.bold: true
                     }
 
