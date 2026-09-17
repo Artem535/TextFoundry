@@ -312,17 +312,6 @@ jobs:
           export LD_LIBRARY_PATH="$QT_PREFIX/lib:${LD_LIBRARY_PATH:-}"
           ctest --test-dir build-rel --output-on-failure
 
-      - name: Debug - lldb backtrace for core_tests (macOS, temporary)
-        if: runner.os == 'macOS'
-        run: |
-          CORE_TESTS_BIN="$(find "${{ github.workspace }}/build-rel" -maxdepth 4 -type f -name core_tests | head -n 1)"
-          echo "core_tests binary: $CORE_TESTS_BIN"
-          test -n "$CORE_TESTS_BIN"
-          otool -L "$CORE_TESTS_BIN" || true
-          echo "---- objectbox dylibs found under build-rel ----"
-          find "${{ github.workspace }}/build-rel" -name 'libobjectbox*' || true
-          lldb -o "run" -o "bt all" -o "quit" -- "$CORE_TESTS_BIN" 2>&1 | tail -n 200
-
       - name: Test
         if: runner.os == 'macOS'
         run: ctest --test-dir build-rel --output-on-failure
