@@ -28,7 +28,12 @@ FetchContent_Declare(
 set(FTXUI_ENABLE_INSTALL OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(ftxui)
 
-add_subdirectory(src/textfoundry_engine)
+FetchContent_Declare(
+  textfoundry_engine
+  GIT_REPOSITORY https://github.com/Artem535/TextFoundryEngine.git
+  GIT_TAG v0.1.0
+)
+FetchContent_MakeAvailable(textfoundry_engine)
 set(OBJECTBOX_LICENSE_FILE "${objectbox_SOURCE_DIR}/LICENSE.txt")
 add_subdirectory(src/textfoundry_ai)
 add_subdirectory(src/text_foundry_cli)

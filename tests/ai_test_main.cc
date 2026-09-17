@@ -8,9 +8,9 @@
 #define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #include <doctest/doctest.h>
 
-#include "../src/textfoundry_engine/tf/block_generation.h"
-#include "../src/textfoundry_engine/tf/block_type.hpp"
-#include "../src/textfoundry_engine/tf/error.h"
+#include "tf/block_generation.h"
+#include "tf/block_type.hpp"
+#include "tf/error.h"
 #include "../src/textfoundry_ai/openai_compatible_block_generator.h"
 
 using namespace tf;

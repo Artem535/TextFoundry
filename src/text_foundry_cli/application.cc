@@ -9,11 +9,11 @@
 #include <sstream>
 #include <string_view>
 
-#include "../textfoundry_engine/tf/block.h"
-#include "../textfoundry_engine/tf/composition.h"
-#include "../textfoundry_engine/tf/error.h"
-#include "../textfoundry_engine/tf/logger.h"
-#include "../textfoundry_engine/tf/renderer.h"
+#include "tf/block.h"
+#include "tf/composition.h"
+#include "tf/error.h"
+#include "tf/logger.h"
+#include "tf/renderer.h"
 #include "tui.h"
 
 // ============================================================================
