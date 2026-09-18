@@ -82,7 +82,7 @@ AI-функции не применяются автоматически во в
 В проекте уже оформлены:
 
 * сборка core, AI-модуля, CLI, GUI и примеров через `CMake`
-* пакетная конфигурация для установки `TextFoundryConfig.cmake`
+* пакетная конфигурация для установки `TextFoundryAppConfig.cmake`
 * RPM packaging pipeline
 * desktop integration для Linux GUI-сборки
 
