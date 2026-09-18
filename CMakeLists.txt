@@ -17,7 +17,7 @@ if(UNIX AND NOT APPLE)
 endif()
 
 set(TEXTFOUNDRY_INSTALL_CMAKEDIR
-    "${CMAKE_INSTALL_LIBDIR}/cmake/TextFoundry")
+    "${CMAKE_INSTALL_LIBDIR}/cmake/TextFoundryApp")
 
 # Use a fixed FTXUI release directly from upstream instead of vcpkg.
 FetchContent_Declare(
@@ -146,29 +146,34 @@ enable_testing()
 add_subdirectory(tests)
 
 # ===== Installation and packaging =====
+# Named TextFoundryApp (not TextFoundry) so this app-level package/export
+# identity does not collide with the TextFoundry package that
+# TextFoundryEngine (fetched below via FetchContent) installs under the same
+# "TextFoundry" name -- both would otherwise write TextFoundryConfig.cmake
+# and TextFoundryTargets.cmake to the same destination.
 write_basic_package_version_file(
-    "${CMAKE_CURRENT_BINARY_DIR}/TextFoundryConfigVersion.cmake"
+    "${CMAKE_CURRENT_BINARY_DIR}/TextFoundryAppConfigVersion.cmake"
     VERSION ${PROJECT_VERSION}
     COMPATIBILITY SameMajorVersion
 )
 
 configure_package_config_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/TextFoundryConfig.cmake.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/TextFoundryConfig.cmake"
+    "${CMAKE_CURRENT_SOURCE_DIR}/cmake/TextFoundryAppConfig.cmake.in"
+    "${CMAKE_CURRENT_BINARY_DIR}/TextFoundryAppConfig.cmake"
     INSTALL_DESTINATION "${TEXTFOUNDRY_INSTALL_CMAKEDIR}"
 )
 
 install(
-    EXPORT TextFoundryTargets
-    FILE TextFoundryTargets.cmake
-    NAMESPACE TextFoundry::
+    EXPORT TextFoundryAppTargets
+    FILE TextFoundryAppTargets.cmake
+    NAMESPACE TextFoundryApp::
     DESTINATION "${TEXTFOUNDRY_INSTALL_CMAKEDIR}"
 )
 
 install(
     FILES
-        "${CMAKE_CURRENT_BINARY_DIR}/TextFoundryConfig.cmake"
-        "${CMAKE_CURRENT_BINARY_DIR}/TextFoundryConfigVersion.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/TextFoundryAppConfig.cmake"
+        "${CMAKE_CURRENT_BINARY_DIR}/TextFoundryAppConfigVersion.cmake"
     DESTINATION "${TEXTFOUNDRY_INSTALL_CMAKEDIR}"
 )
 

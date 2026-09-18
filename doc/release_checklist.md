@@ -2,8 +2,8 @@
 
 ## Packaging
 
-- Build `core_tests`, `tf`, and `tf-gui` from a clean tree.
-- Run `ctest --test-dir build-rel --output-on-failure -R core_tests`.
+- Build `ai_tests`, `tf`, and `tf-gui` from a clean tree.
+- Run `ctest --test-dir build-rel --output-on-failure -R ai_tests`.
 - Verify `cmake --install build-rel --prefix <staging-dir>` installs:
   - `bin/tf`
   - `bin/tf-gui`

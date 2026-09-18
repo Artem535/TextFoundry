@@ -54,7 +54,8 @@ The repository currently contains:
 
 - a Qt/QML GUI workbench in `src/text_foundry_gui`
 - a CLI/TUI surface in `src/text_foundry_cli`
-- a core engine and storage layer in `src/textfoundry_engine`
+- a core engine and storage layer consumed from the external
+  [`TextFoundryEngine`](https://github.com/Artem535/TextFoundryEngine) repository via CMake `FetchContent`
 - OpenAI-compatible AI integration in `src/textfoundry_ai`
 
 ## Typical Workflow
@@ -85,7 +86,7 @@ At the moment, TextFoundry focuses on:
 
 At a high level, the codebase is split into four main layers:
 
-- `textfoundry_engine` for domain logic, rendering, validation, and storage-backed repositories
+- `textfoundry_engine` (external, via `TextFoundryEngine`) for domain logic, rendering, validation, and storage-backed repositories
 - `textfoundry_ai` for OpenAI-compatible adapters and AI-assisted workflows
 - `text_foundry_gui` for the main desktop workbench
 - `text_foundry_cli` for command-line and terminal-oriented flows
@@ -213,7 +214,6 @@ only a local editor.
 
 ## Repository Layout
 
-- `src/textfoundry_engine` — core domain and storage
 - `src/textfoundry_ai` — AI adapters and prompt workflows
 - `src/text_foundry_gui` — Qt/QML GUI
 - `src/text_foundry_cli` — CLI and TUI

@@ -17,6 +17,6 @@ if(NOT TARGET objectbox)
   FetchContent_MakeAvailable(objectbox)
 endif()
 
-include("${CMAKE_CURRENT_LIST_DIR}/TextFoundryTargets.cmake")
+include("${CMAKE_CURRENT_LIST_DIR}/TextFoundryAppTargets.cmake")
 
-check_required_components(TextFoundry)
+check_required_components(TextFoundryApp)

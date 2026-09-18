@@ -33,7 +33,7 @@ set_target_properties(textfoundry_ai_openai PROPERTIES EXPORT_NAME AiOpenAI)
 
 install(
     TARGETS textfoundry_ai_openai
-    EXPORT TextFoundryTargets
+    EXPORT TextFoundryAppTargets
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

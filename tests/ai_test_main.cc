@@ -11,7 +11,7 @@
 #include "tf/block_generation.h"
 #include "tf/block_type.hpp"
 #include "tf/error.h"
-#include "../src/textfoundry_ai/openai_compatible_block_generator.h"
+#include "openai_compatible_block_generator.h"
 
 using namespace tf;
 

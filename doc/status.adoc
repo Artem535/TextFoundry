@@ -82,14 +82,16 @@ AI-функции не применяются автоматически во в
 В проекте уже оформлены:
 
 * сборка core, AI-модуля, CLI, GUI и примеров через `CMake`
-* пакетная конфигурация для установки `TextFoundryConfig.cmake`
+* пакетная конфигурация для установки `TextFoundryAppConfig.cmake`
 * RPM packaging pipeline
 * desktop integration для Linux GUI-сборки
 
 === Тесты
 
-Подключён `doctest`, есть набор unit/integration-style тестов для core engine и
-части AI-интеграций. Тестовый таргет сейчас один: `core_tests`.
+Подключён `doctest`. Тесты core engine теперь живут в отдельном репозитории
+`TextFoundryEngine` (подключается через `FetchContent` и имеет свой набор
+тестов). В этом репозитории тестовый таргет сейчас один: `ai_tests`,
+покрывающий AI-интеграции.
 
 == Что считается рабочим пользовательским сценарием
 
