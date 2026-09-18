@@ -31,7 +31,7 @@ FetchContent_MakeAvailable(ftxui)
 FetchContent_Declare(
   textfoundry_engine
   GIT_REPOSITORY https://github.com/Artem535/TextFoundryEngine.git
-  GIT_TAG v0.1.0
+  GIT_TAG v0.1.1
 )
 FetchContent_MakeAvailable(textfoundry_engine)
 set(OBJECTBOX_LICENSE_FILE "${objectbox_SOURCE_DIR}/LICENSE.txt")
