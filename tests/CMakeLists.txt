@@ -15,6 +15,13 @@ endif()
 
 add_test(NAME ai_tests COMMAND ai_tests)
 
+if(WIN32 AND TARGET objectbox)
+  set_tests_properties(ai_tests PROPERTIES
+    ENVIRONMENT_MODIFICATION
+      "PATH=path_list_prepend:$<TARGET_FILE_DIR:objectbox>;PATH=path_list_prepend:${CMAKE_BINARY_DIR}/bin;PATH=path_list_prepend:${CMAKE_BINARY_DIR}/vcpkg_installed/x64-windows/bin"
+  )
+endif()
+
 if(TARGET textfoundry)
   add_test(NAME python_core_api
     COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/python/test_core_api.py)
@@ -24,11 +31,4 @@ if(TARGET textfoundry)
     COMMAND ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/python/test_ai_api.py)
   set_tests_properties(python_ai_api PROPERTIES
     ENVIRONMENT "PYTHONPATH=$<TARGET_FILE_DIR:textfoundry>")
-endif()
-
-if(WIN32 AND TARGET objectbox)
-  set_tests_properties(ai_tests PROPERTIES
-    ENVIRONMENT_MODIFICATION
-      "PATH=path_list_prepend:$<TARGET_FILE_DIR:objectbox>;PATH=path_list_prepend:${CMAKE_BINARY_DIR}/bin;PATH=path_list_prepend:${CMAKE_BINARY_DIR}/vcpkg_installed/x64-windows/bin"
-  )
 endif()

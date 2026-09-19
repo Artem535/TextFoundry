@@ -35,9 +35,20 @@ FetchContent_Declare(
   GIT_REPOSITORY https://github.com/Artem535/TextFoundryEngine.git
   GIT_TAG v0.1.1
 )
+# textfoundry_core (fetched above) is linked into the Python extension module
+# below, which is a shared library -- it needs to be built as
+# position-independent code. Nothing else in this file needs that, so this
+# is scoped narrowly around the fetch and restored immediately after,
+# following the same save/restore pattern already used below for
+# BUILD_TESTING around the KSyntaxHighlighting fetch.
+set(TEXTFOUNDRY_SAVED_PIC "${CMAKE_POSITION_INDEPENDENT_CODE}")
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 FetchContent_MakeAvailable(textfoundry_engine)
+set(CMAKE_POSITION_INDEPENDENT_CODE "${TEXTFOUNDRY_SAVED_PIC}")
 set(OBJECTBOX_LICENSE_FILE "${objectbox_SOURCE_DIR}/LICENSE.txt")
 add_subdirectory(src/textfoundry_ai)
+
+option(TEXTFOUNDRY_BUILD_PYTHON "Build Python extension module" ON)
 
 if(TEXTFOUNDRY_BUILD_PYTHON)
   find_package(Python COMPONENTS Interpreter Development.Module QUIET)

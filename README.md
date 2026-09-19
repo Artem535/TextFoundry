@@ -148,9 +148,9 @@ package for the selected interpreter first (for example, `python3-dev` on
 Debian/Ubuntu), then configure and build:
 
 ```bash
-rtk cmake --preset vcpkg-rel
-rtk cmake --build build-rel --parallel
-rtk ctest --test-dir build-rel --output-on-failure
+cmake --preset vcpkg-rel
+cmake --build build-rel --parallel
+ctest --test-dir build-rel --output-on-failure
 ```
 
 The extension is written to `build-rel/python`. Use the same interpreter that
