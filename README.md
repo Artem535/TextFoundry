@@ -112,9 +112,9 @@ The project uses CMake and vcpkg for the C++ dependency set.
 Basic release configure/build:
 
 ```bash
-cmake --preset vcpkg-rel
-cmake --build build-rel --parallel
-ctest --test-dir build-rel --output-on-failure
+rtk cmake --preset vcpkg-rel
+rtk cmake --build build-rel --parallel
+rtk ctest --test-dir build-rel --output-on-failure
 ```
 
 Notes:
@@ -139,6 +139,55 @@ The repository currently depends on:
 
 Some GUI-side dependencies are resolved either from the system or through
 vendored/fetched builds, depending on the platform and workflow.
+
+### Python API (nanobind)
+
+The optional `textfoundry` Python extension is built by default when CMake can
+find nanobind and Python's development module. Install the Python development
+package for the selected interpreter first (for example, `python3-dev` on
+Debian/Ubuntu), then configure and build:
+
+```bash
+cmake --preset vcpkg-rel
+cmake --build build-rel --parallel
+ctest --test-dir build-rel --output-on-failure
+```
+
+The extension is written to `build-rel/python`. Use the same interpreter that
+CMake selected for `Python3_EXECUTABLE` (check `build-rel/CMakeCache.txt`); the
+interpreter and extension Python versions must match. With the vcpkg Python on
+Linux, for example:
+
+```bash
+PYTHON=build-rel/vcpkg_installed/x64-linux/tools/python3/python3.12
+export PYTHON
+PYTHONPATH=build-rel/python "$PYTHON" -c 'import textfoundry; print(textfoundry.__version__)'
+PYTHONPATH=build-rel/python "$PYTHON" examples/python_api_example.py
+```
+
+Replace `PYTHON` with the `Python3_EXECUTABLE` path from your CMake cache on
+other platforms or when using a system Python development package.
+
+Python exposes the deterministic engine workflow (publish, compose, and
+render) without duplicating C++ domain logic. AI adapters are explicit: call
+`Engine.configure_openai(...)` before using generation, normalization, or
+rewrite methods. A normal `Engine.render(...)` call never performs network I/O.
+
+The AI workflow can be exercised entirely offline with the testing transport.
+It demonstrates block generation, prompt slicing, semantic normalization, and
+composition rewrite while printing each result:
+
+```bash
+PYTHON=build-rel/vcpkg_installed/x64-linux/tools/python3/python3.12
+export PYTHON
+PYTHONPATH=build-rel/python "$PYTHON" examples/python_ai_example.py
+```
+
+`examples/python_ai_example.py` uses `textfoundry._testing.FakeTransport` and
+fixture responses; it never contacts the configured example URL and does not
+require a real API key. The `_testing` module is available in testing builds
+(`-DBUILD_TESTING=ON`), while production applications should provide their own
+OpenAI-compatible service configuration.
 
 ### Build Notes
 

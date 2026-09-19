@@ -25,6 +25,9 @@
     {
       "name": "platform-folders",
       "version>=": "4.3.0"
+    },
+    {
+      "name": "nanobind"
     }
   ]
 }
